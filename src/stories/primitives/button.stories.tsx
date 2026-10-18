@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { LuChevronsUpDown } from 'react-icons/lu'
 import { VscEye, VscEyeClosed } from 'react-icons/vsc'
 import { Button } from '@/src/primitives/button.tsx'
 
@@ -43,13 +42,8 @@ export const AccentSubtle: Story = {
   },
 }
 
-export const GhostIcon: Story = {
-  args: {
-    variant: 'ghost',
-    icon: true,
-    'aria-label': 'Expand all',
-    children: <LuChevronsUpDown className={'size-4'} />,
-  },
+export const Ghost: Story = {
+  args: { variant: 'ghost', children: 'Cancel' },
 }
 
 export const Disabled: Story = {

@@ -10,6 +10,7 @@ import { MutedHint } from '@/src/primitives/muted-hint.tsx'
 import { OptionList } from '@/src/primitives/option-list.tsx'
 import { PopoverHeader } from '@/src/primitives/popover-header.tsx'
 import { PopoverSurface } from '@/src/primitives/popover-surface.tsx'
+import { Tooltip } from '@/src/primitives/tooltip.tsx'
 
 export function CommentsMenu() {
   const { state, list, countLabel, focusComment } = useComments()
@@ -17,10 +18,12 @@ export function CommentsMenu() {
 
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
-      <Popover.Trigger render={<IconButton />} title={countLabel} aria-label={countLabel}>
-        <VscComment />
-        <span className={'text-xs tabular-nums'}>{list.length}</span>
-      </Popover.Trigger>
+      <Tooltip label={countLabel}>
+        <Popover.Trigger render={<IconButton />} aria-label={countLabel}>
+          <VscComment />
+          <span className={'text-xs tabular-nums'}>{list.length}</span>
+        </Popover.Trigger>
+      </Tooltip>
       <PopoverSurface align={'end'} className={'w-80'}>
         <PopoverHeader title={'Comments'} meta={countLabel} />
         <OptionList>

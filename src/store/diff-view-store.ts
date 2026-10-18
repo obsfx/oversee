@@ -9,6 +9,8 @@ interface DiffViewPreferences {
 }
 
 interface DiffViewState extends DiffViewPreferences {
+  previewTheme: string | null
+  setPreviewTheme: (previewTheme: string | null) => void
   setViewMode: (viewMode: DiffViewMode) => void
   toggleUnchanged: () => void
 }
@@ -19,6 +21,10 @@ export const useDiffViewStore = create<DiffViewState>()(
       return {
         viewMode: 'split',
         unchangedExpanded: false,
+        previewTheme: null,
+        setPreviewTheme: (previewTheme) => {
+          set({ previewTheme })
+        },
         setViewMode: (viewMode) => {
           set({ viewMode })
         },

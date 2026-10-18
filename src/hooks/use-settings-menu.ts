@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-export type SettingsView = 'overview' | 'interface' | 'editor'
+export type SettingsView = 'overview' | 'interface' | 'editor' | 'diffColors'
 
 export interface SettingsViewProps {
   navigate: (view: SettingsView) => void

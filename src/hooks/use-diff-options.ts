@@ -1,11 +1,11 @@
 import type { FileDiffOptions, SelectedLineRange } from '@pierre/diffs/react'
+import { useDiffTheme } from '@/src/hooks/use-diff-theme.ts'
 import type { DiffAnnotationMeta } from '@/src/lib/comment-annotations.ts'
 import type { RenderedDiff } from '@/src/lib/diff-line-reveal.ts'
 import { DiffSurface } from '@/src/lib/diff-surface.ts'
 import { LineRanges } from '@/src/lib/line-range.ts'
 import { useAnnotationStore } from '@/src/store/annotation-store.ts'
 import { useDiffViewStore } from '@/src/store/diff-view-store.ts'
-import { useSettingsStore } from '@/src/store/settings-store.ts'
 
 export const useDiffOptions = (
   path: string,
@@ -17,9 +17,7 @@ export const useDiffOptions = (
   const unchangedExpanded = useDiffViewStore((state) => {
     return state.unchangedExpanded
   })
-  const theme = useSettingsStore((state) => {
-    return state.theme
-  })
+  const { themes, themeType } = useDiffTheme()
   const select = useAnnotationStore((state) => {
     return state.select
   })
@@ -29,8 +27,8 @@ export const useDiffOptions = (
   }
 
   const options: FileDiffOptions<DiffAnnotationMeta, undefined> = {
-    theme: DiffSurface.themes,
-    themeType: theme,
+    theme: themes,
+    themeType,
     diffStyle: viewMode,
     expandUnchanged: unchangedExpanded,
     disableFileHeader: true,

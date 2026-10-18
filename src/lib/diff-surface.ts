@@ -22,8 +22,6 @@ const HOVER_TINT =
 const CODE_BLOCKS = '[data-code],[data-diff-type=split][data-overflow=scroll]'
 
 export abstract class DiffSurface {
-  static readonly themes = { dark: 'pierre-dark', light: 'pierre-light' }
-
   static readonly style = {
     '--diffs-bg-selection-override': 'var(--color-accent)',
     '--diffs-bg-selection-number-override': 'var(--color-accent)',

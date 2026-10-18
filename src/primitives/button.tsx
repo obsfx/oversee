@@ -5,7 +5,6 @@ export type ButtonVariant = 'surface' | 'ghost' | 'accent-subtle'
 
 interface ButtonProps extends ComponentProps<'button'> {
   variant?: ButtonVariant
-  icon?: boolean
 }
 
 const VARIANTS: Record<ButtonVariant, string> = {
@@ -32,7 +31,7 @@ const VARIANTS: Record<ButtonVariant, string> = {
   ),
 }
 
-export function Button({ variant = 'surface', icon = false, className, ...props }: ButtonProps) {
+export function Button({ variant = 'surface', className, ...props }: ButtonProps) {
   return (
     <button
       type={'button'}
@@ -41,7 +40,7 @@ export function Button({ variant = 'surface', icon = false, className, ...props 
         'transition-[color,background-color,border-color,box-shadow] duration-150 ease-in-out',
         'focus-visible:ring-2 focus-visible:ring-accent/40',
         'disabled:pointer-events-none disabled:opacity-65',
-        icon ? 'size-7 px-0' : 'h-6 px-2',
+        'h-6 px-2',
         VARIANTS[variant],
         className,
       )}

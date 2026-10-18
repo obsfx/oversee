@@ -8,6 +8,8 @@ import {
 } from '@/src/hooks/use-settings-menu.ts'
 import { IconButton } from '@/src/primitives/icon-button.tsx'
 import { PopoverSurface } from '@/src/primitives/popover-surface.tsx'
+import { Tooltip } from '@/src/primitives/tooltip.tsx'
+import { DiffColorSettings } from '@/src/components/topbar/diff-color-settings.tsx'
 import { EditorSettings } from '@/src/components/topbar/editor-settings.tsx'
 import { InterfaceSettings } from '@/src/components/topbar/interface-settings.tsx'
 import { SettingsOverview } from '@/src/components/topbar/settings-overview.tsx'
@@ -16,6 +18,7 @@ const SETTINGS_VIEWS: Record<SettingsView, ComponentType<SettingsViewProps>> = {
   overview: SettingsOverview,
   interface: InterfaceSettings,
   editor: EditorSettings,
+  diffColors: DiffColorSettings,
 }
 
 export function SettingsMenu() {
@@ -24,9 +27,11 @@ export function SettingsMenu() {
 
   return (
     <Popover.Root onOpenChange={handleOpenChange}>
-      <Popover.Trigger render={<IconButton />} title={'Settings'} aria-label={'Settings'}>
-        <VscSettingsGear />
-      </Popover.Trigger>
+      <Tooltip label={'Settings'}>
+        <Popover.Trigger render={<IconButton />} aria-label={'Settings'}>
+          <VscSettingsGear />
+        </Popover.Trigger>
+      </Tooltip>
       <PopoverSurface align={'end'} className={'flex w-72 flex-col gap-2 p-2'}>
         <ActiveView navigate={navigate} />
       </PopoverSurface>

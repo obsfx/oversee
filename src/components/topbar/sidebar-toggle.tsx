@@ -1,5 +1,6 @@
 import { VscLayoutSidebarLeft, VscLayoutSidebarLeftOff } from 'react-icons/vsc'
 import { IconButton } from '@/src/primitives/icon-button.tsx'
+import { Tooltip } from '@/src/primitives/tooltip.tsx'
 import { useLayoutStore } from '@/src/store/layout-store.ts'
 
 export function SidebarToggle() {
@@ -13,8 +14,10 @@ export function SidebarToggle() {
   const label = expanded ? 'Collapse sidebar' : 'Expand sidebar'
 
   return (
-    <IconButton title={label} aria-label={label} aria-expanded={expanded} onClick={toggle}>
-      <Icon />
-    </IconButton>
+    <Tooltip label={label}>
+      <IconButton aria-label={label} aria-expanded={expanded} onClick={toggle}>
+        <Icon />
+      </IconButton>
+    </Tooltip>
   )
 }

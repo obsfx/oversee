@@ -12,6 +12,7 @@ import {
   LuStrikethrough,
 } from 'react-icons/lu'
 import { IconButton } from '@/src/primitives/icon-button.tsx'
+import { Tooltip } from '@/src/primitives/tooltip.tsx'
 
 interface ToolbarAction {
   key: string
@@ -148,21 +149,21 @@ export function MarkdownToolbar({ editor }: { editor: Editor }) {
     <div className={'flex items-center gap-px'}>
       {ACTIONS.map((action, index) => {
         return (
-          <IconButton
-            key={action.key}
-            title={action.label}
-            aria-label={action.label}
-            aria-pressed={active[index]}
-            className={'size-5.5 min-w-5.5 text-xs'}
-            onMouseDown={(event) => {
-              event.preventDefault()
-            }}
-            onClick={() => {
-              action.run(editor)
-            }}
-          >
-            {action.icon}
-          </IconButton>
+          <Tooltip key={action.key} label={action.label}>
+            <IconButton
+              aria-label={action.label}
+              aria-pressed={active[index]}
+              className={'size-5.5 min-w-5.5 text-xs'}
+              onMouseDown={(event) => {
+                event.preventDefault()
+              }}
+              onClick={() => {
+                action.run(editor)
+              }}
+            >
+              {action.icon}
+            </IconButton>
+          </Tooltip>
         )
       })}
     </div>

@@ -1,3 +1,4 @@
+import { DiffThemeCatalog } from '@/src/lib/diff-theme-catalog.ts'
 import { GoogleFontCatalog } from '@/src/lib/google-font-catalog.ts'
 import { NumericRange } from '@/src/lib/numeric-range.ts'
 import { ValueGuards } from '@/src/lib/value-guards.ts'
@@ -13,6 +14,7 @@ export interface Settings {
   editorFontWeight: number
   editorFontSize: number
   editorLineHeight: number
+  diffTheme: string
 }
 
 export abstract class SettingsSchema {
@@ -31,6 +33,7 @@ export abstract class SettingsSchema {
     editorFontWeight: 400,
     editorFontSize: 12,
     editorLineHeight: 1.6,
+    diffTheme: DiffThemeCatalog.auto,
   }
 
   static uiScale(uiFontSize: number) {
@@ -62,6 +65,9 @@ export abstract class SettingsSchema {
         value.editorLineHeight,
         defaults.editorLineHeight,
       ),
+      diffTheme: DiffThemeCatalog.isDiffTheme(value.diffTheme)
+        ? value.diffTheme
+        : defaults.diffTheme,
     }
   }
 }

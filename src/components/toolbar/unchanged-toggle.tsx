@@ -1,5 +1,6 @@
 import { VscFold, VscUnfold } from 'react-icons/vsc'
 import { IconButton } from '@/src/primitives/icon-button.tsx'
+import { Tooltip } from '@/src/primitives/tooltip.tsx'
 import { useDiffViewStore } from '@/src/store/diff-view-store.ts'
 
 export function UnchangedToggle() {
@@ -12,8 +13,10 @@ export function UnchangedToggle() {
   const label = expanded ? 'Collapse unchanged sections' : 'Expand unchanged sections'
 
   return (
-    <IconButton title={label} aria-label={label} aria-pressed={expanded} onClick={toggle}>
-      {expanded ? <VscFold /> : <VscUnfold />}
-    </IconButton>
+    <Tooltip label={label}>
+      <IconButton aria-label={label} aria-pressed={expanded} onClick={toggle}>
+        {expanded ? <VscFold /> : <VscUnfold />}
+      </IconButton>
+    </Tooltip>
   )
 }

@@ -33,6 +33,13 @@ export function SettingsOverview({ navigate }: SettingsViewProps) {
             navigate('editor')
           }}
         />
+        <SummaryRow
+          label={'Diff colors'}
+          summary={SettingsSummary.diffColors(settings)}
+          onOpen={() => {
+            navigate('diffColors')
+          }}
+        />
       </div>
     </>
   )

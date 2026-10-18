@@ -1,6 +1,7 @@
 import { VscChevronDown, VscChevronUp } from 'react-icons/vsc'
 import { FileProgress } from '@/src/primitives/file-progress.tsx'
 import { IconButton } from '@/src/primitives/icon-button.tsx'
+import { Tooltip } from '@/src/primitives/tooltip.tsx'
 
 interface FileNavigatorProps {
   position: number
@@ -23,24 +24,26 @@ export function FileNavigator({
 }: FileNavigatorProps) {
   return (
     <div className={'flex items-center gap-0.5'}>
-      <IconButton
-        title={'Previous file'}
-        aria-label={'Previous file'}
-        disabled={!canPrevious}
-        onClick={onPrevious}
-        className={'h-5 min-w-5'}
-      >
-        <VscChevronUp />
-      </IconButton>
-      <IconButton
-        title={'Next file'}
-        aria-label={'Next file'}
-        disabled={!canNext}
-        onClick={onNext}
-        className={'h-5 min-w-5'}
-      >
-        <VscChevronDown />
-      </IconButton>
+      <Tooltip label={'Previous file'}>
+        <IconButton
+          aria-label={'Previous file'}
+          disabled={!canPrevious}
+          onClick={onPrevious}
+          className={'h-5 min-w-5'}
+        >
+          <VscChevronUp />
+        </IconButton>
+      </Tooltip>
+      <Tooltip label={'Next file'}>
+        <IconButton
+          aria-label={'Next file'}
+          disabled={!canNext}
+          onClick={onNext}
+          className={'h-5 min-w-5'}
+        >
+          <VscChevronDown />
+        </IconButton>
+      </Tooltip>
       <FileProgress position={position} total={total} percent={percent} />
     </div>
   )

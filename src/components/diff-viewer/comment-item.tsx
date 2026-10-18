@@ -7,6 +7,7 @@ import { CommentActionButton } from '@/src/primitives/comment-action-button.tsx'
 import { CommentActions } from '@/src/primitives/comment-actions.tsx'
 import { CommentEntry } from '@/src/primitives/comment-entry.tsx'
 import { CommentMeta } from '@/src/primitives/comment-meta.tsx'
+import { Tooltip } from '@/src/primitives/tooltip.tsx'
 import { MarkdownView } from '@/src/components/diff-viewer/markdown-view.tsx'
 
 export function CommentItem({ comment }: { comment: ReviewComment }) {
@@ -27,17 +28,16 @@ export function CommentItem({ comment }: { comment: ReviewComment }) {
       <CommentMeta items={meta} />
       {failed && <p className={'pt-1 text-micro text-danger'}>Could not delete the comment.</p>}
       <CommentActions>
-        <CommentActionButton title={'Edit'} aria-label={'Edit comment'} onClick={edit}>
-          <VscEdit />
-        </CommentActionButton>
-        <CommentActionButton
-          title={'Delete'}
-          aria-label={'Delete comment'}
-          disabled={removing}
-          onClick={remove}
-        >
-          <VscTrash />
-        </CommentActionButton>
+        <Tooltip label={'Edit comment'}>
+          <CommentActionButton aria-label={'Edit comment'} onClick={edit}>
+            <VscEdit />
+          </CommentActionButton>
+        </Tooltip>
+        <Tooltip label={'Delete comment'}>
+          <CommentActionButton aria-label={'Delete comment'} disabled={removing} onClick={remove}>
+            <VscTrash />
+          </CommentActionButton>
+        </Tooltip>
       </CommentActions>
     </CommentEntry>
   )

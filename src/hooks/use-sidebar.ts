@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { ReviewProgressRules } from '@/src/lib/review-progress.ts'
 import { useReviewStore } from '@/src/store/review-store.ts'
 import { useChangeSet } from '@/src/hooks/use-change-set.ts'
 import { useFileTreeController } from '@/src/hooks/use-file-tree-controller.ts'
@@ -23,7 +22,6 @@ export const useSidebar = () => {
       })
     : changedPaths
   const tree = useFileTreeController(visiblePaths, changes)
-  const progress = ReviewProgressRules.of(changedPaths, reviewed)
 
   const toggleHideReviewed = () => {
     setHideReviewed(!hideReviewed)
@@ -38,7 +36,6 @@ export const useSidebar = () => {
     state,
     retry,
     tree,
-    progress,
     hideReviewed,
     toggleHideReviewed,
     allExpanded,

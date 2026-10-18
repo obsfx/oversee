@@ -1,4 +1,5 @@
 import { LuColumns2, LuRows2 } from 'react-icons/lu'
+import { Tooltip } from '@/src/primitives/tooltip.tsx'
 import { SegmentedControl } from '@/src/primitives/segmented-control.tsx'
 import { SegmentedOption } from '@/src/primitives/segmented-option.tsx'
 import { type DiffViewMode, useDiffViewStore } from '@/src/store/diff-view-store.ts'
@@ -20,18 +21,18 @@ export function ViewModeToggle() {
     <SegmentedControl>
       {MODES.map(({ value, label, Icon }) => {
         return (
-          <SegmentedOption
-            key={value}
-            active={value === viewMode}
-            title={label}
-            aria-label={label}
-            className={'flex h-5 items-center'}
-            onClick={() => {
-              setViewMode(value)
-            }}
-          >
-            <Icon />
-          </SegmentedOption>
+          <Tooltip key={value} label={label}>
+            <SegmentedOption
+              active={value === viewMode}
+              aria-label={label}
+              className={'flex h-5 items-center'}
+              onClick={() => {
+                setViewMode(value)
+              }}
+            >
+              <Icon />
+            </SegmentedOption>
+          </Tooltip>
         )
       })}
     </SegmentedControl>
