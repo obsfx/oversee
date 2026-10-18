@@ -96,6 +96,10 @@ export abstract class DiffThemeCatalog {
     return DiffThemeCatalog.autoThemes
   }
 
+  static resolvedName(themes: ThemesType, themeType: ThemeTypes) {
+    return themeType === 'dark' ? themes.dark : themes.light
+  }
+
   static themeType(id: string, appTheme: Theme): ThemeTypes {
     return DiffThemeCatalog.schemesById.get(id)?.type ?? appTheme
   }

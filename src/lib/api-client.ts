@@ -31,6 +31,19 @@ export class ApiClient {
     return (body ?? {}) as Record<string, unknown>
   }
 
+  static field<T>(
+    body: unknown,
+    name: string,
+    isValid: (value: unknown) => value is T,
+    path: string,
+  ): T {
+    const value = ApiClient.fieldsOf(body)[name]
+    if (!isValid(value)) {
+      throw ApiError.unexpectedShape(path)
+    }
+    return value
+  }
+
   url(path: string) {
     return new URL(path, this.baseUrl).toString()
   }

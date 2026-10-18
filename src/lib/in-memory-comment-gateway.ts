@@ -38,6 +38,12 @@ export class InMemoryCommentGateway implements CommentGateway {
     return Promise.resolve(updated)
   }
 
+  takeAll() {
+    const taken = this.comments
+    this.comments = []
+    return taken
+  }
+
   remove(id: string) {
     this.comments = CommentLists.without(this.comments, id)
     return Promise.resolve()

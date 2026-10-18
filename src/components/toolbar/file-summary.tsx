@@ -1,4 +1,4 @@
-import plur from 'plur'
+import { CountLabels } from '@/src/lib/count-labels.ts'
 import type { FileChange } from '@/src/lib/change-set.ts'
 import { DiffStatsRules } from '@/src/lib/diff-stats.ts'
 import { TreePaths } from '@/src/lib/tree-paths.ts'
@@ -10,7 +10,7 @@ const STAT_BLOCK_COUNT = 5
 
 export function FileSummary({ file }: { file: FileChange }) {
   const { directory, name } = TreePaths.split(file.path)
-  const description = `${file.additions} ${plur('addition', file.additions)}, ${file.deletions} ${plur('deletion', file.deletions)}`
+  const description = `${CountLabels.of(file.additions, 'addition')}, ${CountLabels.of(file.deletions, 'deletion')}`
 
   return (
     <>

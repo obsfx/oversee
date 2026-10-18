@@ -1,15 +1,15 @@
 import type { CommentGateway, NewComment, ReviewComment } from '@/src/lib/comment-gateway.ts'
 import { CommentLists } from '@/src/lib/comment-lists.ts'
-import { ComparisonRules, type Comparison } from '@/src/lib/comparison-rules.ts'
-import { ResourceCache } from '@/src/lib/resource-cache.ts'
+import { ComparisonCache } from '@/src/lib/comparison-cache.ts'
+import type { Comparison } from '@/src/lib/comparison-rules.ts'
 
 export class ReviewComments {
   private readonly gateway: CommentGateway
-  private readonly cache: ResourceCache<Comparison, ReviewComment[]>
+  private readonly cache: ComparisonCache<ReviewComment[]>
 
   constructor(gateway: CommentGateway) {
     this.gateway = gateway
-    this.cache = new ResourceCache(ComparisonRules.key, (comparison) => {
+    this.cache = new ComparisonCache((comparison) => {
       return gateway.list(comparison)
     })
   }
@@ -32,6 +32,12 @@ export class ReviewComments {
       return CommentLists.replace(comments, updated)
     })
     return updated
+  }
+
+  clear(comparison: Comparison) {
+    this.of(comparison).update(() => {
+      return []
+    })
   }
 
   async remove(comparison: Comparison, id: string) {

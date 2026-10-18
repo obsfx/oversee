@@ -1,61 +1,30 @@
-import { ApiClient, ApiError } from '@/src/lib/api-client.ts'
+import { ApiClient } from '@/src/lib/api-client.ts'
 import { HttpGateway } from '@/src/lib/http-gateway.ts'
 import type { CommentGateway, NewComment, ReviewComment } from '@/src/lib/comment-gateway.ts'
 import { ComparisonRules, type Comparison } from '@/src/lib/comparison-rules.ts'
-import { LineRanges, type LineRange } from '@/src/lib/line-range.ts'
+import { CommentShapes } from '@/src/lib/comment-shapes.ts'
 import { ValueGuards } from '@/src/lib/value-guards.ts'
 
 export class HttpCommentGateway extends HttpGateway implements CommentGateway {
   private static readonly path = '/comments'
 
-  private static isLineRange(value: unknown): value is LineRange {
-    const { start, end, side, endSide } = ApiClient.fieldsOf(value)
-    return (
-      ValueGuards.isPositiveInteger(start) &&
-      ValueGuards.isPositiveInteger(end) &&
-      LineRanges.isSide(side) &&
-      LineRanges.isSide(endSide)
-    )
-  }
-
-  private static isReviewComment(value: unknown): value is ReviewComment {
-    const { id, filePath, range, body, createdAt, updatedAt } = ApiClient.fieldsOf(value)
-    return (
-      ValueGuards.isString(id) &&
-      ValueGuards.isString(filePath) &&
-      HttpCommentGateway.isLineRange(range) &&
-      ValueGuards.isString(body) &&
-      ValueGuards.isNumber(createdAt) &&
-      ValueGuards.isNumber(updatedAt)
-    )
-  }
-
-  private static toComment({
-    id,
-    filePath,
-    range,
-    body,
-    createdAt,
-    updatedAt,
-  }: ReviewComment): ReviewComment {
-    const { start, end, side, endSide } = range
-    return { id, filePath, range: { start, end, side, endSide }, body, createdAt, updatedAt }
+  private static isCommentList(value: unknown): value is ReviewComment[] {
+    return ValueGuards.isListOf(value, CommentShapes.isReviewComment)
   }
 
   private static parseList(body: unknown): ReviewComment[] {
-    const { comments } = ApiClient.fieldsOf(body)
-    if (!ValueGuards.isListOf(comments, HttpCommentGateway.isReviewComment)) {
-      throw ApiError.unexpectedShape(HttpCommentGateway.path)
-    }
-    return comments.map(HttpCommentGateway.toComment)
+    return ApiClient.field(
+      body,
+      'comments',
+      HttpCommentGateway.isCommentList,
+      HttpCommentGateway.path,
+    ).map(CommentShapes.toComment)
   }
 
   private static parseOne(body: unknown): ReviewComment {
-    const { comment } = ApiClient.fieldsOf(body)
-    if (!HttpCommentGateway.isReviewComment(comment)) {
-      throw ApiError.unexpectedShape(HttpCommentGateway.path)
-    }
-    return HttpCommentGateway.toComment(comment)
+    return CommentShapes.toComment(
+      ApiClient.field(body, 'comment', CommentShapes.isReviewComment, HttpCommentGateway.path),
+    )
   }
 
   private static commentPath(id: string) {

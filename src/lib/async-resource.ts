@@ -6,6 +6,12 @@ export type ResourceState<T> =
   | { status: 'ready'; data: T }
   | { status: 'failed'; error: Error }
 
+export abstract class ResourceStates {
+  static dataOr<T, F>(state: ResourceState<T>, fallback: F): T | F {
+    return state.status === 'ready' ? state.data : fallback
+  }
+}
+
 export class AsyncResource<T> {
   readonly store: StoreApi<ResourceState<T>>
   private readonly fetcher: () => Promise<T>

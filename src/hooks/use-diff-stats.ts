@@ -1,4 +1,4 @@
-import plur from 'plur'
+import { CountLabels } from '@/src/lib/count-labels.ts'
 import { DiffStatsRules } from '@/src/lib/diff-stats.ts'
 import { useChangeSet } from '@/src/hooks/use-change-set.ts'
 
@@ -8,6 +8,6 @@ export const useDiffStats = () => {
     return null
   }
   const stats = DiffStatsRules.of(state.data.changes)
-  const description = `${stats.additions} ${plur('line', stats.additions)} added, ${stats.deletions} ${plur('line', stats.deletions)} removed across ${stats.files} ${plur('file', stats.files)}`
+  const description = `${CountLabels.of(stats.additions, 'line')} added, ${CountLabels.of(stats.deletions, 'line')} removed across ${CountLabels.of(stats.files, 'file')}`
   return { ...stats, description }
 }

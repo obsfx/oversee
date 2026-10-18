@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useServices } from '@/src/context/services/use-services.ts'
-import type { FileChange } from '@/src/lib/change-set.ts'
+import { ChangeSets } from '@/src/lib/change-set.ts'
+import { ResourceStates } from '@/src/lib/async-resource.ts'
 import type { FileDiff } from '@/src/lib/file-diff-gateway.ts'
 import { useNavigationStore } from '@/src/store/navigation-store.ts'
 import { useChangeSet } from '@/src/hooks/use-change-set.ts'
@@ -19,13 +20,10 @@ export const useFileDiff = () => {
   const selectedPath = useNavigationStore((navigation) => {
     return navigation.selectedPath
   })
-  let change: FileChange | null = null
-  if (changeSetState.status === 'ready') {
-    change =
-      changeSetState.data.changes.find((candidate) => {
-        return candidate.path === selectedPath
-      }) ?? null
-  }
+  const change = ChangeSets.find(
+    ResourceStates.dataOr(changeSetState, ChangeSets.empty).changes,
+    selectedPath,
+  )
   const resource = comparison && change ? fileDiffs.get({ comparison, change }) : null
   const state = useResource(resource)
   const [shown, setShown] = useState<ShownDiff | null>(null)

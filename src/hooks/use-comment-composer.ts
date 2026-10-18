@@ -1,12 +1,10 @@
-import { useState } from 'react'
 import { useServices } from '@/src/context/services/use-services.ts'
 import type { ReviewComment } from '@/src/lib/comment-gateway.ts'
 import { LineRanges, type LineRange } from '@/src/lib/line-range.ts'
 import { useAnnotationStore } from '@/src/store/annotation-store.ts'
+import { useAsyncAction } from '@/src/hooks/use-async-action.ts'
 import { useCommentEditor } from '@/src/hooks/use-comment-editor.ts'
 import { useComparison } from '@/src/hooks/use-comparison.ts'
-
-type SaveStatus = 'idle' | 'saving' | 'failed'
 
 interface CommentComposerOptions {
   path: string
@@ -20,30 +18,23 @@ export const useCommentComposer = ({ path, range, comment }: CommentComposerOpti
   const closeDraft = useAnnotationStore((state) => {
     return state.closeDraft
   })
-  const [status, setStatus] = useState<SaveStatus>('idle')
-
-  const save = async (body: string) => {
-    if (!comparison || status === 'saving') {
+  const save = useAsyncAction(async (body: string) => {
+    if (!comparison) {
       return
     }
-    setStatus('saving')
-    try {
-      if (comment) {
-        await comments.update(comparison, comment.id, body)
-      } else {
-        await comments.create(comparison, { filePath: path, range, body })
-      }
-      closeDraft()
-    } catch {
-      setStatus('failed')
+    if (comment) {
+      await comments.update(comparison, comment.id, body)
+    } else {
+      await comments.create(comparison, { filePath: path, range, body })
     }
-  }
+    closeDraft()
+  })
 
   const { editor, isEmpty, submit } = useCommentEditor({
     initialBody: comment?.body ?? '',
     placeholder: 'Leave a comment. Markdown shortcuts work as you type.',
     onSubmit: (body) => {
-      void save(body)
+      void save.run(body)
     },
     onCancel: closeDraft,
     className: 'comment-prose min-h-12 max-h-64 overflow-y-auto px-2 py-1.5',
@@ -55,9 +46,9 @@ export const useCommentComposer = ({ path, range, comment }: CommentComposerOpti
     editor,
     submit,
     cancel: closeDraft,
-    canSubmit: !isEmpty && status !== 'saving',
-    failed: status === 'failed',
-    submitLabel: status === 'saving' ? 'Saving' : idleLabel,
+    canSubmit: !isEmpty && !save.pending,
+    failed: save.failed,
+    submitLabel: save.pending ? 'Saving' : idleLabel,
     label: LineRanges.label(range),
   }
 }

@@ -1,51 +1,43 @@
 import { Popover } from '@base-ui/react/popover'
-import { useState } from 'react'
+import { Tabs } from '@base-ui/react/tabs'
 import { VscComment } from 'react-icons/vsc'
-import { useComments } from '@/src/hooks/use-comments.ts'
-import { CommentMarkdown } from '@/src/lib/comment-markdown.ts'
-import { LineRanges } from '@/src/lib/line-range.ts'
-import { CommentRow } from '@/src/primitives/comment-row.tsx'
+import { CurrentCommentsPanel } from '@/src/components/topbar/current-comments-panel.tsx'
+import { ReviewSessionsPanel } from '@/src/components/topbar/review-sessions-panel.tsx'
+import { useCommentsMenu } from '@/src/hooks/use-comments-menu.ts'
 import { IconButton } from '@/src/primitives/icon-button.tsx'
-import { MutedHint } from '@/src/primitives/muted-hint.tsx'
-import { OptionList } from '@/src/primitives/option-list.tsx'
-import { PopoverHeader } from '@/src/primitives/popover-header.tsx'
 import { PopoverSurface } from '@/src/primitives/popover-surface.tsx'
+import { PopoverTab } from '@/src/primitives/popover-tab.tsx'
+import { PopoverTabsHeader } from '@/src/primitives/popover-tabs-header.tsx'
 import { Tooltip } from '@/src/primitives/tooltip.tsx'
 
 export function CommentsMenu() {
-  const { state, list, countLabel, focusComment } = useComments()
-  const [open, setOpen] = useState(false)
+  const menu = useCommentsMenu()
 
   return (
-    <Popover.Root open={open} onOpenChange={setOpen}>
-      <Tooltip label={countLabel}>
-        <Popover.Trigger render={<IconButton />} aria-label={countLabel}>
+    <Popover.Root open={menu.open} onOpenChange={menu.setOpen}>
+      <Tooltip label={menu.countLabel}>
+        <Popover.Trigger render={<IconButton />} aria-label={menu.countLabel}>
           <VscComment />
-          <span className={'text-xs tabular-nums'}>{list.length}</span>
+          <span className={'text-xs tabular-nums'}>{menu.commentCount}</span>
         </Popover.Trigger>
       </Tooltip>
-      <PopoverSurface align={'end'} className={'w-80'}>
-        <PopoverHeader title={'Comments'} meta={countLabel} />
-        <OptionList>
-          <div className={'pt-1'} />
-          {state.status === 'loading' && <MutedHint>Loading comments</MutedHint>}
-          {state.status === 'failed' && <MutedHint>Could not load comments</MutedHint>}
-          {state.status === 'ready' && list.length === 0 && <MutedHint>No comments yet</MutedHint>}
-          {list.map((comment) => {
-            return (
-              <CommentRow
-                key={comment.id}
-                filePath={comment.filePath}
-                location={LineRanges.shortLabel(comment.range)}
-                body={CommentMarkdown.summary(comment.body)}
-                onSelect={() => {
-                  focusComment(comment)
-                  setOpen(false)
-                }}
-              />
-            )
-          })}
-        </OptionList>
+      <PopoverSurface align={'end'} className={'w-[26rem]'}>
+        <Tabs.Root value={menu.tab} onValueChange={menu.selectTab}>
+          <PopoverTabsHeader meta={menu.tab === 'current' ? menu.countLabel : 'Recorded reviews'}>
+            <PopoverTab value={'current'} label={'Current'} count={menu.commentCount} />
+            <PopoverTab value={'sessions'} label={'Sessions'} count={menu.sessionCount} />
+          </PopoverTabsHeader>
+          <Tabs.Panel value={'current'} className={'outline-none'}>
+            <CurrentCommentsPanel onNavigate={menu.close} />
+          </Tabs.Panel>
+          <Tabs.Panel value={'sessions'} className={'outline-none'}>
+            <ReviewSessionsPanel
+              openedSession={menu.openedSession}
+              onOpen={menu.openSession}
+              onBack={menu.closeSession}
+            />
+          </Tabs.Panel>
+        </Tabs.Root>
       </PopoverSurface>
     </Popover.Root>
   )

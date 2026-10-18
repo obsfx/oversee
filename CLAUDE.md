@@ -63,6 +63,36 @@ Let me explain the **core components of the app, the sections are color coded**.
 - when we open a file diff, we should be able to see the added comments, that we fetch from the backend.
 - this sections needs a loader component that we show while we are gathering the diff information from the backend.
 
+### review sessions
+
+##### purpose
+- a **review session** is one round of review: the set of `comments` a reviewer left on a comparison (source branch vs target branch), frozen with the code they pointed at.
+- the code changes after a review, so a finished session keeps its own copy of the commented lines. it never depends on the current diff to make sense.
+- sessions are scoped to a **comparison**. switching the branch selection shows that comparison's active comments and sessions only.
+
+##### lifecycle
+- there is at most **one open session** per comparison. there is no explicit "start" action: the first comment on a comparison creates the open session.
+- while the open session has comments, a `finish review` button sits left of the `comments` button in the **topbar**.
+- `finish review` asks for confirmation first (anchored popover with the comment count) so an accidental click can not end the session.
+- finishing closes the session: its comments leave the **diff view** and move to the session history. the next comment starts a new session.
+- finished sessions are **never** put back into the diff view, because the lines may have moved or changed since.
+
+##### statuses
+- `created`: finished by the reviewer, nobody picked it up yet. every finished session starts here.
+- `in progress`: someone is addressing the comments.
+- `closed`: the comments are addressed and the review is done.
+- status is **read-only** in this app. another role changes it through the backend, our UI only displays it (leading status icon on each session row).
+
+##### comments popover
+- the topbar `comments` button opens a tabbed popover:
+    - `Current`: comments of the open session. clicking one navigates to its file and scrolls to its line.
+    - `Sessions`: finished sessions of the current comparison, newest first. each row shows the status icon, finish date, branch and comment count.
+- selecting a session drills into it inside the same popover (with a back button): each comment shows its file, line range, the saved code lines with **syntax highlighting** (same theme as the diff view) and the comment text.
+
+##### how it works
+- `ReviewSessionGateway` (http and in-memory for stories) and the `ReviewSessions` class own the data. finishing updates the session list and clears the active comments.
+- `useFinishReview`, `useReviewSessions`, `useCommentsMenu` and `useSnippetHighlight` drive the UI. `SnippetHighlighter` tokenizes saved lines with the shared `@pierre/diffs` highlighter.
+
 ### component development decision flow
 - every major component design should be approved.
 - we follow **storybook first** principle. ever component should take a place in storybook first.

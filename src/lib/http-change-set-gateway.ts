@@ -1,4 +1,4 @@
-import { ApiClient, ApiError } from '@/src/lib/api-client.ts'
+import { ApiClient } from '@/src/lib/api-client.ts'
 import { HttpGateway } from '@/src/lib/http-gateway.ts'
 import { type ChangeSet, ChangeStatuses, type FileChange } from '@/src/lib/change-set.ts'
 import type { ChangeSetGateway } from '@/src/lib/change-set-gateway.ts'
@@ -27,11 +27,17 @@ export class HttpChangeSetGateway extends HttpGateway implements ChangeSetGatewa
     return change
   }
 
+  private static isChangeList(value: unknown): value is FileChange[] {
+    return ValueGuards.isListOf(value, HttpChangeSetGateway.isFileChange)
+  }
+
   private static parseChangeSet(body: unknown): ChangeSet {
-    const { changes } = ApiClient.fieldsOf(body)
-    if (!ValueGuards.isListOf(changes, HttpChangeSetGateway.isFileChange)) {
-      throw ApiError.unexpectedShape(HttpChangeSetGateway.path)
-    }
+    const changes = ApiClient.field(
+      body,
+      'changes',
+      HttpChangeSetGateway.isChangeList,
+      HttpChangeSetGateway.path,
+    )
     return { changes: changes.map(HttpChangeSetGateway.toFileChange) }
   }
 

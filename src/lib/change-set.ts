@@ -33,3 +33,15 @@ export interface FileChange {
 export interface ChangeSet {
   changes: FileChange[]
 }
+
+export abstract class ChangeSets {
+  static readonly empty: ChangeSet = { changes: [] }
+
+  static find(changes: readonly FileChange[], path: string | null) {
+    return (
+      changes.find((change) => {
+        return change.path === path
+      }) ?? null
+    )
+  }
+}

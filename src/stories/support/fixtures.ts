@@ -3,9 +3,12 @@ import type { ChangeSet } from '@/src/lib/change-set.ts'
 import type { ReviewComment } from '@/src/lib/comment-gateway.ts'
 import type { FileDiff, FileDiffRequest } from '@/src/lib/file-diff-gateway.ts'
 import { InMemoryCommentGateway } from '@/src/lib/in-memory-comment-gateway.ts'
+import { InMemoryReviewSessionGateway } from '@/src/lib/in-memory-review-session-gateway.ts'
+import type { ReviewSession } from '@/src/lib/review-session-gateway.ts'
 import { Services } from '@/src/lib/services.ts'
 import { changeSet } from '@/src/stories/support/change-set-fixture.ts'
 import { fileDiffFor } from '@/src/stories/support/file-diff-fixture.ts'
+import { reviewSessions, snapshotOf } from '@/src/stories/support/review-session-fixture.ts'
 
 export const branchList: BranchList = {
   current: 'feat/upgrade-deprecated-versions',
@@ -60,6 +63,7 @@ export const reviewComments: ReviewComment[] = [
 interface StoryServicesOptions {
   branches?: () => Promise<BranchList>
   comments?: ReviewComment[]
+  sessions?: ReviewSession[]
   changeSets?: () => Promise<ChangeSet>
   fileDiffs?: (request: FileDiffRequest) => Promise<FileDiff>
 }
@@ -69,6 +73,7 @@ export const createStoryServices = ({
     return Promise.resolve(branchList)
   },
   comments = reviewComments,
+  sessions = reviewSessions,
   changeSets = () => {
     return Promise.resolve(changeSet)
   },
@@ -76,9 +81,11 @@ export const createStoryServices = ({
     return Promise.resolve(fileDiffFor(change))
   },
 }: StoryServicesOptions = {}) => {
+  const commentGateway = new InMemoryCommentGateway(comments)
   return new Services({
     branches: { list: branches },
-    comments: new InMemoryCommentGateway(comments),
+    comments: commentGateway,
+    sessions: new InMemoryReviewSessionGateway(commentGateway, sessions, snapshotOf),
     changeSets: { load: changeSets },
     fileDiffs: { load: fileDiffs },
   })
