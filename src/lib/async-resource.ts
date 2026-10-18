@@ -42,6 +42,13 @@ export class AsyncResource<T> {
     return this.pending
   }
 
+  update(change: (data: T) => T) {
+    const state = this.store.getState()
+    if (state.status === 'ready') {
+      this.store.setState({ status: 'ready', data: change(state.data) }, true)
+    }
+  }
+
   reload() {
     if (this.pending) {
       return this.pending

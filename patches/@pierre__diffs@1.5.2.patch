@@ -1,0 +1,12 @@
+diff --git a/dist/components/FileDiff.js b/dist/components/FileDiff.js
+index 6f66bd3910315a1c16e37dabd9dd5b8df067661d..9a558d48890ac8d417d21e74c80c20311e75f1f7 100644
+--- a/dist/components/FileDiff.js
++++ b/dist/components/FileDiff.js
+@@ -352,6 +352,7 @@ var FileDiff = class {
+ 		if (!recycle) this.lineAnnotations = [];
+ 		this.clearAuxiliaryNodes();
+ 		this.annotationCache.clear();
++		if (!recycle) this.pre?.remove();
+ 		this.pre = void 0;
+ 		this.codeUnified = void 0;
+ 		this.codeDeletions = void 0;

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { VscArrowRight, VscGitCompare } from 'react-icons/vsc'
-import { ChipButton } from '../../primitives/chip-button.tsx'
+import { ChipButton } from '@/src/primitives/chip-button.tsx'
 
 const meta = {
   title: 'Primitives/ChipButton',

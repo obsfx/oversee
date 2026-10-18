@@ -1,7 +1,7 @@
 import type { FileTree, FileTreeOptions } from '@pierre/trees'
-import type { FileChange } from './change-set.ts'
-import { FileTreeAppearance } from './file-tree-appearance.ts'
-import { TreePaths } from './tree-paths.ts'
+import type { FileChange } from '@/src/lib/change-set.ts'
+import { FileTreeAppearance } from '@/src/lib/file-tree-appearance.ts'
+import { TreePaths } from '@/src/lib/tree-paths.ts'
 
 export interface FileTreeInput {
   paths: readonly string[]
@@ -13,27 +13,28 @@ export interface FileTreeHandlers {
   onSelectFile: (path: string) => void
 }
 
-const pathsKeyOf = (paths: readonly string[]) => {
-  return paths.join('\n')
-}
-
-const changesKeyOf = (changes: readonly FileChange[]) => {
-  return changes
-    .map((change) => {
-      return `${change.status}:${change.path}`
-    })
-    .join('\n')
-}
-
 export class FileTreeController {
   readonly model: FileTree
   private paths: readonly string[]
   private pathsKey: string
   private changesKey: string
 
+  private static pathsKeyOf(paths: readonly string[]) {
+    return paths.join('\n')
+  }
+
+  private static changesKeyOf(changes: readonly FileChange[]) {
+    return changes
+      .map((change) => {
+        return `${change.status}:${change.path}`
+      })
+      .join('\n')
+  }
+
   static createOptions(
     { paths, changes }: FileTreeInput,
     handlers: FileTreeHandlers,
+    uiScale: number,
   ): FileTreeOptions {
     return {
       paths,
@@ -43,6 +44,7 @@ export class FileTreeController {
       search: true,
       fileTreeSearchMode: 'hide-non-matches',
       density: 'compact',
+      itemHeight: FileTreeAppearance.itemHeight(uiScale),
       icons: FileTreeAppearance.icons,
       unsafeCSS: FileTreeAppearance.css,
       renderRowDecoration: ({ item }) => {
@@ -63,12 +65,12 @@ export class FileTreeController {
   constructor(model: FileTree, { paths, changes }: FileTreeInput) {
     this.model = model
     this.paths = paths
-    this.pathsKey = pathsKeyOf(paths)
-    this.changesKey = changesKeyOf(changes)
+    this.pathsKey = FileTreeController.pathsKeyOf(paths)
+    this.changesKey = FileTreeController.changesKeyOf(changes)
   }
 
   syncPaths(paths: readonly string[]) {
-    const pathsKey = pathsKeyOf(paths)
+    const pathsKey = FileTreeController.pathsKeyOf(paths)
     if (pathsKey === this.pathsKey) {
       return
     }
@@ -78,7 +80,7 @@ export class FileTreeController {
   }
 
   syncChanges(changes: readonly FileChange[]) {
-    const changesKey = changesKeyOf(changes)
+    const changesKey = FileTreeController.changesKeyOf(changes)
     if (changesKey === this.changesKey) {
       return
     }

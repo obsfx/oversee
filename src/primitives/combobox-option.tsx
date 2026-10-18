@@ -1,7 +1,7 @@
 import { Combobox } from '@base-ui/react/combobox'
 import type { ComponentProps } from 'react'
 import { VscCheck } from 'react-icons/vsc'
-import { c } from '../c.ts'
+import { c } from '@/src/c.ts'
 
 interface ComboboxOptionProps extends Omit<ComponentProps<typeof Combobox.Item>, 'children'> {
   value: string

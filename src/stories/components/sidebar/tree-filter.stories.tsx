@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { TreeFilter } from '../../../components/sidebar/tree-filter.tsx'
-import { createStoryTree } from '../../support/story-tree.ts'
+import { TreeFilter } from '@/src/components/sidebar/tree-filter.tsx'
+import { createStoryTree } from '@/src/stories/support/story-tree.ts'
 
 const meta = {
   title: 'Components/Sidebar/TreeFilter',

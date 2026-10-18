@@ -1,4 +1,4 @@
-import type { FileChange } from './change-set.ts'
+import type { FileChange } from '@/src/lib/change-set.ts'
 
 export interface DiffStats {
   files: number

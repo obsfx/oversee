@@ -1,6 +1,6 @@
 import type { ComponentProps } from 'react'
 import { VscCheck } from 'react-icons/vsc'
-import { c } from '../c.ts'
+import { c } from '@/src/c.ts'
 
 interface CheckToggleProps extends Omit<ComponentProps<'button'>, 'role'> {
   checked: boolean

@@ -1,13 +1,15 @@
 import { Popover } from '@base-ui/react/popover'
 import { useState } from 'react'
 import { VscComment } from 'react-icons/vsc'
-import { useComments } from '../../hooks/use-comments.ts'
-import { CommentRow } from '../../primitives/comment-row.tsx'
-import { IconButton } from '../../primitives/icon-button.tsx'
-import { MutedHint } from '../../primitives/muted-hint.tsx'
-import { OptionList } from '../../primitives/option-list.tsx'
-import { PopoverHeader } from '../../primitives/popover-header.tsx'
-import { PopoverSurface } from '../../primitives/popover-surface.tsx'
+import { useComments } from '@/src/hooks/use-comments.ts'
+import { CommentMarkdown } from '@/src/lib/comment-markdown.ts'
+import { LineRanges } from '@/src/lib/line-range.ts'
+import { CommentRow } from '@/src/primitives/comment-row.tsx'
+import { IconButton } from '@/src/primitives/icon-button.tsx'
+import { MutedHint } from '@/src/primitives/muted-hint.tsx'
+import { OptionList } from '@/src/primitives/option-list.tsx'
+import { PopoverHeader } from '@/src/primitives/popover-header.tsx'
+import { PopoverSurface } from '@/src/primitives/popover-surface.tsx'
 
 export function CommentsMenu() {
   const { state, list, countLabel, focusComment } = useComments()
@@ -31,8 +33,8 @@ export function CommentsMenu() {
               <CommentRow
                 key={comment.id}
                 filePath={comment.filePath}
-                line={comment.line}
-                body={comment.body}
+                location={LineRanges.shortLabel(comment.range)}
+                body={CommentMarkdown.summary(comment.body)}
                 onSelect={() => {
                   focusComment(comment)
                   setOpen(false)

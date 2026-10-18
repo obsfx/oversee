@@ -1,14 +1,21 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { fn } from 'storybook/test'
-import { CommentRow } from '../../primitives/comment-row.tsx'
-import { reviewComments } from '../support/fixtures.ts'
+import { CommentMarkdown } from '@/src/lib/comment-markdown.ts'
+import { LineRanges } from '@/src/lib/line-range.ts'
+import { CommentRow } from '@/src/primitives/comment-row.tsx'
+import { reviewComments } from '@/src/stories/support/fixtures.ts'
 
 const [comment] = reviewComments
 
 const meta = {
   title: 'Primitives/CommentRow',
   component: CommentRow,
-  args: { filePath: comment.filePath, line: comment.line, body: comment.body, onSelect: fn() },
+  args: {
+    filePath: comment.filePath,
+    location: LineRanges.shortLabel(comment.range),
+    body: CommentMarkdown.summary(comment.body),
+    onSelect: fn(),
+  },
   decorators: [
     (Story) => {
       return (

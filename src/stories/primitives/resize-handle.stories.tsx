@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Group, Panel } from 'react-resizable-panels'
-import { PanelLayout } from '../../lib/panel-layout.ts'
-import { ResizeHandle } from '../../primitives/resize-handle.tsx'
+import { PanelLayout } from '@/src/lib/panel-layout.ts'
+import { ResizeHandle } from '@/src/primitives/resize-handle.tsx'
 
 const meta = {
   title: 'Primitives/ResizeHandle',

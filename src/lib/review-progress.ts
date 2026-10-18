@@ -1,4 +1,4 @@
-import { Ratio } from './ratio.ts'
+import { Ratio } from '@/src/lib/ratio.ts'
 
 export interface ReviewProgress {
   reviewed: number

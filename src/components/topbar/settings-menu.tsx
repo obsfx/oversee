@@ -5,12 +5,12 @@ import {
   useSettingsMenu,
   type SettingsView,
   type SettingsViewProps,
-} from '../../hooks/use-settings-menu.ts'
-import { IconButton } from '../../primitives/icon-button.tsx'
-import { PopoverSurface } from '../../primitives/popover-surface.tsx'
-import { EditorSettings } from './editor-settings.tsx'
-import { InterfaceSettings } from './interface-settings.tsx'
-import { SettingsOverview } from './settings-overview.tsx'
+} from '@/src/hooks/use-settings-menu.ts'
+import { IconButton } from '@/src/primitives/icon-button.tsx'
+import { PopoverSurface } from '@/src/primitives/popover-surface.tsx'
+import { EditorSettings } from '@/src/components/topbar/editor-settings.tsx'
+import { InterfaceSettings } from '@/src/components/topbar/interface-settings.tsx'
+import { SettingsOverview } from '@/src/components/topbar/settings-overview.tsx'
 
 const SETTINGS_VIEWS: Record<SettingsView, ComponentType<SettingsViewProps>> = {
   overview: SettingsOverview,

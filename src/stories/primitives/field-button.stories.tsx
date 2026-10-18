@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { VscChevronDown } from 'react-icons/vsc'
-import { FieldButton } from '../../primitives/field-button.tsx'
+import { FieldButton } from '@/src/primitives/field-button.tsx'
 
 const meta = {
   title: 'Primitives/FieldButton',

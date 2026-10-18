@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { fn } from 'storybook/test'
-import { FileNavigator } from '../../../components/toolbar/file-navigator.tsx'
+import { FileNavigator } from '@/src/components/toolbar/file-navigator.tsx'
 
 const meta = {
   title: 'Components/Toolbar/FileNavigator',

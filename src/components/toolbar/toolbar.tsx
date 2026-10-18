@@ -1,12 +1,12 @@
-import { useFileNavigation } from '../../hooks/use-file-navigation.ts'
-import { ToolbarDivider } from '../../primitives/toolbar-divider.tsx'
-import { ToolbarGroup } from '../../primitives/toolbar-group.tsx'
-import { ToolbarShell } from '../../primitives/toolbar-shell.tsx'
-import { FileNavigator } from './file-navigator.tsx'
-import { FileSummary } from './file-summary.tsx'
-import { ReviewedToggle } from './reviewed-toggle.tsx'
-import { UnchangedToggle } from './unchanged-toggle.tsx'
-import { ViewModeToggle } from './view-mode-toggle.tsx'
+import { useFileNavigation } from '@/src/hooks/use-file-navigation.ts'
+import { ToolbarDivider } from '@/src/primitives/toolbar-divider.tsx'
+import { ToolbarGroup } from '@/src/primitives/toolbar-group.tsx'
+import { ToolbarShell } from '@/src/primitives/toolbar-shell.tsx'
+import { FileNavigator } from '@/src/components/toolbar/file-navigator.tsx'
+import { FileSummary } from '@/src/components/toolbar/file-summary.tsx'
+import { ReviewedToggle } from '@/src/components/toolbar/reviewed-toggle.tsx'
+import { UnchangedToggle } from '@/src/components/toolbar/unchanged-toggle.tsx'
+import { ViewModeToggle } from '@/src/components/toolbar/view-mode-toggle.tsx'
 
 export function Toolbar() {
   const navigation = useFileNavigation()

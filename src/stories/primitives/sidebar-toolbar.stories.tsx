@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { LuChevronsDownUp } from 'react-icons/lu'
-import { BareInput } from '../../primitives/bare-input.tsx'
-import { Button } from '../../primitives/button.tsx'
-import { FilterField } from '../../primitives/filter-field.tsx'
-import { SidebarToolbar } from '../../primitives/sidebar-toolbar.tsx'
+import { BareInput } from '@/src/primitives/bare-input.tsx'
+import { Button } from '@/src/primitives/button.tsx'
+import { FilterField } from '@/src/primitives/filter-field.tsx'
+import { SidebarToolbar } from '@/src/primitives/sidebar-toolbar.tsx'
 
 const meta = {
   title: 'Primitives/SidebarToolbar',

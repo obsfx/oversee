@@ -1,4 +1,4 @@
-import { c } from '../c.ts'
+import { c } from '@/src/c.ts'
 
 interface DiffStatBlocksProps {
   added: number

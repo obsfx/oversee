@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { MutedHint } from '../../primitives/muted-hint.tsx'
+import { MutedHint } from '@/src/primitives/muted-hint.tsx'
 
 const meta = {
   title: 'Primitives/MutedHint',

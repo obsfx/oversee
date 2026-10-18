@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useStore } from 'zustand'
 import { createStore, type StoreApi } from 'zustand/vanilla'
-import type { AsyncResource, ResourceState } from '../lib/async-resource.ts'
+import type { AsyncResource, ResourceState } from '@/src/lib/async-resource.ts'
 
 const idleStore = createStore<ResourceState<never>>()(() => {
   return { status: 'idle' }

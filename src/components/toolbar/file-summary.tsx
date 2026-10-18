@@ -1,10 +1,10 @@
 import plur from 'plur'
-import type { FileChange } from '../../lib/change-set.ts'
-import { DiffStatsRules } from '../../lib/diff-stats.ts'
-import { TreePaths } from '../../lib/tree-paths.ts'
-import { DiffStat } from '../../primitives/diff-stat.tsx'
-import { DiffStatBlocks } from '../../primitives/diff-stat-blocks.tsx'
-import { FilePathLabel } from '../../primitives/file-path-label.tsx'
+import type { FileChange } from '@/src/lib/change-set.ts'
+import { DiffStatsRules } from '@/src/lib/diff-stats.ts'
+import { TreePaths } from '@/src/lib/tree-paths.ts'
+import { DiffStat } from '@/src/primitives/diff-stat.tsx'
+import { DiffStatBlocks } from '@/src/primitives/diff-stat-blocks.tsx'
+import { FilePathLabel } from '@/src/primitives/file-path-label.tsx'
 
 const STAT_BLOCK_COUNT = 5
 

@@ -1,9 +1,9 @@
 import { Combobox } from '@base-ui/react/combobox'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useRef } from 'react'
-import { VirtualizedComboboxList } from '../../components/virtualized-combobox-list.tsx'
-import type { ListVirtualizer } from '../../hooks/use-virtualized-combobox.ts'
-import { GoogleFontCatalog } from '../../lib/google-font-catalog.ts'
+import { VirtualizedComboboxList } from '@/src/components/virtualized-combobox-list.tsx'
+import type { ListVirtualizer } from '@/src/hooks/use-virtualized-combobox.ts'
+import { GoogleFontCatalog } from '@/src/lib/google-font-catalog.ts'
 
 const meta = {
   title: 'Components/VirtualizedComboboxList',

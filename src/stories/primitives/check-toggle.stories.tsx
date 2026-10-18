@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { CheckToggle } from '../../primitives/check-toggle.tsx'
+import { CheckToggle } from '@/src/primitives/check-toggle.tsx'
 
 const meta = {
   title: 'Primitives/CheckToggle',

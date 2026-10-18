@@ -1,8 +1,8 @@
-import { useNumericDraft } from '../../hooks/use-numeric-draft.ts'
-import type { NumericRange } from '../../lib/numeric-range.ts'
-import { BareInput } from '../../primitives/bare-input.tsx'
-import { InputFrame } from '../../primitives/input-frame.tsx'
-import { SettingRow } from '../../primitives/setting-row.tsx'
+import { useNumericDraft } from '@/src/hooks/use-numeric-draft.ts'
+import type { NumericRange } from '@/src/lib/numeric-range.ts'
+import { BareInput } from '@/src/primitives/bare-input.tsx'
+import { InputFrame } from '@/src/primitives/input-frame.tsx'
+import { SettingRow } from '@/src/primitives/setting-row.tsx'
 
 interface NumericSettingInputProps {
   label: string

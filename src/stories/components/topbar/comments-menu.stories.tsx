@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { CommentsMenu } from '../../../components/topbar/comments-menu.tsx'
-import type { Services } from '../../../lib/services.ts'
-import { createStoryServices } from '../../support/fixtures.ts'
-import { StoryFrame } from '../../support/story-frame.tsx'
+import { CommentsMenu } from '@/src/components/topbar/comments-menu.tsx'
+import type { Services } from '@/src/lib/services.ts'
+import { createStoryServices } from '@/src/stories/support/fixtures.ts'
+import { StoryFrame } from '@/src/stories/support/story-frame.tsx'
 
 const meta = {
   title: 'Components/Topbar/CommentsMenu',

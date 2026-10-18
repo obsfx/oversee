@@ -1,6 +1,6 @@
 import { Combobox } from '@base-ui/react/combobox'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { ComboboxOption } from '../../primitives/combobox-option.tsx'
+import { ComboboxOption } from '@/src/primitives/combobox-option.tsx'
 
 const meta = {
   title: 'Primitives/ComboboxOption',

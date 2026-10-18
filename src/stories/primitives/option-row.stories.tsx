@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { VscEdit, VscGitBranch } from 'react-icons/vsc'
 import { fn } from 'storybook/test'
-import { OptionRow } from '../../primitives/option-row.tsx'
+import { OptionRow } from '@/src/primitives/option-row.tsx'
 
 const meta = {
   title: 'Primitives/OptionRow',

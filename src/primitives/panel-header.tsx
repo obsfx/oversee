@@ -1,5 +1,5 @@
 import { VscChevronLeft } from 'react-icons/vsc'
-import { IconButton } from './icon-button.tsx'
+import { IconButton } from '@/src/primitives/icon-button.tsx'
 
 interface PanelHeaderProps {
   title: string

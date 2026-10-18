@@ -1,7 +1,7 @@
 import { Combobox } from '@base-ui/react/combobox'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useCallback, useImperativeHandle, useRef, type RefObject } from 'react'
-import type { ListVirtualizer } from './use-virtualized-combobox.ts'
+import type { ListVirtualizer } from '@/src/hooks/use-virtualized-combobox.ts'
 
 const ROW_HEIGHT = 24
 const OVERSCAN = 20

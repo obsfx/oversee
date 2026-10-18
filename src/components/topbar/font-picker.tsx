@@ -1,12 +1,12 @@
 import { Combobox } from '@base-ui/react/combobox'
 import { VscChevronDown } from 'react-icons/vsc'
-import { useVirtualizedCombobox } from '../../hooks/use-virtualized-combobox.ts'
-import { BareInput } from '../../primitives/bare-input.tsx'
-import { ComboboxSurface } from '../../primitives/combobox-surface.tsx'
-import { FieldButton } from '../../primitives/field-button.tsx'
-import { MutedHint } from '../../primitives/muted-hint.tsx'
-import { SearchField } from '../../primitives/search-field.tsx'
-import { VirtualizedComboboxList } from '../virtualized-combobox-list.tsx'
+import { useVirtualizedCombobox } from '@/src/hooks/use-virtualized-combobox.ts'
+import { BareInput } from '@/src/primitives/bare-input.tsx'
+import { ComboboxSurface } from '@/src/primitives/combobox-surface.tsx'
+import { FieldButton } from '@/src/primitives/field-button.tsx'
+import { MutedHint } from '@/src/primitives/muted-hint.tsx'
+import { SearchField } from '@/src/primitives/search-field.tsx'
+import { VirtualizedComboboxList } from '@/src/components/virtualized-combobox-list.tsx'
 
 interface FontPickerProps {
   label: string

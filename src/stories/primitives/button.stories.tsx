@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { LuChevronsUpDown } from 'react-icons/lu'
 import { VscEye, VscEyeClosed } from 'react-icons/vsc'
-import { Button } from '../../primitives/button.tsx'
+import { Button } from '@/src/primitives/button.tsx'
 
 const meta = {
   title: 'Primitives/Button',

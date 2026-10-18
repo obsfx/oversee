@@ -1,5 +1,5 @@
 import { useContext } from 'react'
-import { ServicesContext } from './services-context.ts'
+import { ServicesContext } from '@/src/context/services/services-context.ts'
 
 export const useServices = () => {
   const services = useContext(ServicesContext)

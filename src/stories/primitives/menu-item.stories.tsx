@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { VscCheck } from 'react-icons/vsc'
-import { MenuItem } from '../../primitives/menu-item.tsx'
+import { MenuItem } from '@/src/primitives/menu-item.tsx'
 
 const meta = {
   title: 'Primitives/MenuItem',

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { NumericRange } from '../lib/numeric-range.ts'
+import type { NumericRange } from '@/src/lib/numeric-range.ts'
 
 export const useNumericDraft = (
   value: number,

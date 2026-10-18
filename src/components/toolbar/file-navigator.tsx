@@ -1,6 +1,6 @@
 import { VscChevronDown, VscChevronUp } from 'react-icons/vsc'
-import { FileProgress } from '../../primitives/file-progress.tsx'
-import { IconButton } from '../../primitives/icon-button.tsx'
+import { FileProgress } from '@/src/primitives/file-progress.tsx'
+import { IconButton } from '@/src/primitives/icon-button.tsx'
 
 interface FileNavigatorProps {
   position: number

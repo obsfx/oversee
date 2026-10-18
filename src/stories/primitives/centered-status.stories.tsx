@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { VscCheckAll } from 'react-icons/vsc'
-import { CenteredStatus } from '../../primitives/centered-status.tsx'
-import { Spinner } from '../../primitives/spinner.tsx'
+import { CenteredStatus } from '@/src/primitives/centered-status.tsx'
+import { Spinner } from '@/src/primitives/spinner.tsx'
 
 const meta = {
   title: 'Primitives/CenteredStatus',

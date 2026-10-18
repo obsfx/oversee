@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { VscComment, VscSettingsGear } from 'react-icons/vsc'
-import { IconButton } from '../../primitives/icon-button.tsx'
+import { IconButton } from '@/src/primitives/icon-button.tsx'
 
 const meta = {
   title: 'Primitives/IconButton',

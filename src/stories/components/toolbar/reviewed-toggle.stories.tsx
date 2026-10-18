@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { ReviewedToggle } from '../../../components/toolbar/reviewed-toggle.tsx'
+import { ReviewedToggle } from '@/src/components/toolbar/reviewed-toggle.tsx'
 
 const meta = {
   title: 'Components/Toolbar/ReviewedToggle',

@@ -1,7 +1,7 @@
-import { useServices } from '../context/services/use-services.ts'
-import { ComparisonRules, type ComparisonSource } from '../lib/comparison-rules.ts'
-import { useComparisonStore } from '../store/comparison-store.ts'
-import { useResource } from './use-resource.ts'
+import { useServices } from '@/src/context/services/use-services.ts'
+import { ComparisonRules, type ComparisonSource } from '@/src/lib/comparison-rules.ts'
+import { useComparisonStore } from '@/src/store/comparison-store.ts'
+import { useResource } from '@/src/hooks/use-resource.ts'
 
 export const useComparison = () => {
   const { branches } = useServices()

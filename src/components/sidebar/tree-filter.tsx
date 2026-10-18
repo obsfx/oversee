@@ -1,8 +1,8 @@
 import type { FileTree } from '@pierre/trees'
 import { VscClose } from 'react-icons/vsc'
-import { useTreeFilter } from '../../hooks/use-tree-filter.ts'
-import { BareInput } from '../../primitives/bare-input.tsx'
-import { FilterField } from '../../primitives/filter-field.tsx'
+import { useTreeFilter } from '@/src/hooks/use-tree-filter.ts'
+import { BareInput } from '@/src/primitives/bare-input.tsx'
+import { FilterField } from '@/src/primitives/filter-field.tsx'
 
 export function TreeFilter({ model }: { model: FileTree }) {
   const { value, apply, clear } = useTreeFilter(model)

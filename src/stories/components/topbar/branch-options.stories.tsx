@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { fn } from 'storybook/test'
-import { BranchOptions } from '../../../components/topbar/branch-options.tsx'
-import { branchList } from '../../support/fixtures.ts'
+import { BranchOptions } from '@/src/components/topbar/branch-options.tsx'
+import { branchList } from '@/src/stories/support/fixtures.ts'
 
 const meta = {
   title: 'Components/Topbar/BranchOptions',

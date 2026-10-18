@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { DiffStat } from '../../primitives/diff-stat.tsx'
+import { DiffStat } from '@/src/primitives/diff-stat.tsx'
 
 const meta = {
   title: 'Primitives/DiffStat',

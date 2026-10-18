@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { c } from '../c.ts'
+import { c } from '@/src/c.ts'
 
 interface InputFrameProps {
   invalid: boolean

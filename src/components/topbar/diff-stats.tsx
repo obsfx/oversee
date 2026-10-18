@@ -1,5 +1,5 @@
-import { useDiffStats } from '../../hooks/use-diff-stats.ts'
-import { DiffStat } from '../../primitives/diff-stat.tsx'
+import { useDiffStats } from '@/src/hooks/use-diff-stats.ts'
+import { DiffStat } from '@/src/primitives/diff-stat.tsx'
 
 export function DiffStats() {
   const stats = useDiffStats()

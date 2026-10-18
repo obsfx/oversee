@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { MenuItem } from '../../primitives/menu-item.tsx'
-import { MenuSurface } from '../../primitives/menu-surface.tsx'
+import { MenuItem } from '@/src/primitives/menu-item.tsx'
+import { MenuSurface } from '@/src/primitives/menu-surface.tsx'
 
 const meta = {
   title: 'Primitives/MenuSurface',

@@ -1,6 +1,6 @@
 import type { FileTreeIconConfig } from '@pierre/trees'
 import type { CSSProperties } from 'react'
-import type { Theme } from './settings-schema.ts'
+import type { Theme } from '@/src/lib/settings-schema.ts'
 
 const REVIEWED_ICON = 'oversee-reviewed'
 
@@ -10,37 +10,7 @@ const FOLDER_CLOSED = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 1
 
 const FOLDER_OPEN = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M1 4.5C1 3.12 2.12 2 3.5 2h1.09c.4 0 .78.16 1.06.44L7.21 4h3.29c1.22 0 2.24.88 2.46 2.04 1.65.3 2.59 2.18 1.7 3.71l-1.58 2.75A2.5 2.5 0 0 1 10.48 14H3.5A2.5 2.5 0 0 1 1 11.5v-7Z'/></svg>`
 
-const maskUrl = (svg: string) => {
-  return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`
-}
-
-const CSS = `
-  [data-type="item"] { gap: 4px; }
-  [data-file-tree-search-container] { display: none; }
-  [data-item-section="spacing-item"] { opacity: 1; }
-  [data-item-type="folder"] > [data-item-section="icon"] {
-    width: auto;
-    gap: 3px;
-  }
-  [data-item-type="folder"] > [data-item-section="icon"]::after {
-    content: "";
-    flex: none;
-    width: 14px;
-    height: 14px;
-    background-color: var(--color-folder);
-    mask: ${maskUrl(FOLDER_CLOSED)} no-repeat center / contain;
-  }
-  [data-item-type="folder"][aria-expanded="true"] > [data-item-section="icon"]::after {
-    mask-image: ${maskUrl(FOLDER_OPEN)};
-  }
-  [data-item-section="decoration"] {
-    order: -1;
-    flex: none;
-    width: 14px;
-    margin-right: 2px;
-    color: var(--color-reviewed);
-  }
-`
+const COMPACT_ITEM_HEIGHT = 24
 
 const HOST_STYLE = {
   '--trees-bg-override': 'var(--color-sidebar)',
@@ -56,19 +26,59 @@ const HOST_STYLE = {
   '--trees-git-renamed-color-override': 'var(--color-status-renamed)',
   '--trees-git-untracked-color-override': 'var(--color-status-untracked)',
   '--trees-font-family-override': 'var(--font-ui)',
-  '--trees-font-size-override': '12px',
-  '--trees-level-gap-override': '10px',
-  '--trees-padding-inline-override': '6px',
+  '--trees-font-size-override': '0.75rem',
+  '--trees-level-gap-override': '0.625rem',
+  '--trees-padding-inline-override': '0.375rem',
   height: '100%',
 } as CSSProperties
 
 export abstract class FileTreeAppearance {
+  private static maskUrl(svg: string) {
+    return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`
+  }
+
+  private static stylesheet() {
+    const closed = FileTreeAppearance.maskUrl(FOLDER_CLOSED)
+    const open = FileTreeAppearance.maskUrl(FOLDER_OPEN)
+    return `
+  [data-type="item"] { gap: 0.25rem; }
+  [data-file-tree-search-container] { display: none; }
+  [data-item-section="spacing-item"] { opacity: 1; }
+  [data-item-type="folder"] > [data-item-section="icon"] {
+    width: auto;
+    gap: 0.1875rem;
+  }
+  [data-item-type="folder"] > [data-item-section="icon"]::after {
+    content: "";
+    flex: none;
+    width: 0.875rem;
+    height: 0.875rem;
+    background-color: var(--color-folder);
+    mask: ${closed} no-repeat center / contain;
+  }
+  [data-item-type="folder"][aria-expanded="true"] > [data-item-section="icon"]::after {
+    mask-image: ${open};
+  }
+  [data-item-section="decoration"] {
+    order: -1;
+    flex: none;
+    width: 0.875rem;
+    margin-right: 0.125rem;
+    color: var(--color-reviewed);
+  }
+`
+  }
+
   static readonly reviewedIcon = REVIEWED_ICON
-  static readonly css = CSS
+  static readonly css = FileTreeAppearance.stylesheet()
   static readonly icons: FileTreeIconConfig = {
     set: 'complete',
     colored: true,
     spriteSheet: SPRITE,
+  }
+
+  static itemHeight(uiScale: number) {
+    return Math.round(COMPACT_ITEM_HEIGHT * uiScale)
   }
 
   static hostStyle(theme: Theme): CSSProperties {

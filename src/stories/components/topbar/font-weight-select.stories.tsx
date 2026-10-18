@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { fn } from 'storybook/test'
-import { FontWeightSelect } from '../../../components/topbar/font-weight-select.tsx'
+import { FontWeightSelect } from '@/src/components/topbar/font-weight-select.tsx'
 
 const meta = {
   title: 'Components/Topbar/FontWeightSelect',

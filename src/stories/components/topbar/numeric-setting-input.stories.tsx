@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { fn } from 'storybook/test'
-import { NumericSettingInput } from '../../../components/topbar/numeric-setting-input.tsx'
-import { SettingsSchema } from '../../../lib/settings-schema.ts'
+import { NumericSettingInput } from '@/src/components/topbar/numeric-setting-input.tsx'
+import { SettingsSchema } from '@/src/lib/settings-schema.ts'
 
 const meta = {
   title: 'Components/Topbar/NumericSettingInput',

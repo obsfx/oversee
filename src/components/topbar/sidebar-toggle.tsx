@@ -1,6 +1,6 @@
 import { VscLayoutSidebarLeft, VscLayoutSidebarLeftOff } from 'react-icons/vsc'
-import { IconButton } from '../../primitives/icon-button.tsx'
-import { useLayoutStore } from '../../store/layout-store.ts'
+import { IconButton } from '@/src/primitives/icon-button.tsx'
+import { useLayoutStore } from '@/src/store/layout-store.ts'
 
 export function SidebarToggle() {
   const expanded = useLayoutStore((state) => {

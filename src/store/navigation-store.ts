@@ -1,10 +1,11 @@
 import { create } from 'zustand'
-import type { ReviewComment } from '../lib/comment-gateway.ts'
+import type { ReviewComment } from '@/src/lib/comment-gateway.ts'
+import { type LineAnchor, LineRanges } from '@/src/lib/line-range.ts'
 
 export interface FocusRequest {
   commentId: string
   filePath: string
-  line: number
+  anchor: LineAnchor
   requestedAt: number
 }
 
@@ -13,6 +14,7 @@ interface NavigationState {
   focus: FocusRequest | null
   selectFile: (path: string) => void
   focusComment: (comment: ReviewComment) => void
+  clearFocus: (requestedAt: number) => void
 }
 
 export const useNavigationStore = create<NavigationState>()((set) => {
@@ -28,9 +30,14 @@ export const useNavigationStore = create<NavigationState>()((set) => {
         focus: {
           commentId: comment.id,
           filePath: comment.filePath,
-          line: comment.line,
+          anchor: LineRanges.anchor(comment.range),
           requestedAt: Date.now(),
         },
+      })
+    },
+    clearFocus: (requestedAt) => {
+      set((state) => {
+        return state.focus?.requestedAt === requestedAt ? { focus: null } : {}
       })
     },
   }

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { MutedHint } from '../../primitives/muted-hint.tsx'
-import { TopbarGroup } from '../../primitives/topbar-group.tsx'
-import { TopbarShell } from '../../primitives/topbar-shell.tsx'
+import { MutedHint } from '@/src/primitives/muted-hint.tsx'
+import { TopbarGroup } from '@/src/primitives/topbar-group.tsx'
+import { TopbarShell } from '@/src/primitives/topbar-shell.tsx'
 
 const meta = {
   title: 'Primitives/TopbarShell',

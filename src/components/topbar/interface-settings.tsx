@@ -1,12 +1,12 @@
-import type { SettingsViewProps } from '../../hooks/use-settings-menu.ts'
-import { GoogleFontCatalog } from '../../lib/google-font-catalog.ts'
-import { SettingsSchema } from '../../lib/settings-schema.ts'
-import { PanelHeader } from '../../primitives/panel-header.tsx'
-import { SettingRow } from '../../primitives/setting-row.tsx'
-import { useSettingsStore } from '../../store/settings-store.ts'
-import { FontPicker } from './font-picker.tsx'
-import { FontWeightSelect } from './font-weight-select.tsx'
-import { NumericSettingInput } from './numeric-setting-input.tsx'
+import type { SettingsViewProps } from '@/src/hooks/use-settings-menu.ts'
+import { GoogleFontCatalog } from '@/src/lib/google-font-catalog.ts'
+import { SettingsSchema } from '@/src/lib/settings-schema.ts'
+import { PanelHeader } from '@/src/primitives/panel-header.tsx'
+import { SettingRow } from '@/src/primitives/setting-row.tsx'
+import { useSettingsStore } from '@/src/store/settings-store.ts'
+import { FontPicker } from '@/src/components/topbar/font-picker.tsx'
+import { FontWeightSelect } from '@/src/components/topbar/font-weight-select.tsx'
+import { NumericSettingInput } from '@/src/components/topbar/numeric-setting-input.tsx'
 
 export function InterfaceSettings({ navigate }: SettingsViewProps) {
   const settings = useSettingsStore()

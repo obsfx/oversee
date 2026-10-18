@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { fn } from 'storybook/test'
-import { FontPicker } from '../../../components/topbar/font-picker.tsx'
-import { GoogleFontCatalog } from '../../../lib/google-font-catalog.ts'
+import { FontPicker } from '@/src/components/topbar/font-picker.tsx'
+import { GoogleFontCatalog } from '@/src/lib/google-font-catalog.ts'
 
 const meta = {
   title: 'Components/Topbar/FontPicker',

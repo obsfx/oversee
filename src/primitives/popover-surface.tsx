@@ -1,6 +1,6 @@
 import { Popover } from '@base-ui/react/popover'
 import type { ReactNode } from 'react'
-import { c } from '../c.ts'
+import { c } from '@/src/c.ts'
 
 interface PopoverSurfaceProps {
   align: 'start' | 'end'

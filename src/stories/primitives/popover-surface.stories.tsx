@@ -1,9 +1,9 @@
 import { Popover } from '@base-ui/react/popover'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { VscSettingsGear } from 'react-icons/vsc'
-import { IconButton } from '../../primitives/icon-button.tsx'
-import { MutedHint } from '../../primitives/muted-hint.tsx'
-import { PopoverSurface } from '../../primitives/popover-surface.tsx'
+import { IconButton } from '@/src/primitives/icon-button.tsx'
+import { MutedHint } from '@/src/primitives/muted-hint.tsx'
+import { PopoverSurface } from '@/src/primitives/popover-surface.tsx'
 
 const meta = {
   title: 'Primitives/PopoverSurface',

@@ -1,5 +1,5 @@
 import { prepareFileTreeInput } from '@pierre/trees'
-import type { FileChange } from './change-set.ts'
+import type { FileChange } from '@/src/lib/change-set.ts'
 
 export abstract class FileOrder {
   static ofTree(changes: readonly FileChange[]): FileChange[] {

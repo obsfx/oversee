@@ -1,10 +1,10 @@
 import { VscEdit, VscGitBranch } from 'react-icons/vsc'
-import { useOptionFilter } from '../../hooks/use-option-filter.ts'
-import { BareInput } from '../../primitives/bare-input.tsx'
-import { MutedHint } from '../../primitives/muted-hint.tsx'
-import { OptionList } from '../../primitives/option-list.tsx'
-import { OptionRow } from '../../primitives/option-row.tsx'
-import { SearchField } from '../../primitives/search-field.tsx'
+import { useOptionFilter } from '@/src/hooks/use-option-filter.ts'
+import { BareInput } from '@/src/primitives/bare-input.tsx'
+import { MutedHint } from '@/src/primitives/muted-hint.tsx'
+import { OptionList } from '@/src/primitives/option-list.tsx'
+import { OptionRow } from '@/src/primitives/option-row.tsx'
+import { SearchField } from '@/src/primitives/search-field.tsx'
 
 interface PinnedOption {
   label: string

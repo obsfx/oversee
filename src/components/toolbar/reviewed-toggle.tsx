@@ -1,5 +1,5 @@
-import { CheckToggle } from '../../primitives/check-toggle.tsx'
-import { useReviewStore } from '../../store/review-store.ts'
+import { CheckToggle } from '@/src/primitives/check-toggle.tsx'
+import { useReviewStore } from '@/src/store/review-store.ts'
 
 export function ReviewedToggle({ path }: { path: string }) {
   const reviewed = useReviewStore((review) => {

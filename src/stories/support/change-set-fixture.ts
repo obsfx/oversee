@@ -1,4 +1,4 @@
-import type { ChangeSet } from '../../lib/change-set.ts'
+import type { ChangeSet } from '@/src/lib/change-set.ts'
 
 export const changeSet: ChangeSet = {
   changes: [

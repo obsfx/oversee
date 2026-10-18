@@ -1,8 +1,8 @@
 import { useEffect } from 'react'
-import { FileNavigationRules } from '../lib/file-navigation.ts'
-import { FileOrder } from '../lib/file-order.ts'
-import { useNavigationStore } from '../store/navigation-store.ts'
-import { useChangeSet } from './use-change-set.ts'
+import { FileNavigationRules } from '@/src/lib/file-navigation.ts'
+import { FileOrder } from '@/src/lib/file-order.ts'
+import { useNavigationStore } from '@/src/store/navigation-store.ts'
+import { useChangeSet } from '@/src/hooks/use-change-set.ts'
 
 export const useFileNavigation = () => {
   const { state } = useChangeSet()

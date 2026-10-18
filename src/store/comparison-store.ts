@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Comparison } from '../lib/comparison-rules.ts'
+import type { Comparison } from '@/src/lib/comparison-rules.ts'
 
 interface ComparisonState {
   selected: Comparison | null

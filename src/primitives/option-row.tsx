@@ -1,6 +1,6 @@
 import type { IconType } from 'react-icons'
 import { VscCheck } from 'react-icons/vsc'
-import { c } from '../c.ts'
+import { c } from '@/src/c.ts'
 
 interface OptionRowProps {
   icon: IconType

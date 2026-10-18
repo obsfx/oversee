@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { BareInput } from '../../primitives/bare-input.tsx'
+import { BareInput } from '@/src/primitives/bare-input.tsx'
 
 const meta = {
   title: 'Primitives/BareInput',

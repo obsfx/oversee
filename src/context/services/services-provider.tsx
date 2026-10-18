@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
-import type { Services } from '../../lib/services.ts'
-import { ServicesContext } from './services-context.ts'
+import type { Services } from '@/src/lib/services.ts'
+import { ServicesContext } from '@/src/context/services/services-context.ts'
 
 interface ServicesProviderProps {
   services: Services

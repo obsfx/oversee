@@ -1,7 +1,7 @@
-import type { Theme } from '../../lib/settings-schema.ts'
-import { SettingsSchema } from '../../lib/settings-schema.ts'
-import { SegmentedControl } from '../../primitives/segmented-control.tsx'
-import { SegmentedOption } from '../../primitives/segmented-option.tsx'
+import type { Theme } from '@/src/lib/settings-schema.ts'
+import { SettingsSchema } from '@/src/lib/settings-schema.ts'
+import { SegmentedControl } from '@/src/primitives/segmented-control.tsx'
+import { SegmentedOption } from '@/src/primitives/segmented-option.tsx'
 
 interface ThemeToggleProps {
   value: Theme

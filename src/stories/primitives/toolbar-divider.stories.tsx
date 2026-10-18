@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { ToolbarDivider } from '../../primitives/toolbar-divider.tsx'
+import { ToolbarDivider } from '@/src/primitives/toolbar-divider.tsx'
 
 const meta = {
   title: 'Primitives/ToolbarDivider',

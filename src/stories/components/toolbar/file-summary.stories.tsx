@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { FileSummary } from '../../../components/toolbar/file-summary.tsx'
+import { FileSummary } from '@/src/components/toolbar/file-summary.tsx'
 
 const meta = {
   title: 'Components/Toolbar/FileSummary',

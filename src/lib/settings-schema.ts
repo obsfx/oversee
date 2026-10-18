@@ -1,5 +1,6 @@
-import { GoogleFontCatalog } from './google-font-catalog.ts'
-import { NumericRange } from './numeric-range.ts'
+import { GoogleFontCatalog } from '@/src/lib/google-font-catalog.ts'
+import { NumericRange } from '@/src/lib/numeric-range.ts'
+import { ValueGuards } from '@/src/lib/value-guards.ts'
 
 export type Theme = 'light' | 'dark'
 
@@ -32,6 +33,10 @@ export abstract class SettingsSchema {
     editorLineHeight: 1.6,
   }
 
+  static uiScale(uiFontSize: number) {
+    return uiFontSize / SettingsSchema.baseUiFontSize
+  }
+
   static parse(raw: unknown): Settings {
     if (typeof raw !== 'object' || raw === null) {
       return SettingsSchema.defaults
@@ -43,23 +48,20 @@ export abstract class SettingsSchema {
       ? value.editorFont
       : defaults.editorFont
     return {
-      theme:
-        SettingsSchema.themes.find((theme) => {
-          return theme === value.theme
-        }) ?? defaults.theme,
+      theme: ValueGuards.isOneOf(SettingsSchema.themes, value.theme) ? value.theme : defaults.theme,
       uiFont,
       uiFontWeight: GoogleFontCatalog.closestWeight(uiFont, value.uiFontWeight),
-      uiFontSize: SettingsSchema.uiFontSizeRange.contains(value.uiFontSize)
-        ? value.uiFontSize
-        : defaults.uiFontSize,
+      uiFontSize: SettingsSchema.uiFontSizeRange.valueOr(value.uiFontSize, defaults.uiFontSize),
       editorFont,
       editorFontWeight: GoogleFontCatalog.closestWeight(editorFont, value.editorFontWeight),
-      editorFontSize: SettingsSchema.editorFontSizeRange.contains(value.editorFontSize)
-        ? value.editorFontSize
-        : defaults.editorFontSize,
-      editorLineHeight: SettingsSchema.lineHeightRange.contains(value.editorLineHeight)
-        ? value.editorLineHeight
-        : defaults.editorLineHeight,
+      editorFontSize: SettingsSchema.editorFontSizeRange.valueOr(
+        value.editorFontSize,
+        defaults.editorFontSize,
+      ),
+      editorLineHeight: SettingsSchema.lineHeightRange.valueOr(
+        value.editorLineHeight,
+        defaults.editorLineHeight,
+      ),
     }
   }
 }

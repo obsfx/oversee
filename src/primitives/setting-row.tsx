@@ -14,7 +14,7 @@ export function SettingRow({ label, error, children }: SettingRowProps) {
       </span>
       <div className={'flex h-6 items-center justify-end'}>{children}</div>
       {error && (
-        <span className={'col-span-2 justify-self-end text-[11px] text-danger'}>{error}</span>
+        <span className={'col-span-2 justify-self-end text-mini text-danger'}>{error}</span>
       )}
     </div>
   )

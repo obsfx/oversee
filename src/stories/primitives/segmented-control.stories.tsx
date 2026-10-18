@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { SegmentedControl } from '../../primitives/segmented-control.tsx'
-import { SegmentedOption } from '../../primitives/segmented-option.tsx'
+import { SegmentedControl } from '@/src/primitives/segmented-control.tsx'
+import { SegmentedOption } from '@/src/primitives/segmented-option.tsx'
 
 const meta = {
   title: 'Primitives/SegmentedControl',

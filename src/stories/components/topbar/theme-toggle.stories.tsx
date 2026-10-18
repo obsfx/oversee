@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { fn } from 'storybook/test'
-import { ThemeToggle } from '../../../components/topbar/theme-toggle.tsx'
+import { ThemeToggle } from '@/src/components/topbar/theme-toggle.tsx'
 
 const meta = {
   title: 'Components/Topbar/ThemeToggle',

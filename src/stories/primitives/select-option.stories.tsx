@@ -1,8 +1,8 @@
 import { Select } from '@base-ui/react/select'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { FieldButton } from '../../primitives/field-button.tsx'
-import { SelectOption } from '../../primitives/select-option.tsx'
-import { SelectSurface } from '../../primitives/select-surface.tsx'
+import { FieldButton } from '@/src/primitives/field-button.tsx'
+import { SelectOption } from '@/src/primitives/select-option.tsx'
+import { SelectSurface } from '@/src/primitives/select-surface.tsx'
 
 const meta = {
   title: 'Primitives/SelectOption',

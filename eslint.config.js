@@ -6,6 +6,7 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 import prettier from 'eslint-config-prettier/flat'
 import storybook from 'eslint-plugin-storybook'
+import noRelativeImportPaths from 'eslint-plugin-no-relative-import-paths'
 
 const FUNCTION_TYPES = new Set([
   'FunctionDeclaration',
@@ -143,7 +144,7 @@ export default defineConfig([
       reactHooks.configs.flat.recommended,
       reactRefresh.configs.vite,
     ],
-    plugins: { oversee: overseePlugin },
+    plugins: { oversee: overseePlugin, 'no-relative-import-paths': noRelativeImportPaths },
     languageOptions: {
       globals: globals.browser,
     },
@@ -156,6 +157,10 @@ export default defineConfig([
       ],
       'oversee/one-component-per-file': 'error',
       'oversee/one-hook-per-file': 'error',
+      'no-relative-import-paths/no-relative-import-paths': [
+        'error',
+        { allowSameFolder: false, prefix: '@' },
+      ],
     },
   },
   storybook.configs['flat/recommended'],

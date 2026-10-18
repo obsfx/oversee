@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { ToolbarGroup } from '../../primitives/toolbar-group.tsx'
-import { ToolbarShell } from '../../primitives/toolbar-shell.tsx'
+import { ToolbarGroup } from '@/src/primitives/toolbar-group.tsx'
+import { ToolbarShell } from '@/src/primitives/toolbar-shell.tsx'
 
 const meta = {
   title: 'Primitives/ToolbarShell',

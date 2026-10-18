@@ -1,4 +1,4 @@
-import type { Settings } from './settings-schema.ts'
+import type { Settings } from '@/src/lib/settings-schema.ts'
 
 export abstract class SettingsSummary {
   static interface(settings: Settings) {

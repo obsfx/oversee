@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { SidebarToggle } from '../../../components/topbar/sidebar-toggle.tsx'
+import { SidebarToggle } from '@/src/components/topbar/sidebar-toggle.tsx'
 
 const meta = {
   title: 'Components/Topbar/SidebarToggle',

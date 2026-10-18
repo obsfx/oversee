@@ -1,9 +1,9 @@
-import type { SettingsViewProps } from '../../hooks/use-settings-menu.ts'
-import { SettingsSummary } from '../../lib/settings-summary.ts'
-import { SettingRow } from '../../primitives/setting-row.tsx'
-import { SummaryRow } from '../../primitives/summary-row.tsx'
-import { useSettingsStore } from '../../store/settings-store.ts'
-import { ThemeToggle } from './theme-toggle.tsx'
+import type { SettingsViewProps } from '@/src/hooks/use-settings-menu.ts'
+import { SettingsSummary } from '@/src/lib/settings-summary.ts'
+import { SettingRow } from '@/src/primitives/setting-row.tsx'
+import { SummaryRow } from '@/src/primitives/summary-row.tsx'
+import { useSettingsStore } from '@/src/store/settings-store.ts'
+import { ThemeToggle } from '@/src/components/topbar/theme-toggle.tsx'
 
 export function SettingsOverview({ navigate }: SettingsViewProps) {
   const settings = useSettingsStore()

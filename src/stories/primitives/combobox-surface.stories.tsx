@@ -1,10 +1,10 @@
 import { Combobox } from '@base-ui/react/combobox'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { BareInput } from '../../primitives/bare-input.tsx'
-import { ComboboxOption } from '../../primitives/combobox-option.tsx'
-import { ComboboxSurface } from '../../primitives/combobox-surface.tsx'
-import { FieldButton } from '../../primitives/field-button.tsx'
-import { SearchField } from '../../primitives/search-field.tsx'
+import { BareInput } from '@/src/primitives/bare-input.tsx'
+import { ComboboxOption } from '@/src/primitives/combobox-option.tsx'
+import { ComboboxSurface } from '@/src/primitives/combobox-surface.tsx'
+import { FieldButton } from '@/src/primitives/field-button.tsx'
+import { SearchField } from '@/src/primitives/search-field.tsx'
 
 const fonts = ['Fira Code', 'IBM Plex Mono', 'JetBrains Mono', 'Source Code Pro']
 

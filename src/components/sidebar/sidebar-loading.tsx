@@ -1,5 +1,5 @@
-import { CenteredStatus } from '../../primitives/centered-status.tsx'
-import { Spinner } from '../../primitives/spinner.tsx'
+import { CenteredStatus } from '@/src/primitives/centered-status.tsx'
+import { Spinner } from '@/src/primitives/spinner.tsx'
 
 export function SidebarLoading() {
   return (

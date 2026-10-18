@@ -1,5 +1,5 @@
 import type { ComponentProps } from 'react'
-import { c } from '../c.ts'
+import { c } from '@/src/c.ts'
 
 export function FieldButton({ className, ...props }: ComponentProps<'button'>) {
   return (

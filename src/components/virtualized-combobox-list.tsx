@@ -1,7 +1,7 @@
 import type { CSSProperties, RefObject } from 'react'
-import { useComboboxListVirtualizer } from '../hooks/use-combobox-list-virtualizer.ts'
-import type { ListVirtualizer } from '../hooks/use-virtualized-combobox.ts'
-import { ComboboxOption } from '../primitives/combobox-option.tsx'
+import { useComboboxListVirtualizer } from '@/src/hooks/use-combobox-list-virtualizer.ts'
+import type { ListVirtualizer } from '@/src/hooks/use-virtualized-combobox.ts'
+import { ComboboxOption } from '@/src/primitives/combobox-option.tsx'
 
 interface VirtualizedComboboxListProps {
   open: boolean

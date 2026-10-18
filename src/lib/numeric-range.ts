@@ -13,6 +13,10 @@ export class NumericRange {
     return typeof value === 'number' && value >= this.min && value <= this.max
   }
 
+  valueOr(value: unknown, fallback: number) {
+    return this.contains(value) ? value : fallback
+  }
+
   parse(raw: string) {
     const trimmed = raw.trim()
     if (!DECIMAL.test(trimmed)) {

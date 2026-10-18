@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { VscGitBranch } from 'react-icons/vsc'
 import { fn } from 'storybook/test'
-import { OptionList } from '../../primitives/option-list.tsx'
-import { OptionRow } from '../../primitives/option-row.tsx'
-import { branchList } from '../support/fixtures.ts'
+import { OptionList } from '@/src/primitives/option-list.tsx'
+import { OptionRow } from '@/src/primitives/option-row.tsx'
+import { branchList } from '@/src/stories/support/fixtures.ts'
 
 const meta = {
   title: 'Primitives/OptionList',

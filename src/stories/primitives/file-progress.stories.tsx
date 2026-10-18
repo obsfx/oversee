@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { FileProgress } from '../../primitives/file-progress.tsx'
+import { FileProgress } from '@/src/primitives/file-progress.tsx'
 
 const meta = {
   title: 'Primitives/FileProgress',

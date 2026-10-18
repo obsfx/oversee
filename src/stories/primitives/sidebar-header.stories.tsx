@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { VscEye } from 'react-icons/vsc'
-import { Button } from '../../primitives/button.tsx'
-import { ProgressTrack } from '../../primitives/progress-track.tsx'
-import { SidebarHeader } from '../../primitives/sidebar-header.tsx'
+import { Button } from '@/src/primitives/button.tsx'
+import { ProgressTrack } from '@/src/primitives/progress-track.tsx'
+import { SidebarHeader } from '@/src/primitives/sidebar-header.tsx'
 
 const meta = {
   title: 'Primitives/SidebarHeader',

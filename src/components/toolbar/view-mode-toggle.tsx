@@ -1,7 +1,7 @@
 import { LuColumns2, LuRows2 } from 'react-icons/lu'
-import { SegmentedControl } from '../../primitives/segmented-control.tsx'
-import { SegmentedOption } from '../../primitives/segmented-option.tsx'
-import { type DiffViewMode, useDiffViewStore } from '../../store/diff-view-store.ts'
+import { SegmentedControl } from '@/src/primitives/segmented-control.tsx'
+import { SegmentedOption } from '@/src/primitives/segmented-option.tsx'
+import { type DiffViewMode, useDiffViewStore } from '@/src/store/diff-view-store.ts'
 
 const MODES: { value: DiffViewMode; label: string; Icon: typeof LuColumns2 }[] = [
   { value: 'split', label: 'Split view', Icon: LuColumns2 },

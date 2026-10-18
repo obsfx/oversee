@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { fn } from 'storybook/test'
-import { ComparisonPickerFailed } from '../../../components/topbar/comparison-picker-failed.tsx'
+import { ComparisonPickerFailed } from '@/src/components/topbar/comparison-picker-failed.tsx'
 
 const meta = {
   title: 'Components/Topbar/ComparisonPickerFailed',

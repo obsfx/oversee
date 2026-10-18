@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { BareInput } from '../../primitives/bare-input.tsx'
-import { FilterField } from '../../primitives/filter-field.tsx'
+import { BareInput } from '@/src/primitives/bare-input.tsx'
+import { FilterField } from '@/src/primitives/filter-field.tsx'
 
 const meta = {
   title: 'Primitives/FilterField',

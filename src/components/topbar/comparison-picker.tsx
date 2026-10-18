@@ -1,12 +1,12 @@
 import { Popover } from '@base-ui/react/popover'
 import { VscArrowRight, VscChevronDown, VscGitCompare } from 'react-icons/vsc'
-import { useComparison } from '../../hooks/use-comparison.ts'
-import { ComparisonRules } from '../../lib/comparison-rules.ts'
-import { ChipButton } from '../../primitives/chip-button.tsx'
-import { PopoverSurface } from '../../primitives/popover-surface.tsx'
-import { BranchOptions } from './branch-options.tsx'
-import { ComparisonPickerFailed } from './comparison-picker-failed.tsx'
-import { ComparisonPickerLoading } from './comparison-picker-loading.tsx'
+import { useComparison } from '@/src/hooks/use-comparison.ts'
+import { ComparisonRules } from '@/src/lib/comparison-rules.ts'
+import { ChipButton } from '@/src/primitives/chip-button.tsx'
+import { PopoverSurface } from '@/src/primitives/popover-surface.tsx'
+import { BranchOptions } from '@/src/components/topbar/branch-options.tsx'
+import { ComparisonPickerFailed } from '@/src/components/topbar/comparison-picker-failed.tsx'
+import { ComparisonPickerLoading } from '@/src/components/topbar/comparison-picker-loading.tsx'
 
 export function ComparisonPicker() {
   const { branchesState, comparison, selectSource, selectTarget, retry } = useComparison()

@@ -1,6 +1,6 @@
 import { VscRefresh, VscWarning } from 'react-icons/vsc'
-import { ChipButton } from '../../primitives/chip-button.tsx'
-import { TopbarGroup } from '../../primitives/topbar-group.tsx'
+import { ChipButton } from '@/src/primitives/chip-button.tsx'
+import { TopbarGroup } from '@/src/primitives/topbar-group.tsx'
 
 interface ComparisonPickerFailedProps {
   reason: string

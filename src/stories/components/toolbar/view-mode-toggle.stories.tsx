@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { ViewModeToggle } from '../../../components/toolbar/view-mode-toggle.tsx'
+import { ViewModeToggle } from '@/src/components/toolbar/view-mode-toggle.tsx'
 
 const meta = {
   title: 'Components/Toolbar/ViewModeToggle',

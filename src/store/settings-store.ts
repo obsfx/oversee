@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { SettingsSchema, type Settings } from '../lib/settings-schema.ts'
+import { SettingsSchema, type Settings } from '@/src/lib/settings-schema.ts'
 
 interface SettingsState extends Settings {
   update: (patch: Partial<Settings>) => void

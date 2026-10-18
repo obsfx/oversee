@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { Topbar } from '../../../components/topbar/topbar.tsx'
-import type { Services } from '../../../lib/services.ts'
-import { createStoryServices, neverResolves, rejectsWith } from '../../support/fixtures.ts'
-import { StoryFrame } from '../../support/story-frame.tsx'
+import { Topbar } from '@/src/components/topbar/topbar.tsx'
+import type { Services } from '@/src/lib/services.ts'
+import { createStoryServices, neverResolves, rejectsWith } from '@/src/stories/support/fixtures.ts'
+import { StoryFrame } from '@/src/stories/support/story-frame.tsx'
 
 const meta = {
   title: 'Components/Topbar/Topbar',

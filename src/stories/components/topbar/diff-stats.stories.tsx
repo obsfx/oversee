@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { DiffStats } from '../../../components/topbar/diff-stats.tsx'
-import type { Services } from '../../../lib/services.ts'
-import { createStoryServices, neverResolves } from '../../support/fixtures.ts'
-import { StoryFrame } from '../../support/story-frame.tsx'
+import { DiffStats } from '@/src/components/topbar/diff-stats.tsx'
+import type { Services } from '@/src/lib/services.ts'
+import { createStoryServices, neverResolves } from '@/src/stories/support/fixtures.ts'
+import { StoryFrame } from '@/src/stories/support/story-frame.tsx'
 
 const meta = {
   title: 'Components/Topbar/DiffStats',

@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { fn } from 'storybook/test'
-import { InterfaceSettings } from '../../../components/topbar/interface-settings.tsx'
-import { createStoryServices } from '../../support/fixtures.ts'
-import { StoryFrame } from '../../support/story-frame.tsx'
+import { InterfaceSettings } from '@/src/components/topbar/interface-settings.tsx'
+import { createStoryServices } from '@/src/stories/support/fixtures.ts'
+import { StoryFrame } from '@/src/stories/support/story-frame.tsx'
 
 const services = createStoryServices()
 

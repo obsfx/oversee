@@ -1,6 +1,6 @@
 import { VscFold, VscUnfold } from 'react-icons/vsc'
-import { IconButton } from '../../primitives/icon-button.tsx'
-import { useDiffViewStore } from '../../store/diff-view-store.ts'
+import { IconButton } from '@/src/primitives/icon-button.tsx'
+import { useDiffViewStore } from '@/src/store/diff-view-store.ts'
 
 export function UnchangedToggle() {
   const expanded = useDiffViewStore((diffView) => {

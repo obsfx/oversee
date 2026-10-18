@@ -1,6 +1,6 @@
 import { VscGitCompare } from 'react-icons/vsc'
-import { ChipButton } from '../../primitives/chip-button.tsx'
-import { Spinner } from '../../primitives/spinner.tsx'
+import { ChipButton } from '@/src/primitives/chip-button.tsx'
+import { Spinner } from '@/src/primitives/spinner.tsx'
 
 export function ComparisonPickerLoading() {
   return (

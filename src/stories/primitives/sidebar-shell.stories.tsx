@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { SidebarShell } from '../../primitives/sidebar-shell.tsx'
+import { SidebarShell } from '@/src/primitives/sidebar-shell.tsx'
 
 const meta = {
   title: 'Primitives/SidebarShell',

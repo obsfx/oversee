@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { FileTreeView } from '../../../components/sidebar/file-tree-view.tsx'
-import { createStoryServices } from '../../support/fixtures.ts'
-import { StoryFrame } from '../../support/story-frame.tsx'
-import { createStoryTree } from '../../support/story-tree.ts'
+import { FileTreeView } from '@/src/components/sidebar/file-tree-view.tsx'
+import { createStoryServices } from '@/src/stories/support/fixtures.ts'
+import { StoryFrame } from '@/src/stories/support/story-frame.tsx'
+import { createStoryTree } from '@/src/stories/support/story-tree.ts'
 
 const services = createStoryServices()
 

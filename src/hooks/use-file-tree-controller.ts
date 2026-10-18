@@ -1,9 +1,11 @@
 import { useFileTree } from '@pierre/trees/react'
 import { useEffect, useState } from 'react'
-import type { FileChange } from '../lib/change-set.ts'
-import { FileTreeController, type FileTreeHandlers } from '../lib/file-tree-controller.ts'
-import { useNavigationStore } from '../store/navigation-store.ts'
-import { useReviewStore } from '../store/review-store.ts'
+import type { FileChange } from '@/src/lib/change-set.ts'
+import { FileTreeController, type FileTreeHandlers } from '@/src/lib/file-tree-controller.ts'
+import { SettingsSchema } from '@/src/lib/settings-schema.ts'
+import { useNavigationStore } from '@/src/store/navigation-store.ts'
+import { useReviewStore } from '@/src/store/review-store.ts'
+import { useSettingsStore } from '@/src/store/settings-store.ts'
 
 const handlers: FileTreeHandlers = {
   isReviewed: (path) => {
@@ -18,7 +20,16 @@ const handlers: FileTreeHandlers = {
 }
 
 export const useFileTreeController = (paths: readonly string[], changes: readonly FileChange[]) => {
-  const { model } = useFileTree(FileTreeController.createOptions({ paths, changes }, handlers))
+  const uiFontSize = useSettingsStore((settings) => {
+    return settings.uiFontSize
+  })
+  const { model } = useFileTree(
+    FileTreeController.createOptions(
+      { paths, changes },
+      handlers,
+      SettingsSchema.uiScale(uiFontSize),
+    ),
+  )
   const [controller] = useState(() => {
     return new FileTreeController(model, { paths, changes })
   })

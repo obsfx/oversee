@@ -1,4 +1,4 @@
-import { AsyncResource } from './async-resource.ts'
+import { AsyncResource } from '@/src/lib/async-resource.ts'
 
 export class ResourceCache<K, T> {
   private readonly resources = new Map<string, AsyncResource<T>>()

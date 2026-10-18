@@ -1,11 +1,11 @@
 import type { FileTree as FileTreeModel } from '@pierre/trees'
 import { FileTree } from '@pierre/trees/react'
 import { VscCheck } from 'react-icons/vsc'
-import { FileTreeAppearance } from '../../lib/file-tree-appearance.ts'
-import { MenuItem } from '../../primitives/menu-item.tsx'
-import { MenuSurface } from '../../primitives/menu-surface.tsx'
-import { useReviewStore } from '../../store/review-store.ts'
-import { useSettingsStore } from '../../store/settings-store.ts'
+import { FileTreeAppearance } from '@/src/lib/file-tree-appearance.ts'
+import { MenuItem } from '@/src/primitives/menu-item.tsx'
+import { MenuSurface } from '@/src/primitives/menu-surface.tsx'
+import { useReviewStore } from '@/src/store/review-store.ts'
+import { useSettingsStore } from '@/src/store/settings-store.ts'
 
 export function FileTreeView({ model }: { model: FileTreeModel }) {
   const theme = useSettingsStore((settings) => {

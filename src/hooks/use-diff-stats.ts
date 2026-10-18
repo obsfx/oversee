@@ -1,6 +1,6 @@
 import plur from 'plur'
-import { DiffStatsRules } from '../lib/diff-stats.ts'
-import { useChangeSet } from './use-change-set.ts'
+import { DiffStatsRules } from '@/src/lib/diff-stats.ts'
+import { useChangeSet } from '@/src/hooks/use-change-set.ts'
 
 export const useDiffStats = () => {
   const { state } = useChangeSet()

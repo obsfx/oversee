@@ -1,8 +1,8 @@
-import { useServices } from '../context/services/use-services.ts'
-import type { ResourceState } from '../lib/async-resource.ts'
-import type { ChangeSet } from '../lib/change-set.ts'
-import { useComparison } from './use-comparison.ts'
-import { useResource } from './use-resource.ts'
+import { useServices } from '@/src/context/services/use-services.ts'
+import type { ResourceState } from '@/src/lib/async-resource.ts'
+import type { ChangeSet } from '@/src/lib/change-set.ts'
+import { useComparison } from '@/src/hooks/use-comparison.ts'
+import { useResource } from '@/src/hooks/use-resource.ts'
 
 export const useChangeSet = () => {
   const { changeSets } = useServices()

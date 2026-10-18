@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { fn } from 'storybook/test'
-import { SummaryRow } from '../../primitives/summary-row.tsx'
+import { SummaryRow } from '@/src/primitives/summary-row.tsx'
 
 const meta = {
   title: 'Primitives/SummaryRow',

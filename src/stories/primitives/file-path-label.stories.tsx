@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { FilePathLabel } from '../../primitives/file-path-label.tsx'
+import { FilePathLabel } from '@/src/primitives/file-path-label.tsx'
 
 const meta = {
   title: 'Primitives/FilePathLabel',

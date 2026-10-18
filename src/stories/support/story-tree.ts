@@ -1,6 +1,6 @@
 import { FileTree } from '@pierre/trees'
-import { FileTreeAppearance } from '../../lib/file-tree-appearance.ts'
-import { changeSet } from './change-set-fixture.ts'
+import { FileTreeAppearance } from '@/src/lib/file-tree-appearance.ts'
+import { changeSet } from '@/src/stories/support/change-set-fixture.ts'
 
 export const createStoryTree = () => {
   return new FileTree({

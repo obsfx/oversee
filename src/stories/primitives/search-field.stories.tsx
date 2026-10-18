@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { BareInput } from '../../primitives/bare-input.tsx'
-import { SearchField } from '../../primitives/search-field.tsx'
+import { BareInput } from '@/src/primitives/bare-input.tsx'
+import { SearchField } from '@/src/primitives/search-field.tsx'
 
 const meta = {
   title: 'Primitives/SearchField',

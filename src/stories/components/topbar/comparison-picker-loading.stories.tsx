@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { ComparisonPickerLoading } from '../../../components/topbar/comparison-picker-loading.tsx'
+import { ComparisonPickerLoading } from '@/src/components/topbar/comparison-picker-loading.tsx'
 
 const meta = {
   title: 'Components/Topbar/ComparisonPickerLoading',

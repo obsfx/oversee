@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { SidebarEmpty } from '../../../components/sidebar/sidebar-empty.tsx'
+import { SidebarEmpty } from '@/src/components/sidebar/sidebar-empty.tsx'
 
 const meta = {
   title: 'Components/Sidebar/SidebarEmpty',

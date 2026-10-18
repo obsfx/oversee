@@ -86,6 +86,10 @@ Let me explain the **core components of the app, the sections are color coded**.
 - never use unicode symbols such as `…`, `·`, `→` in source text. use plain text, or an icon from `react-icons` for symbols.
 - use `plur` for count based pluralization.
 - always use curly braces for `if` bodies and arrow function bodies.
+- prefer plain `if` statements over multi-line ternaries and conditional spreads such as `...(x ? [a] : [])`. build the value, then add to it inside `if` blocks.
+- in `./src/lib`, helper functions live in a class: private static methods of the class that uses them, or a small abstract utility class when shared (for example `ResponseGuards`). no module-level helper functions.
+- use `dayjs` for date and time work.
+- import from the project root with the `@/` alias, for example `@/src/primitives/kbd.tsx`. relative imports (`./`, `../`) are rejected by eslint.
 
 ### overall folder structure
 - `./src/primitives`: it contains the tailwind style components, no logic. tailwind classes could be long enough to populate whole screen. so we gonna `hide` that styled components with tailwind that has very long class names so we are not polluting the component body with that long class names

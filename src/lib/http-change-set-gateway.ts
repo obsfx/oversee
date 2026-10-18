@@ -1,54 +1,44 @@
-import { ApiClient, ApiError } from './api-client.ts'
-import { type ChangeSet, ChangeStatuses, type FileChange } from './change-set.ts'
-import type { ChangeSetGateway } from './change-set-gateway.ts'
-import type { Comparison } from './comparison-rules.ts'
+import { ApiClient, ApiError } from '@/src/lib/api-client.ts'
+import { HttpGateway } from '@/src/lib/http-gateway.ts'
+import { type ChangeSet, ChangeStatuses, type FileChange } from '@/src/lib/change-set.ts'
+import type { ChangeSetGateway } from '@/src/lib/change-set-gateway.ts'
+import { ComparisonRules, type Comparison } from '@/src/lib/comparison-rules.ts'
+import { ValueGuards } from '@/src/lib/value-guards.ts'
 
-const PATH = '/get-file-tree'
-const UNCOMMITTED_REF = ':uncommitted'
+export class HttpChangeSetGateway extends HttpGateway implements ChangeSetGateway {
+  private static readonly path = '/get-file-tree'
 
-const isCount = (value: unknown): value is number => {
-  return typeof value === 'number' && Number.isInteger(value) && value >= 0
-}
-
-const isFileChange = (value: unknown): value is FileChange => {
-  const { path, status, additions, deletions } = ApiClient.fieldsOf(value)
-  return (
-    typeof path === 'string' &&
-    ChangeStatuses.includes(status) &&
-    isCount(additions) &&
-    isCount(deletions)
-  )
-}
-
-const parseChangeSet = (body: unknown): ChangeSet => {
-  const { changes } = ApiClient.fieldsOf(body)
-  if (!Array.isArray(changes) || !changes.every(isFileChange)) {
-    throw ApiError.unexpectedShape(PATH)
-  }
-  return {
-    changes: changes.map((change) => {
-      return {
-        path: change.path,
-        status: change.status,
-        additions: change.additions,
-        deletions: change.deletions,
-      }
-    }),
-  }
-}
-
-export class HttpChangeSetGateway implements ChangeSetGateway {
-  private readonly api: ApiClient
-
-  constructor(api: ApiClient) {
-    this.api = api
+  private static isFileChange(value: unknown): value is FileChange {
+    const { path, status, additions, deletions, previousPath } = ApiClient.fieldsOf(value)
+    return (
+      ValueGuards.isString(path) &&
+      ValueGuards.isOptionalString(previousPath) &&
+      ChangeStatuses.includes(status) &&
+      ValueGuards.isCount(additions) &&
+      ValueGuards.isCount(deletions)
+    )
   }
 
-  load({ source, target }: Comparison) {
-    const query = new URLSearchParams({
-      source: source.kind === 'branch' ? source.name : UNCOMMITTED_REF,
-      target,
-    })
-    return this.api.get(`${PATH}?${query.toString()}`, parseChangeSet)
+  private static toFileChange({ path, status, additions, deletions, previousPath }: FileChange) {
+    const change: FileChange = { path, status, additions, deletions }
+    if (previousPath !== undefined) {
+      change.previousPath = previousPath
+    }
+    return change
+  }
+
+  private static parseChangeSet(body: unknown): ChangeSet {
+    const { changes } = ApiClient.fieldsOf(body)
+    if (!ValueGuards.isListOf(changes, HttpChangeSetGateway.isFileChange)) {
+      throw ApiError.unexpectedShape(HttpChangeSetGateway.path)
+    }
+    return { changes: changes.map(HttpChangeSetGateway.toFileChange) }
+  }
+
+  load(comparison: Comparison) {
+    return this.api.get(
+      ApiClient.withQuery(HttpChangeSetGateway.path, ComparisonRules.searchParams(comparison)),
+      HttpChangeSetGateway.parseChangeSet,
+    )
   }
 }

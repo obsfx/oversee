@@ -1,6 +1,6 @@
 import { VscRefresh, VscWarning } from 'react-icons/vsc'
-import { Button } from '../../primitives/button.tsx'
-import { CenteredStatus } from '../../primitives/centered-status.tsx'
+import { Button } from '@/src/primitives/button.tsx'
+import { CenteredStatus } from '@/src/primitives/centered-status.tsx'
 
 interface SidebarFailedProps {
   reason: string

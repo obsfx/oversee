@@ -1,5 +1,5 @@
-import type { FileChange } from './change-set.ts'
-import { Ratio } from './ratio.ts'
+import type { FileChange } from '@/src/lib/change-set.ts'
+import { Ratio } from '@/src/lib/ratio.ts'
 
 export interface FilePosition {
   current: FileChange | null

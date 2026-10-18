@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { VscFold } from 'react-icons/vsc'
-import { IconButton } from '../../primitives/icon-button.tsx'
-import { ToolbarGroup } from '../../primitives/toolbar-group.tsx'
+import { IconButton } from '@/src/primitives/icon-button.tsx'
+import { ToolbarGroup } from '@/src/primitives/toolbar-group.tsx'
 
 const meta = {
   title: 'Primitives/ToolbarGroup',

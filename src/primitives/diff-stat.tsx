@@ -1,5 +1,5 @@
 import type { ComponentProps } from 'react'
-import { c } from '../c.ts'
+import { c } from '@/src/c.ts'
 
 interface DiffStatProps extends ComponentProps<'span'> {
   additions: number

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { SidebarLoading } from '../../../components/sidebar/sidebar-loading.tsx'
+import { SidebarLoading } from '@/src/components/sidebar/sidebar-loading.tsx'
 
 const meta = {
   title: 'Components/Sidebar/SidebarLoading',

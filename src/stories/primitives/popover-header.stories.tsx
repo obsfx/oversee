@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { PopoverHeader } from '../../primitives/popover-header.tsx'
+import { PopoverHeader } from '@/src/primitives/popover-header.tsx'
 
 const meta = {
   title: 'Primitives/PopoverHeader',

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
-import { AppearanceRoot } from '../../components/appearance-root.tsx'
-import { ServicesProvider } from '../../context/services/services-provider.tsx'
-import type { Services } from '../../lib/services.ts'
+import { AppearanceRoot } from '@/src/components/appearance-root.tsx'
+import { ServicesProvider } from '@/src/context/services/services-provider.tsx'
+import type { Services } from '@/src/lib/services.ts'
 
 interface StoryFrameProps {
   services: Services

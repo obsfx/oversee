@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { ReviewProgressRules } from '../lib/review-progress.ts'
-import { useReviewStore } from '../store/review-store.ts'
-import { useChangeSet } from './use-change-set.ts'
-import { useFileTreeController } from './use-file-tree-controller.ts'
+import { ReviewProgressRules } from '@/src/lib/review-progress.ts'
+import { useReviewStore } from '@/src/store/review-store.ts'
+import { useChangeSet } from '@/src/hooks/use-change-set.ts'
+import { useFileTreeController } from '@/src/hooks/use-file-tree-controller.ts'
 
 export const useSidebar = () => {
   const { state, retry } = useChangeSet()

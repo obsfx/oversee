@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { fn } from 'storybook/test'
-import { SidebarFailed } from '../../../components/sidebar/sidebar-failed.tsx'
+import { SidebarFailed } from '@/src/components/sidebar/sidebar-failed.tsx'
 
 const meta = {
   title: 'Components/Sidebar/SidebarFailed',

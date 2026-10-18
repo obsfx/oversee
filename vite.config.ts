@@ -1,7 +1,10 @@
 import react, { reactCompilerPreset } from '@vitejs/plugin-react'
 import babel from '@rolldown/plugin-babel'
+import { fileURLToPath } from 'node:url'
 import { defineConfig, type Plugin } from 'vite'
 import tailwindcss from '@tailwindcss/vite'
+
+const PROJECT_ROOT = fileURLToPath(new URL('./', import.meta.url))
 
 const GOOGLE_FONTS_MODULE = 'virtual:google-fonts'
 const RESOLVED_GOOGLE_FONTS_MODULE = `\0${GOOGLE_FONTS_MODULE}`
@@ -32,4 +35,7 @@ const googleFonts = (): Plugin => {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), babel({ presets: [reactCompilerPreset()] }), tailwindcss(), googleFonts()],
+  resolve: {
+    alias: [{ find: /^@\//, replacement: PROJECT_ROOT }],
+  },
 })

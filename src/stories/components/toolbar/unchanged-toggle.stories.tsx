@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { UnchangedToggle } from '../../../components/toolbar/unchanged-toggle.tsx'
+import { UnchangedToggle } from '@/src/components/toolbar/unchanged-toggle.tsx'
 
 const meta = {
   title: 'Components/Toolbar/UnchangedToggle',
