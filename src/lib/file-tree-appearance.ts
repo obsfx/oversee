@@ -10,6 +10,10 @@ const FOLDER_CLOSED = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 1
 
 const FOLDER_OPEN = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M1 4.5C1 3.12 2.12 2 3.5 2h1.09c.4 0 .78.16 1.06.44L7.21 4h3.29c1.22 0 2.24.88 2.46 2.04 1.65.3 2.59 2.18 1.7 3.71l-1.58 2.75A2.5 2.5 0 0 1 10.48 14H3.5A2.5 2.5 0 0 1 1 11.5v-7Z'/></svg>`
 
+const FOLDER_CLOSED_FRONT = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M1 7.5C1 6.67 1.67 6 2.5 6h11c.83 0 1.5.67 1.5 1.5v4c0 1.38-1.12 2.5-2.5 2.5h-9A2.5 2.5 0 0 1 1 11.5v-4Z'/></svg>`
+
+const FOLDER_OPEN_FRONT = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M5.2 6.5h7.9a1.5 1.5 0 0 1 1.3 2.25l-1.98 3.5A3.5 3.5 0 0 1 10.39 14H3.1a1.5 1.5 0 0 1-1.3-2.25l2.1-3.5A1.5 1.5 0 0 1 5.2 6.5Z'/></svg>`
+
 const COMPACT_ITEM_HEIGHT = 24
 
 const HOST_STYLE = {
@@ -40,6 +44,8 @@ export abstract class FileTreeAppearance {
   private static stylesheet() {
     const closed = FileTreeAppearance.maskUrl(FOLDER_CLOSED)
     const open = FileTreeAppearance.maskUrl(FOLDER_OPEN)
+    const closedFront = FileTreeAppearance.maskUrl(FOLDER_CLOSED_FRONT)
+    const openFront = FileTreeAppearance.maskUrl(FOLDER_OPEN_FRONT)
     return `
   [data-type="item"] { gap: 0.25rem; }
   [data-file-tree-search-container] { display: none; }
@@ -48,16 +54,29 @@ export abstract class FileTreeAppearance {
     width: auto;
     gap: 0.1875rem;
   }
+  [data-item-type="folder"] > [data-item-section="icon"]::before,
   [data-item-type="folder"] > [data-item-section="icon"]::after {
     content: "";
     flex: none;
     width: 0.875rem;
     height: 0.875rem;
-    background-color: var(--color-folder);
+  }
+  [data-item-type="folder"] > [data-item-section="icon"]::after {
+    order: 1;
+    background-color: var(--color-folder-back);
     mask: ${closed} no-repeat center / contain;
+  }
+  [data-item-type="folder"] > [data-item-section="icon"]::before {
+    order: 2;
+    margin-left: -1.0625rem;
+    background-color: var(--color-folder);
+    mask: ${closedFront} no-repeat center / contain;
   }
   [data-item-type="folder"][aria-expanded="true"] > [data-item-section="icon"]::after {
     mask-image: ${open};
+  }
+  [data-item-type="folder"][aria-expanded="true"] > [data-item-section="icon"]::before {
+    mask-image: ${openFront};
   }
   [data-item-section="decoration"] {
     order: -1;

@@ -65,7 +65,7 @@ export function Sidebar() {
           </SidebarToolbar>
         </>
       )}
-      <div className={'min-h-0 flex-1 pt-1'}>
+      <div className={'min-h-0 flex-1'}>
         {state.status === 'failed' && (
           <SidebarFailed reason={state.error.message} onRetry={retry} />
         )}

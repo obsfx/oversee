@@ -29,7 +29,8 @@
   --color-status-deleted: #b25d57;
   --color-status-renamed: #7a6aa8;
   --color-status-untracked: #5f8590;
-  --color-folder: #b08a4a;
+  --color-folder: #d2a95e;
+  --color-folder-back: #9a7334;
   --color-highlight: #fef7cd;
   --font-ui: 'Google Sans Flex', system-ui, sans-serif;
   --font-editor: 'JetBrains Mono', ui-monospace, monospace;
@@ -86,6 +87,7 @@
   --color-status-renamed: #a99ad6;
   --color-status-untracked: #8db1bb;
   --color-folder: #c9a467;
+  --color-folder-back: #8f7347;
   --color-highlight: #3b330f;
 }
 
