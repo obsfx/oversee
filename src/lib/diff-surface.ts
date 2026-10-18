@@ -20,6 +20,8 @@ const HOVER_TINT =
   'color-mix(in lab, var(--diffs-computed-editor-active-line-bg) 95%, var(--color-accent)),' +
   'color-mix(in lab, var(--diffs-computed-editor-active-line-bg) 90%, var(--color-accent)))'
 const CODE_BLOCKS = '[data-code],[data-diff-type=split][data-overflow=scroll]'
+const DELETION_BARS =
+  '[data-indicators=bars] [data-line-type=change-deletion][data-column-number]::before'
 
 export abstract class DiffSurface {
   static readonly style = {
@@ -34,6 +36,7 @@ export abstract class DiffSurface {
     `${SELECTED_ROWS}{--mix-selection-light:91%;--mix-selection-dark:87%}` +
     `${SELECTED_NUMBERS}{--mix-selection-light:84%;--mix-selection-dark:74%}` +
     `${CODE_BLOCKS}{padding-top:0}` +
+    `${DELETION_BARS}{background-image:none;background-color:var(--diffs-deletion-base)}` +
     `${ANNOTATION_ROWS}{--diffs-annotation-bg:var(--diffs-bg)}` +
     `@media (pointer:fine){${HOVERED_ROWS}{${HOVER_TINT}}}`
 

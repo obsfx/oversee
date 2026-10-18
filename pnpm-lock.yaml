@@ -6,6 +6,7 @@ settings:
 
 patchedDependencies:
   '@pierre/diffs@1.5.2': 0741749f62eacf2e5626e659e345d192b3e629c2942b611f4e12a90f6562abcb
+  '@pierre/trees@1.0.0-beta.6': 968c962e153a7263acfb24855c01d313ab3782ea6a9367e2c920f6573e779ddb
 
 importers:
 
@@ -19,7 +20,7 @@ importers:
         version: 1.5.2(patch_hash=0741749f62eacf2e5626e659e345d192b3e629c2942b611f4e12a90f6562abcb)(@shikijs/themes@4.5.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@pierre/trees':
         specifier: 1.0.0-beta.6
-        version: 1.0.0-beta.6(@pierre/theme@2.0.0)(@shikijs/themes@4.5.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(shiki@4.5.0)
+        version: 1.0.0-beta.6(patch_hash=968c962e153a7263acfb24855c01d313ab3782ea6a9367e2c920f6573e779ddb)(@pierre/theme@2.0.0)(@shikijs/themes@4.5.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(shiki@4.5.0)
       '@tailwindcss/vite':
         specifier: 4.3.3
         version: 4.3.3(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0))
@@ -3468,7 +3469,7 @@ snapshots:
       react-dom: 19.3.0(react@19.3.0)
       shiki: 4.5.0
 
-  '@pierre/trees@1.0.0-beta.6(@pierre/theme@2.0.0)(@shikijs/themes@4.5.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(shiki@4.5.0)':
+  '@pierre/trees@1.0.0-beta.6(patch_hash=968c962e153a7263acfb24855c01d313ab3782ea6a9367e2c920f6573e779ddb)(@pierre/theme@2.0.0)(@shikijs/themes@4.5.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(shiki@4.5.0)':
     dependencies:
       '@pierre/theming': 1.0.0(@pierre/theme@2.0.0)(@shikijs/themes@4.5.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(shiki@4.5.0)
       preact: 11.0.0-beta.0
