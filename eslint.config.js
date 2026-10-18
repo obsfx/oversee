@@ -7,7 +7,11 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 import prettier from 'eslint-config-prettier/flat'
 import storybook from 'eslint-plugin-storybook'
 
-const FUNCTION_TYPES = new Set(['FunctionDeclaration', 'FunctionExpression', 'ArrowFunctionExpression'])
+const FUNCTION_TYPES = new Set([
+  'FunctionDeclaration',
+  'FunctionExpression',
+  'ArrowFunctionExpression',
+])
 const PASCAL_CASE = /^[A-Z][A-Za-z0-9]*$/
 const HOOK_NAME = /^use[A-Z0-9]/
 const CLASS_COMPONENT_BASES = new Set(['Component', 'PureComponent'])
@@ -34,7 +38,8 @@ const oneComponentPerFile = {
     type: 'problem',
     docs: { description: 'Allow at most one React component definition per file' },
     messages: {
-      multiple: "Component '{{name}}' must live in its own file. Only one component definition is allowed per file.",
+      multiple:
+        "Component '{{name}}' must live in its own file. Only one component definition is allowed per file.",
     },
     schema: [],
   },
@@ -74,7 +79,8 @@ const oneHookPerFile = {
     type: 'problem',
     docs: { description: 'Allow at most one custom hook definition per file' },
     messages: {
-      multiple: "Hook '{{name}}' must live in its own file. Only one hook definition is allowed per file.",
+      multiple:
+        "Hook '{{name}}' must live in its own file. Only one hook definition is allowed per file.",
     },
     schema: [],
   },
@@ -118,6 +124,15 @@ const defaultExportRestrictions = [
   },
 ]
 
+const NON_ASCII_MESSAGE =
+  'Non-ASCII characters are not allowed in source text. Use plain ASCII and an icon from react-icons for symbols.'
+
+const nonAsciiRestrictions = [
+  { selector: 'Literal[value=/[^\\x00-\\x7F]/]', message: NON_ASCII_MESSAGE },
+  { selector: 'TemplateElement[value.raw=/[^\\x00-\\x7F]/]', message: NON_ASCII_MESSAGE },
+  { selector: 'JSXText[value=/[^\\x00-\\x7F]/]', message: NON_ASCII_MESSAGE },
+]
+
 export default defineConfig([
   globalIgnores(['dist', 'storybook-static']),
   {
@@ -133,7 +148,12 @@ export default defineConfig([
       globals: globals.browser,
     },
     rules: {
-      'no-restricted-syntax': ['error', inlineAwaitRestriction, ...defaultExportRestrictions],
+      'no-restricted-syntax': [
+        'error',
+        inlineAwaitRestriction,
+        ...defaultExportRestrictions,
+        ...nonAsciiRestrictions,
+      ],
       'oversee/one-component-per-file': 'error',
       'oversee/one-hook-per-file': 'error',
     },
@@ -142,8 +162,16 @@ export default defineConfig([
   {
     files: ['*.config.{js,ts}', '**/*.stories.{ts,tsx}', '.storybook/**'],
     rules: {
-      'no-restricted-syntax': ['error', inlineAwaitRestriction],
+      'no-restricted-syntax': ['error', inlineAwaitRestriction, ...nonAsciiRestrictions],
     },
   },
   prettier,
+  {
+    files: ['**/*.{ts,tsx}'],
+    rules: {
+      curly: ['error', 'all'],
+      'arrow-body-style': ['error', 'always'],
+      '@typescript-eslint/consistent-type-definitions': ['error', 'interface'],
+    },
+  },
 ])

@@ -77,6 +77,15 @@ Let me explain the **core components of the app, the sections are color coded**.
 - while styling components with tailwind, if we have long classnames or conditional classnames, utilize `/Users/omercanbalandi/studio-2/oversee/src/c.ts`
 - always use `trekker`. trekker is the source of our persistent work. create epics and tasks for a certain achievement.
 - the `testing` phase always a seperate task or epic from the main `tasks`. always cleanup and close the open tasks or epics when it is completed.
+- do not use `fallow` in this project.
+- state management is `zustand`. stores live in `./src/store`.
+- react contexts live in `./src/context/<name>/`, together with the hook that consumes them and their provider.
+- prefer `interface` over `type` for object shapes.
+- if https://usehooks.com/ (`@uidotdev/usehooks`) already provides a hook, use it instead of writing one from scratch.
+- never add hard limits to lists to protect rendering performance. render everything and use virtual lists (`@tanstack/react-virtual`) when needed.
+- never use unicode symbols such as `…`, `·`, `→` in source text. use plain text, or an icon from `react-icons` for symbols.
+- use `plur` for count based pluralization.
+- always use curly braces for `if` bodies and arrow function bodies.
 
 ### overall folder structure
 - `./src/primitives`: it contains the tailwind style components, no logic. tailwind classes could be long enough to populate whole screen. so we gonna `hide` that styled components with tailwind that has very long class names so we are not polluting the component body with that long class names
@@ -85,5 +94,7 @@ Let me explain the **core components of the app, the sections are color coded**.
 - `./src/store`: our state management will be placed there
 - `./src/store`: a layout consist of multiple components and defines an overall `page`. they will be located here
 - `./src/hooks`: custom hooks handles the logic of the components. these stuff will be using logic defined in `./src/lib`
+- `./src/context`: react contexts, each in its own folder with its consumer hook and provider
+- `./src/stories`: every story lives here, mirroring the source folders (`primitives`, `components`, `layouts`). never place stories next to components. every primitive and component gets a story so the project has a record of what exists
 
 
