@@ -33,6 +33,11 @@ export abstract class ComparisonRules {
     return { source: ComparisonRules.branch(current), target }
   }
 
+  static key({ source, target }: Comparison) {
+    const sourceKey = source.kind === 'branch' ? `branch:${source.name}` : 'uncommitted'
+    return `${sourceKey}..${target}`
+  }
+
   static sourceLabel(source: ComparisonSource) {
     return source.kind === 'uncommitted' ? ComparisonRules.uncommittedLabel : source.name
   }

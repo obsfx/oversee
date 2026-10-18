@@ -1,8 +1,11 @@
 import type { BranchList } from '../../lib/branch-gateway.ts'
+import type { ChangeSet } from '../../lib/change-set.ts'
 import type { ReviewComment } from '../../lib/comment-gateway.ts'
 import { InMemoryCommentGateway } from '../../lib/in-memory-comment-gateway.ts'
 import { Services } from '../../lib/services.ts'
 import { StaticBranchGateway } from '../../lib/static-branch-gateway.ts'
+import { StaticChangeSetGateway } from '../../lib/static-change-set-gateway.ts'
+import { changeSet } from './change-set-fixture.ts'
 
 export const branchList: BranchList = {
   current: 'feat/upgrade-deprecated-versions',
@@ -41,6 +44,7 @@ export const reviewComments: ReviewComment[] = [
 interface StoryServicesOptions {
   branches?: () => Promise<BranchList>
   comments?: ReviewComment[]
+  changeSets?: () => Promise<ChangeSet>
 }
 
 export const createStoryServices = ({
@@ -48,15 +52,19 @@ export const createStoryServices = ({
     return Promise.resolve(branchList)
   },
   comments = reviewComments,
+  changeSets = () => {
+    return Promise.resolve(changeSet)
+  },
 }: StoryServicesOptions = {}) => {
   return new Services({
     branches: new StaticBranchGateway(branches),
     comments: new InMemoryCommentGateway(comments),
+    changeSets: new StaticChangeSetGateway(changeSets),
   })
 }
 
-export const neverResolves = () => {
-  return new Promise<BranchList>(() => {
+export const neverResolves = <T>() => {
+  return new Promise<T>(() => {
     return undefined
   })
 }

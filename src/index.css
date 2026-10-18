@@ -13,6 +13,23 @@
   --color-fg-muted: #6b7280;
   --color-fg-faint: #9ca3af;
   --color-danger: #dc2626;
+  --color-accent: #7c5cc4;
+  --color-accent-subtle: #efeafb;
+  --color-accent-strong: #5b3fa6;
+  --color-sidebar: #eef0f3;
+  --color-sidebar-hover: #e4e7eb;
+  --color-sidebar-selected: #dde1e6;
+  --color-sidebar-fg: #24292f;
+  --color-sidebar-muted: #57606a;
+  --color-sidebar-guide: #d0d7de;
+  --color-reviewed: #4a8a6a;
+  --color-reviewed-soft: #5f9c79;
+  --color-status-added: #4f8a68;
+  --color-status-modified: #a07a2c;
+  --color-status-deleted: #b25d57;
+  --color-status-renamed: #7a6aa8;
+  --color-status-untracked: #5f8590;
+  --color-folder: #b08a4a;
   --font-ui: 'Google Sans Flex', system-ui, sans-serif;
   --font-editor: 'JetBrains Mono', ui-monospace, monospace;
 }
@@ -28,6 +45,23 @@
   --color-fg-muted: #8b949e;
   --color-fg-faint: #6e7681;
   --color-danger: #f85149;
+  --color-accent: #a991e8;
+  --color-accent-subtle: #2a2140;
+  --color-accent-strong: #c9b8f5;
+  --color-sidebar: #0a0d12;
+  --color-sidebar-hover: #151a21;
+  --color-sidebar-selected: #1f2731;
+  --color-sidebar-fg: #d1d7e0;
+  --color-sidebar-muted: #9198a1;
+  --color-sidebar-guide: #2d333b;
+  --color-reviewed: #6fae8c;
+  --color-reviewed-soft: #86c0a0;
+  --color-status-added: #7fb896;
+  --color-status-modified: #cfa75e;
+  --color-status-deleted: #d98c86;
+  --color-status-renamed: #a99ad6;
+  --color-status-untracked: #8db1bb;
+  --color-folder: #c9a467;
 }
 
 body {
