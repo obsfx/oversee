@@ -4,7 +4,7 @@ export function ResizeHandle() {
   return (
     <Separator
       className={
-        'w-px bg-line outline-none hover:bg-fg-faint focus-visible:bg-accent data-[separator=active]:bg-accent'
+        'w-1.5 shrink-0 border-r border-line bg-sidebar transition-colors outline-none hover:border-fg-faint focus-visible:border-accent data-[separator=active]:border-accent'
       }
     />
   )

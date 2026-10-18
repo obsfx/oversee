@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Group, Panel } from 'react-resizable-panels'
+import { PanelLayout } from '../../lib/panel-layout.ts'
 import { ResizeHandle } from '../../primitives/resize-handle.tsx'
 
 const meta = {
@@ -8,7 +9,7 @@ const meta = {
   render: () => {
     return (
       <div className={'h-40 border border-line text-xs'}>
-        <Group orientation={'horizontal'}>
+        <Group orientation={'horizontal'} resizeTargetMinimumSize={PanelLayout.resizeTarget}>
           <Panel defaultSize={'30%'} minSize={'20%'} className={'bg-sidebar p-2'}>
             Drag the handle
           </Panel>

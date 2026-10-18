@@ -1,5 +1,6 @@
 import { Group, Panel, useDefaultLayout } from 'react-resizable-panels'
 import { Sidebar } from '../components/sidebar/sidebar.tsx'
+import { PanelLayout } from '../lib/panel-layout.ts'
 import { ResizeHandle } from '../primitives/resize-handle.tsx'
 import { useLayoutStore } from '../store/layout-store.ts'
 import { ReviewMain } from './review-main.tsx'
@@ -20,8 +21,9 @@ export function ReviewLayout() {
           orientation={'horizontal'}
           defaultLayout={defaultLayout}
           onLayoutChanged={onLayoutChanged}
+          resizeTargetMinimumSize={PanelLayout.resizeTarget}
         >
-          <Panel id={'sidebar'} defaultSize={'280px'} minSize={'220px'} maxSize={'50%'}>
+          <Panel id={'sidebar'} {...PanelLayout.sidebar}>
             <Sidebar />
           </Panel>
           <ResizeHandle />
