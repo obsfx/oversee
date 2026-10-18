@@ -24,7 +24,7 @@ export function NumericSettingInput({
 
   return (
     <SettingRow label={label} error={error}>
-      <InputFrame invalid={!isValid} suffix={unit}>
+      <InputFrame invalid={!isValid} suffix={unit} className={'w-36'}>
         <BareInput
           value={draft}
           inputMode={'decimal'}
@@ -32,7 +32,7 @@ export function NumericSettingInput({
           aria-invalid={!isValid}
           className={'tabular-nums'}
           onChange={(event) => {
-            return change(event.target.value)
+            change(event.target.value)
           }}
           onBlur={revertIfInvalid}
           onKeyDown={(event) => {

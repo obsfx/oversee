@@ -18,8 +18,8 @@ const googleFonts = (): Plugin => {
       }
       const { APIv2 } = await import('google-font-metadata')
       const fonts = Object.values(APIv2)
-        .map(({ family, category }) => {
-          return { family, category }
+        .map(({ family, category, weights }) => {
+          return { family, category, weights }
         })
         .sort((a, b) => {
           return a.family.localeCompare(b.family)

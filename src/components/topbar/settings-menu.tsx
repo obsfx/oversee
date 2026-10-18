@@ -1,70 +1,34 @@
 import { Popover } from '@base-ui/react/popover'
+import type { ComponentType } from 'react'
 import { VscSettingsGear } from 'react-icons/vsc'
-import { GoogleFontCatalog } from '../../lib/google-font-catalog.ts'
-import { SettingsSchema } from '../../lib/settings-schema.ts'
+import {
+  useSettingsMenu,
+  type SettingsView,
+  type SettingsViewProps,
+} from '../../hooks/use-settings-menu.ts'
 import { IconButton } from '../../primitives/icon-button.tsx'
 import { PopoverSurface } from '../../primitives/popover-surface.tsx'
-import { SettingRow } from '../../primitives/setting-row.tsx'
-import { useSettingsStore } from '../../store/settings-store.ts'
-import { FontPicker } from './font-picker.tsx'
-import { NumericSettingInput } from './numeric-setting-input.tsx'
-import { ThemeToggle } from './theme-toggle.tsx'
+import { EditorSettings } from './editor-settings.tsx'
+import { InterfaceSettings } from './interface-settings.tsx'
+import { SettingsOverview } from './settings-overview.tsx'
+
+const SETTINGS_VIEWS: Record<SettingsView, ComponentType<SettingsViewProps>> = {
+  overview: SettingsOverview,
+  interface: InterfaceSettings,
+  editor: EditorSettings,
+}
 
 export function SettingsMenu() {
-  const settings = useSettingsStore()
-  const { update } = settings
+  const { view, navigate, handleOpenChange } = useSettingsMenu()
+  const ActiveView = SETTINGS_VIEWS[view]
 
   return (
-    <Popover.Root>
+    <Popover.Root onOpenChange={handleOpenChange}>
       <Popover.Trigger render={<IconButton />} title={'Settings'} aria-label={'Settings'}>
         <VscSettingsGear />
       </Popover.Trigger>
-      <PopoverSurface align={'end'} className={'flex w-64 flex-col gap-2 p-2'}>
-        <SettingRow label={'Theme'}>
-          <ThemeToggle
-            value={settings.theme}
-            onChange={(theme) => {
-              return update({ theme })
-            }}
-          />
-        </SettingRow>
-        <SettingRow label={'UI font'}>
-          <FontPicker
-            label={'UI font'}
-            value={settings.uiFont}
-            families={GoogleFontCatalog.uiFamilies}
-            onChange={(uiFont) => {
-              return update({ uiFont })
-            }}
-          />
-        </SettingRow>
-        <SettingRow label={'Editor font'}>
-          <FontPicker
-            label={'Editor font'}
-            value={settings.editorFont}
-            families={GoogleFontCatalog.editorFamilies}
-            onChange={(editorFont) => {
-              return update({ editorFont })
-            }}
-          />
-        </SettingRow>
-        <NumericSettingInput
-          label={'Font size'}
-          unit={'px'}
-          range={SettingsSchema.fontSizeRange}
-          value={settings.editorFontSize}
-          onChange={(editorFontSize) => {
-            return update({ editorFontSize })
-          }}
-        />
-        <NumericSettingInput
-          label={'Line height'}
-          range={SettingsSchema.lineHeightRange}
-          value={settings.editorLineHeight}
-          onChange={(editorLineHeight) => {
-            return update({ editorLineHeight })
-          }}
-        />
+      <PopoverSurface align={'end'} className={'flex w-72 flex-col gap-2 p-2'}>
+        <ActiveView navigate={navigate} />
       </PopoverSurface>
     </Popover.Root>
   )

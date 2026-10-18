@@ -12,7 +12,9 @@ export const useSettingsStore = create<SettingsState>()(
       return {
         ...SettingsSchema.defaults,
         update: (patch) => {
-          set(patch)
+          set((state) => {
+            return SettingsSchema.parse({ ...state, ...patch })
+          })
         },
       }
     },

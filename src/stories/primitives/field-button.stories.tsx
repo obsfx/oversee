@@ -6,6 +6,7 @@ const meta = {
   title: 'Primitives/FieldButton',
   component: FieldButton,
   args: {
+    className: 'w-36',
     children: (
       <>
         <span className={'truncate'}>JetBrains Mono</span>

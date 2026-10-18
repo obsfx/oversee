@@ -10,7 +10,7 @@ const meta = {
     label: 'Font size',
     unit: 'px',
     value: 12,
-    range: SettingsSchema.fontSizeRange,
+    range: SettingsSchema.editorFontSizeRange,
     onChange: fn(),
   },
   argTypes: { range: { table: { disable: true } } },

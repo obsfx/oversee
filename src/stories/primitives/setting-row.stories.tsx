@@ -9,7 +9,7 @@ const meta = {
   args: {
     label: 'Font size',
     children: (
-      <InputFrame invalid={false} suffix={'px'}>
+      <InputFrame invalid={false} suffix={'px'} className={'w-36'}>
         <BareInput defaultValue={'12'} />
       </InputFrame>
     ),
@@ -35,7 +35,7 @@ export const WithError: Story = {
   args: {
     error: 'Enter a value between 8 and 32',
     children: (
-      <InputFrame invalid suffix={'px'}>
+      <InputFrame invalid suffix={'px'} className={'w-36'}>
         <BareInput defaultValue={'50'} />
       </InputFrame>
     ),

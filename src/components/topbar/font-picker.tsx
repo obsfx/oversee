@@ -33,7 +33,7 @@ export function FontPicker({ label, value, families, onChange }: FontPickerProps
       }}
     >
       <Combobox.Trigger
-        render={<FieldButton />}
+        render={<FieldButton className={'w-36'} />}
         aria-label={label}
         style={{ fontFamily: `'${value}'` }}
       >

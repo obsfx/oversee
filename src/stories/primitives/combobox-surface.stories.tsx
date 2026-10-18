@@ -16,7 +16,7 @@ const meta = {
     return (
       <div className={'flex justify-end'}>
         <Combobox.Root items={fonts} defaultValue={'JetBrains Mono'} defaultOpen>
-          <Combobox.Trigger render={<FieldButton />} aria-label={args.label}>
+          <Combobox.Trigger render={<FieldButton className={'w-36'} />} aria-label={args.label}>
             <Combobox.Value />
           </Combobox.Trigger>
           <ComboboxSurface label={args.label}>

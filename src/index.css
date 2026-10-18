@@ -69,4 +69,12 @@ body {
   background: var(--color-surface);
   color: var(--color-fg);
   font-family: var(--font-ui);
+  font-weight: var(--ui-font-weight, 400);
+}
+
+@utility editor-text {
+  font-family: var(--font-editor);
+  font-weight: var(--editor-font-weight, 400);
+  font-size: var(--editor-font-size, 12px);
+  line-height: var(--editor-line-height, 1.6);
 }
