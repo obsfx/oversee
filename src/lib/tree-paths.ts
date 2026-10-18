@@ -20,4 +20,9 @@ export abstract class TreePaths {
     })
     return files.length === 1 ? files[0] : null
   }
+
+  static split(path: string) {
+    const slash = path.lastIndexOf('/')
+    return { directory: path.slice(0, slash + 1), name: path.slice(slash + 1) }
+  }
 }

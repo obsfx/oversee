@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { LuChevronsDownUp, LuChevronsUpDown } from 'react-icons/lu'
+import { LuChevronsDownUp } from 'react-icons/lu'
 import { BareInput } from '../../primitives/bare-input.tsx'
 import { Button } from '../../primitives/button.tsx'
 import { FilterField } from '../../primitives/filter-field.tsx'
@@ -23,9 +23,6 @@ const meta = {
         <FilterField>
           <BareInput placeholder={'Filter files'} className={'text-xs'} />
         </FilterField>
-        <Button variant={'ghost'} icon aria-label={'Expand all'}>
-          <LuChevronsUpDown className={'size-4'} />
-        </Button>
         <Button variant={'ghost'} icon aria-label={'Collapse all'}>
           <LuChevronsDownUp className={'size-4'} />
         </Button>

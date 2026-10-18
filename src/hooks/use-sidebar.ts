@@ -10,6 +10,7 @@ export const useSidebar = () => {
     return review.reviewed
   })
   const [hideReviewed, setHideReviewed] = useState(false)
+  const [allExpanded, setAllExpanded] = useState(true)
   const changes = state.status === 'ready' ? state.data.changes : []
   const changedPaths = changes
     .map((change) => {
@@ -28,6 +29,11 @@ export const useSidebar = () => {
     setHideReviewed(!hideReviewed)
   }
 
+  const toggleAllExpanded = () => {
+    tree.setExpanded(!allExpanded)
+    setAllExpanded(!allExpanded)
+  }
+
   return {
     state,
     retry,
@@ -35,6 +41,8 @@ export const useSidebar = () => {
     progress,
     hideReviewed,
     toggleHideReviewed,
+    allExpanded,
+    toggleAllExpanded,
     isEmpty: changedPaths.length === 0,
   }
 }

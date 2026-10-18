@@ -13,7 +13,18 @@ import { SidebarLoading } from './sidebar-loading.tsx'
 import { TreeFilter } from './tree-filter.tsx'
 
 export function Sidebar() {
-  const { state, retry, tree, progress, hideReviewed, toggleHideReviewed, isEmpty } = useSidebar()
+  const {
+    state,
+    retry,
+    tree,
+    progress,
+    hideReviewed,
+    toggleHideReviewed,
+    allExpanded,
+    toggleAllExpanded,
+    isEmpty,
+  } = useSidebar()
+  const expansionLabel = allExpanded ? 'Collapse all' : 'Expand all'
   const visibilityLabel = hideReviewed ? 'Show reviewed files' : 'Hide reviewed files'
   const hasFiles = state.status === 'ready' && !isEmpty
 
@@ -41,24 +52,15 @@ export function Sidebar() {
             <Button
               variant={'ghost'}
               icon
-              title={'Expand all'}
-              aria-label={'Expand all'}
-              onClick={() => {
-                tree.setExpanded(true)
-              }}
+              title={expansionLabel}
+              aria-label={expansionLabel}
+              onClick={toggleAllExpanded}
             >
-              <LuChevronsUpDown className={'size-4'} />
-            </Button>
-            <Button
-              variant={'ghost'}
-              icon
-              title={'Collapse all'}
-              aria-label={'Collapse all'}
-              onClick={() => {
-                tree.setExpanded(false)
-              }}
-            >
-              <LuChevronsDownUp className={'size-4'} />
+              {allExpanded ? (
+                <LuChevronsDownUp className={'size-4'} />
+              ) : (
+                <LuChevronsUpDown className={'size-4'} />
+              )}
             </Button>
           </SidebarToolbar>
         </>

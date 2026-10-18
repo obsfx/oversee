@@ -8,6 +8,10 @@ export class ApiError extends Error {
     this.path = path
     this.status = status
   }
+
+  static unexpectedShape(path: string) {
+    return new ApiError(path, 'unexpected response shape')
+  }
 }
 
 export class ApiClient {
@@ -15,6 +19,10 @@ export class ApiClient {
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl
+  }
+
+  static fieldsOf(body: unknown) {
+    return (body ?? {}) as Record<string, unknown>
   }
 
   async get<T>(path: string, parse: (body: unknown) => T) {

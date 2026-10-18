@@ -1,3 +1,5 @@
+import { Ratio } from './ratio.ts'
+
 export interface ReviewProgress {
   reviewed: number
   total: number
@@ -9,7 +11,10 @@ export abstract class ReviewProgressRules {
     const reviewedCount = paths.filter((path) => {
       return reviewed.has(path)
     }).length
-    const percent = paths.length === 0 ? 0 : (reviewedCount / paths.length) * 100
-    return { reviewed: reviewedCount, total: paths.length, percent }
+    return {
+      reviewed: reviewedCount,
+      total: paths.length,
+      percent: Ratio.percent(reviewedCount, paths.length),
+    }
   }
 }

@@ -3,8 +3,6 @@ import type { ChangeSet } from '../../lib/change-set.ts'
 import type { ReviewComment } from '../../lib/comment-gateway.ts'
 import { InMemoryCommentGateway } from '../../lib/in-memory-comment-gateway.ts'
 import { Services } from '../../lib/services.ts'
-import { StaticBranchGateway } from '../../lib/static-branch-gateway.ts'
-import { StaticChangeSetGateway } from '../../lib/static-change-set-gateway.ts'
 import { changeSet } from './change-set-fixture.ts'
 
 export const branchList: BranchList = {
@@ -57,9 +55,9 @@ export const createStoryServices = ({
   },
 }: StoryServicesOptions = {}) => {
   return new Services({
-    branches: new StaticBranchGateway(branches),
+    branches: { list: branches },
     comments: new InMemoryCommentGateway(comments),
-    changeSets: new StaticChangeSetGateway(changeSets),
+    changeSets: { load: changeSets },
   })
 }
 

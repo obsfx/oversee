@@ -25,3 +25,11 @@ export const WithCount: Story = {
     ),
   },
 }
+
+export const Pressed: Story = {
+  args: { 'aria-pressed': true },
+}
+
+export const Disabled: Story = {
+  args: { disabled: true },
+}

@@ -1,17 +1,17 @@
-import { ApiError, type ApiClient } from './api-client.ts'
+import { ApiClient, ApiError } from './api-client.ts'
 import type { BranchGateway, BranchList } from './branch-gateway.ts'
 
 const PATH = '/get-branches'
 
 const parseBranchList = (body: unknown): BranchList => {
-  const { branches, current } = (body ?? {}) as Record<string, unknown>
+  const { branches, current } = ApiClient.fieldsOf(body)
   const isStringList =
     Array.isArray(branches) &&
     branches.every((branch) => {
       return typeof branch === 'string'
     })
   if (!isStringList || typeof current !== 'string') {
-    throw new ApiError(PATH, 'unexpected response shape')
+    throw ApiError.unexpectedShape(PATH)
   }
   return { branches, current }
 }
