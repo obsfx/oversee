@@ -22,4 +22,8 @@ export class ResourceCache<K, T> {
     this.resources.set(id, resource)
     return resource
   }
+
+  refresh(key: K) {
+    return this.resources.get(this.keyOf(key))?.refresh()
+  }
 }

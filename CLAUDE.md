@@ -1,115 +1,187 @@
+# oversee
 
-### introduction
+This file contains the information and direction for the application we call `oversee`.
 
-This file contains the information and direction about the application we called `oversee`.
+- **oversee** is a **diff viewer** and **line annotation** tool for **git repositories**.
+- it displays the **diff** gathered with **git**, so it only works inside git repositories.
+- it ships as a `go` **CLI** with an embedded browser **UI shell**:
+    - **humans** review code in the UI shell.
+    - **ai agents** use the CLI to pick up reviews, update their status and reply to comments.
+    - in the end, our feedback flows between reviewers and agents through this app.
 
-- **oversee**
-    - is a **diff-viewer** and **line-annotation** tool.
-    - works on **browser**.
-- it displays the **diff** gathered using **git**. therefore this app only going to work on **git repositories**.
-- currently we are focusing on the **full frontend functionality off the app**. this project of course needs a backend to gather **the git diff** and the **file tree** of the git repository. but we are **not gonna put a lot of effort to the backend part at this stage**. we simply put a **mockup backend** to achieve the **functionality of the frontend** but we gonna do the bare minimum on the backend. you can simply use the `../oversee-proto-backend` for it. the backend part is another topic and we are gonna do it in another time. so focus on **frontend**
+## architecture
 
-### how the mock-up back-end going to work
-- just do the bare minimum, but functionality wise it should contain the core principles we can convert it to a **real** app easily.
-- it just just point to an hard coded directory: `/Users/omercanbalandi/oaks-lab/storyvine/now-api` we gonna use there as a test directory. so we can just get the git diff and file tree from that directory.
-- use a sqlite db for data persistency
+```text
+oversee serve (cwd = workspace, git root = repo)
+  → pick an available port on 127.0.0.1
+    → HTTP mux (localhost hosts only)
+      → GET /        → embedded index.html.gz + injected window.__overseeGlobal
+      → /api/*       → httpapi handler → service → git.Repository | repositories (sqlite)
+      → GET /ws      → ws.Hub
+        → service.EventFeed (PRAGMA data_version check every 100ms on the events table)
+          → broadcast new events to every connected UI
 
-### core component off the app
+oversee review start|close|reply (another process, usually an agent)
+  → cli command → service.ReviewService
+    → TxRunner.Within: domain rule → repositories write (status, reply, notification) → events row
+      → the serve process event feed picks it up → websocket push → UI refreshes, bell count updates
+```
 
-Check the following layout representation: `/Users/omercanbalandi/studio-2/oversee-visual-material/general-layout.png`
+##### go layers
+```text
+transport (httpapi, ws, cli)   decode input, map errors, render DTOs or presenters
+  → service                    orchestrates: validate, read git, run transactions, append events
+    → domain                   entities, value objects and rules as receiver methods. no IO, no json tags
+    → repository               one struct per aggregate over sqlc queries, maps rows to domain, TxRunner
+      → storage/sqlite         open, migrations, generated sqldb code, change detector
+    → git                      Runner executes git, typed outputs parse it, Repository returns domain types
+app                            composition root: workspace, db, repositories, services, http server
+```
+- dependencies point down only. `domain` imports nothing from the project.
+- services declare the small interfaces they consume (`GitReader`, `Transactor`, `ChangeDetector`); repositories and the git repository are concrete structs.
+- every multi-write runs in `TxRunner.Within`, and its events are appended in the same transaction (outbox).
+- the JSON contract lives only in `internal/transport/dto`: HTTP responses, CLI `--json`, event payloads (`dto.EventCodec`) and the websocket envelope. changing it means changing the UI parsers too.
+- errors: `domain.ValidationError` maps to 400, `domain.ErrNotFound`/`ErrNoOpenSession` to 404, session state conflicts to 409, everything else to 500 and a log line.
 
-Let me explain the **core components of the app, the sections are color coded**. So you can match them easily.
+- **HTTP** carries queries and commands. the **websocket** only pushes server events to the UI.
+- every write appends a row to the `events` table in the same transaction. this lets CLI processes reach a running server without knowing its port, and lets a reconnecting UI replay missed events with `?after=<lastEventId>`.
+- `window.__overseeGlobal` holds `baseUrl`, `wsUrl` and `workspace` (folder `name`, `path`, and `repoName` when served from a repo subdirectory). without it (vite dev server, storybook), the UI falls back to `window.location` and `GET /api/workspace`.
 
-##### Sidebar
-- the section will show the **file tree**.
-- `@pierre/trees` will be empowering it. the skill can be installable `npx skills add https://github.com/pierrecomputer/pierre --skill trees` for better understanding of the tool.
-- **working principle** is
-    - on initial start a non blocking API request is made to the backend.
-    - backend will run the necessary bash or git commands to gather the file tree.
-    - we should properly display the `MODIFIED`, `REMOVED`, `ADDED` markers on the file item.
-    - we should be able to display additional custom icons on the left side of the file item. a possible case for it would be like, our app is gonna have `mark as reviewed` function. and if a file is `mark as reviewed` we are going to need to show a custom icon, possibly like a `greencheckmark`.
-- sidebar should have a **resizable width**. we need to have an handle on the right edge of the sidebar, so we can adjust its width.
-- sidebar will be `expandable/collapsible`, we are going to have a toggle button in the **topbar**.
-- when we select an item from the file tree, we should see that file in the **diff-view**.
-- this section needs a loader component that we show while we are gathering the file tree information from the backend.
+## CLI interface
 
-##### Topbar
-- it contains the button to toggle the **sidebar**
-    - it will be icon button, it should properly reflect its `expaded or collapsed` state by showing the proper icon.
-- it contains the **branch selection** which means the current and target branch selection and option for viewing uncommitted changes.
-    - the **dropdown** component could be a native component or a component built around some UI library, we will discuss this during the development.
-- a settings button and its menu
-    - this settings menu provides these settings
-        - theme selection, light or dark
-        - font selection for ui and editor, powered by google fonts
-- a button and popover menu that shows the comment count that user put there
-    - it should show the count on the button
-    - when we click on it it should open the popover
-        - and inside of the popover we should see the list of the comments
-        - when we click on one of the comments, we should navigate the file we put that comment and we also need to scroll that position
+- `oversee init`: creates the `.oversee` directory inside the `cwd` and the `sqlite` database in it. it also adds `.oversee/` to `.git/info/exclude`, so it never shows up as an untracked change.
+- `oversee serve`: picks an available port and serves the UI shell and the backend on the same address.
+    - `--port` fixes the port, `--open` opens the browser, `--dev` accepts websocket connections from local dev servers.
+- `oversee review list`: lists finished review sessions, newest first, paginated with `--page` and `--limit`.
+- `oversee review get <session-id>`: shows all details of a session: comments, saved code lines and replies.
+- `oversee review start <session-id>`: sets the session status to `in progress`.
+- `oversee review close <session-id>`: sets the session status to `closed`.
+- `oversee review reply <comment-id>`: when a comment is a question or not something to fix, the agent replies to it with `--body` or stdin. `--author` defaults to `agent`.
+- every command accepts `-C <dir>` to run as if started in that directory. `list` and `get` accept `--json`.
 
-##### Toolbar
-- it contains a section that
-    - `[prevButton] {currentFileNumber} / {totalFileNumber} [nextButton]` so something like `[<] 4 / 72 [>]`
-- side-by-side and unified view toggle
-- total difference count in that file
-- `expand/collapse unchanged sections` button
+## UI shell
 
-##### Diff viewer
-- empowered with `@pierre/diffs`, the skill can be installable `npx skills add https://github.com/pierrecomputer/pierre --skill diffs` for better understand of the tool
-- we will show `1 file at a time`
-- we should be able to `annotate the lines, line selections`
-- when we added a line annotation, it will send to the backend and saved to a database.
-- when we open a file diff, we should be able to see the added comments, that we fetch from the backend.
-- this sections needs a loader component that we show while we are gathering the diff information from the backend.
+Check the layout representation: `/Users/omercanbalandi/studio-2/oversee-visual-material/general-layout.png`. The sections in the image are color coded, so you can match them with the components below.
 
-### review sessions
+##### sidebar
+- shows the **file tree**, powered by `@pierre/trees`. install its skill for a better understanding of the tool: `npx skills add https://github.com/pierrecomputer/pierre --skill trees`.
+- **working principle**
+    - on initial start, a non blocking API request is made to the backend.
+    - the backend runs the necessary git commands to gather the file tree.
+    - file items properly display the `MODIFIED`, `REMOVED` and `ADDED` markers.
+    - file items can display additional custom icons on their left side. for example, a file marked as reviewed shows a green checkmark.
+- the sidebar has a **resizable width**, with a handle on its right edge.
+- the sidebar is **expandable/collapsible** with a toggle button in the **topbar**.
+- selecting an item in the file tree shows that file in the **diff viewer**.
+- shows a loader while the file tree is loading.
+
+##### topbar
+- a button that toggles the **sidebar**. it is an icon button that reflects the `expanded` or `collapsed` state with the proper icon.
+- the **workspace breadcrumb**: the served folder name (`repo / folder` inside a subdirectory), then a slash, then the branch selection. the full path shows in a tooltip. the document title is `<folder> - oversee`.
+- the **branch selection**: source and target branch, plus an option for viewing uncommitted changes.
+    - the initial selection is `Uncommitted changes` against `main` (falling back to `master`, `develop`, then the current branch).
+    - uncommitted changes always diff the working tree against `HEAD`. the target only matters for branch comparisons, where the diff runs from the merge base (or the target itself when the branches share no history).
+- a `finish review` button, see **review sessions**.
+- a **comments** button with a popover. it shows the comment count, see **review sessions**.
+- a **notifications** button with a popover, see **notifications**.
+- a settings button and its menu:
+    - theme selection, light or dark.
+    - font selection for the UI and the editor, powered by google fonts.
+
+##### toolbar
+- file navigation: `[prevButton] {currentFileNumber} / {totalFileNumber} [nextButton]`, for example `[<] 4 / 72 [>]`.
+- side-by-side and unified view toggle.
+- total difference count of the file.
+- `expand/collapse unchanged sections` button.
+
+##### diff viewer
+- powered by `@pierre/diffs`. install its skill for a better understanding of the tool: `npx skills add https://github.com/pierrecomputer/pierre --skill diffs`.
+- shows `1 file at a time`.
+- lines and line selections can be annotated. an annotation is sent to the backend and saved to the database.
+- opening a file diff shows its comments, fetched from the backend.
+- shows a loader while the diff is loading.
+
+## review sessions
 
 ##### purpose
 - a **review session** is one round of review: the set of `comments` a reviewer left on a comparison (source branch vs target branch), frozen with the code they pointed at.
 - the code changes after a review, so a finished session keeps its own copy of the commented lines. it never depends on the current diff to make sense.
-- sessions are scoped to a **comparison**. switching the branch selection shows that comparison's active comments and sessions only.
+- sessions are scoped to a **comparison**. switching the branch selection shows only that comparison's active comments and sessions.
 
 ##### lifecycle
 - there is at most **one open session** per comparison. there is no explicit "start" action: the first comment on a comparison creates the open session.
 - while the open session has comments, a `finish review` button sits left of the `comments` button in the **topbar**.
-- `finish review` asks for confirmation first (anchored popover with the comment count) so an accidental click can not end the session.
+- `finish review` asks for confirmation first (anchored popover with the comment count), so an accidental click can not end the session.
 - finishing closes the session: its comments leave the **diff view** and move to the session history. the next comment starts a new session.
 - finished sessions are **never** put back into the diff view, because the lines may have moved or changed since.
 
 ##### statuses
 - `created`: finished by the reviewer, nobody picked it up yet. every finished session starts here.
-- `in progress`: someone is addressing the comments.
-- `closed`: the comments are addressed and the review is done.
-- status is **read-only** in this app. another role changes it through the backend, our UI only displays it (leading status icon on each session row).
+- `in progress`: someone is addressing the comments (`oversee review start`).
+- `closed`: the comments are addressed and the review is done (`oversee review close`).
+- status is **read-only** in the UI. agents change it through the CLI, the UI only displays it (leading status icon on each session row).
+
+##### replies
+- agents reply to comments with `oversee review reply`. replies show as an always visible thread under their comment in the session detail.
 
 ##### comments popover
 - the topbar `comments` button opens a tabbed popover:
     - `Current`: comments of the open session. clicking one navigates to its file and scrolls to its line.
     - `Sessions`: finished sessions of the current comparison, newest first. each row shows the status icon, finish date, branch and comment count.
-- selecting a session drills into it inside the same popover (with a back button): each comment shows its file, line range, the saved code lines with **syntax highlighting** (same theme as the diff view) and the comment text.
+- selecting a session drills into it inside the same popover (with a back button). each comment shows its file, line range, the saved code lines with **syntax highlighting** (same theme as the diff view), the comment text and its replies.
 
 ##### how it works
-- `ReviewSessionGateway` (http and in-memory for stories) and the `ReviewSessions` class own the data. finishing updates the session list and clears the active comments.
-- `useFinishReview`, `useReviewSessions`, `useCommentsMenu` and `useSnippetHighlight` drive the UI. `SnippetHighlighter` tokenizes saved lines with the shared `@pierre/diffs` highlighter.
+- `ReviewSessionGateway` (http, and in-memory for stories) and the `ReviewSessions` class own the data. finishing updates the session list and clears the active comments. `ReviewSessions.session(id)` loads a single session from any comparison.
+- `useFinishReview`, `useReviewSessions`, `useReviewSession`, `useCommentsMenu` and `useSnippetHighlight` drive the UI. `SnippetHighlighter` tokenizes saved lines with the shared `@pierre/diffs` highlighter.
 
-### component development decision flow
+## notifications
+
+- agent actions (`review start`, `review close`, `review reply`) create **persisted** notifications with a read state, so things that happened while the UI was closed still show up.
+- the topbar bell shows the unread count. its popover lists notifications newest first, with a `Mark all read` action.
+- clicking a notification marks it read and drills into its review session inside the same popover, even when the session belongs to another comparison.
+- `NotificationGateway` (http and in-memory) and the `Notifications` class own the data. `useNotifications` and `useNotificationsMenu` drive the UI.
+
+##### server events
+- `EventStream` is the push gateway: `SocketEventStream` in the app, `InMemoryEventStream` in stories.
+- `ServerEvents` validates incoming envelopes at the boundary. `ServerEventSync` applies them to the services, mounted by `useServerEventSync` in the review layout.
+- event kinds: `session.finished`, `session.status`, `comment.replied`, `notification.created`, `notifications.read`. session events silently refresh the cached session lists, without showing a loader.
+
+## development
+
+- `pnpm dev:server`: runs the go server on port `4400` against the test repository (`OVERSEE_DEV_REPO`, defaults to `/Users/omercanbalandi/oaks-lab/storyvine/now-api`). run `oversee init` there once.
+- `pnpm dev`: runs vite. it proxies `/api` and `/ws` to the go server (`OVERSEE_DEV_API` overrides the target).
+- `pnpm storybook`: storybook with in-memory gateways.
+- `pnpm build:ui`: builds the UI shell into a single, gzipped `internal/webui/dist/index.html.gz` (vite `embed` mode, `vite-plugin-singlefile`, inlined diff worker).
+- `pnpm build:cli`: `build:ui`, then builds `bin/oversee`.
+- `../oversee-proto-backend` was the node mock backend of the first phase. the go server replaced it.
+
+## distribution
+
+- distributed over npm, like `esbuild`:
+    - `@obsfx/oversee`: a small node shim (`npm/oversee/bin/oversee.js`) with every platform package as an `optionalDependency`.
+    - `@obsfx/oversee-<os>-<arch>`: one go binary each, limited by `os` and `cpu`, so npm only installs the one for the current machine.
+- platforms: `darwin`, `linux` and `win32` on `arm64` and `x64`, built with `CGO_ENABLED=0`.
+- `pnpm build:npm <version>` writes every package into `npm-dist/`.
+- `.github/workflows/release.yml` builds and publishes on `v*` tags. it needs the `NPM_TOKEN` secret.
+
+## component development decision flow
+
 - every major component design should be approved.
-- we follow **storybook first** principle. ever component should take a place in storybook first.
-- we need to create **alternatives for a component**. alternatives should be reviewed and picked by the **developer**. then we should implement it to the storybook first. then we can put it to the app.
-- components should be **screen space efficient**. we should go with **compact** design for every part of the app. we should save the space for the **diff-viewer** because that is the most important part of the app. that is the part we actually read and review the code.
+- we follow the **storybook first** principle. every component takes its place in storybook first.
+- we create **alternatives for a component**. the **developer** reviews and picks one. then we implement it in storybook first, then put it into the app.
+- alternatives are a throwaway interactive playground over a working page, in `./src/alternatives`, deleted after the pick.
+- components should be **screen space efficient**. we go with a **compact** design for every part of the app and save space for the **diff viewer**, because that is the part where we actually read and review the code.
 
-### how we design systems
-- complexity should be placed under **class definitions**
-- if a class only created one time, we need to go with **abstract classes**.
-- if a class can be injected somewhere, we need to with normal classes.
-- we never put the logic and complexity in class components, complexity is placed in custom hooks. and custom hooks will orchestrate the necessary classes to the intended actions.
-- while styling components with tailwind, if we have long classnames or conditional classnames, utilize `/Users/omercanbalandi/studio-2/oversee/src/c.ts`
-- always use `trekker`. trekker is the source of our persistent work. create epics and tasks for a certain achievement.
-- the `testing` phase always a seperate task or epic from the main `tasks`. always cleanup and close the open tasks or epics when it is completed.
-- do not use `fallow` in this project.
+## how we design systems
+
+##### frontend
+- complexity should be placed in **class definitions**.
+- if a class is only created once, use an **abstract class**.
+- if a class can be injected somewhere, use a normal class.
+- we never put logic and complexity in components. complexity is placed in custom hooks, and custom hooks orchestrate the necessary classes for the intended actions.
+- when styling components with tailwind, use `/Users/omercanbalandi/studio-2/oversee/src/c.ts` for long or conditional class names.
 - state management is `zustand`. stores live in `./src/store`.
-- react contexts live in `./src/context/<name>/`, together with the hook that consumes them and their provider.
+- react contexts live in `./src/context/<name>/`, together with their provider and the hook that consumes them.
 - prefer `interface` over `type` for object shapes.
 - if https://usehooks.com/ (`@uidotdev/usehooks`) already provides a hook, use it instead of writing one from scratch.
 - never add hard limits to lists to protect rendering performance. render everything and use virtual lists (`@tanstack/react-virtual`) when needed.
@@ -119,16 +191,46 @@ Let me explain the **core components of the app, the sections are color coded**.
 - prefer plain `if` statements over multi-line ternaries and conditional spreads such as `...(x ? [a] : [])`. build the value, then add to it inside `if` blocks.
 - in `./src/lib`, helper functions live in a class: private static methods of the class that uses them, or a small abstract utility class when shared (for example `ResponseGuards`). no module-level helper functions.
 - use `dayjs` for date and time work.
-- import from the project root with the `@/` alias, for example `@/src/primitives/kbd.tsx`. relative imports (`./`, `../`) are rejected by eslint.
+- import from the project root with the `@/` alias, for example `@/src/primitives/kbd.tsx`. eslint rejects relative imports (`./`, `../`).
+- validate external data (http responses, socket messages, injected globals) at the boundary, in the gateway or parser classes.
 
-### overall folder structure
-- `./src/primitives`: it contains the tailwind style components, no logic. tailwind classes could be long enough to populate whole screen. so we gonna `hide` that styled components with tailwind that has very long class names so we are not polluting the component body with that long class names
-- `./src/components`: component logic that is using `primitives`. this files can contain logic but when it comes to logic remember the rules we defined in **how we design systems**
-- `./src/lib`: our class definitions will be located in there. our custom hooks will use these classes to achieve the functionality
-- `./src/store`: our state management will be placed there
-- `./src/store`: a layout consist of multiple components and defines an overall `page`. they will be located here
-- `./src/hooks`: custom hooks handles the logic of the components. these stuff will be using logic defined in `./src/lib`
-- `./src/context`: react contexts, each in its own folder with its consumer hook and provider
-- `./src/stories`: every story lives here, mirroring the source folders (`primitives`, `components`, `layouts`). never place stories next to components. every primitive and component gets a story so the project has a record of what exists
+##### go
+- use the `use-modern-go` skill (`https://github.com/JetBrains/go-modern-guidelines`) before writing go code.
+- use `encoding/json/v2`, the standard library `uuid` package and stdlib `net/http` routing with method patterns.
+- keep the build `cgo` free: `modernc.org/sqlite` for sqlite, `github.com/coder/websocket` for websockets, `cobra` for the CLI.
+- database access goes through `sqlc`: queries live in `internal/storage/sqlite/query`, generated code in `internal/storage/sqlite/sqldb` (committed, never edited). run `pnpm generate:sql` after changing queries or migrations.
+- schema changes are new files in `internal/storage/sqlite/migrations`, tracked with `PRAGMA user_version`. never edit an existing migration, user databases already ran it.
+- put logic in receiver methods on the type that owns it (domain entities, git output types, presenters), and orchestrate those calls in services.
 
+##### workflow
+- always use `trekker`. trekker is the source of our persistent work. create epics and tasks for each achievement.
+- the `testing` phase is always a separate task or epic from the main tasks. always clean up and close open tasks and epics when they are completed.
+- do not use `fallow` in this project.
 
+## folder structure
+
+##### frontend
+- `./src/primitives`: tailwind styled components, no logic. tailwind class names can get long enough to fill the whole screen, so primitives hide them and keep component bodies clean.
+- `./src/components`: components with logic that use `primitives`. for logic, follow the rules in **how we design systems**.
+- `./src/lib`: class definitions. custom hooks use these classes to achieve the functionality.
+- `./src/hooks`: custom hooks that handle component logic, using the classes in `./src/lib`.
+- `./src/store`: zustand stores.
+- `./src/layouts`: a layout consists of multiple components and defines an overall `page`.
+- `./src/context`: react contexts, each in its own folder with its consumer hook and provider.
+- `./src/stories`: every story lives here, mirroring the source folders (`primitives`, `components`, `layouts`). never place stories next to components. every primitive and component gets a story, so the project has a record of what exists.
+
+##### go
+- `./cmd/oversee`: the binary entry point, calls `transport/cli`.
+- `./internal/app`: composition root, wires workspace, database, repositories, services and the http server.
+- `./internal/domain`: entities, value objects, rules, domain events and errors.
+- `./internal/service`: `DiffService`, `CommentService`, `ReviewService`, `NotificationService`, `EventFeed`.
+- `./internal/repository`: session, comment, reply, notification and event repositories, `TxRunner`.
+- `./internal/storage/sqlite`: database open, migrations, sqlc config, queries and generated `sqldb` code, change detector.
+- `./internal/git`: git runner, output parsers and repository.
+- `./internal/transport/httpapi`: http handlers per resource, error mapping, index page rendering, localhost guard.
+- `./internal/transport/ws`: websocket hub.
+- `./internal/transport/cli`: cobra commands (`init`, `serve`, `review`) and presenters.
+- `./internal/transport/dto`: the JSON contract and its mappings.
+- `./internal/workspace`: resolves the `.oversee` directory and the git root.
+- `./internal/webui`: the embedded UI shell (`dist/index.html.gz`, built by `pnpm build:ui`).
+- `./npm`, `./scripts`: npm shim and package build script.

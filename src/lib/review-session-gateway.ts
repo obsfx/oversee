@@ -7,12 +7,22 @@ export interface SnapshotLine {
   text: string
 }
 
+export interface CommentReply {
+  id: string
+  commentId: string
+  author: string
+  body: string
+  createdAt: number
+}
+
 export interface SessionComment extends ReviewComment {
   lines: SnapshotLine[]
+  replies: CommentReply[]
 }
 
 export interface ReviewSession {
   id: string
+  comparison: Comparison
   status: SessionStatus
   createdAt: number
   finishedAt: number
@@ -21,5 +31,6 @@ export interface ReviewSession {
 
 export interface ReviewSessionGateway {
   list(comparison: Comparison): Promise<ReviewSession[]>
+  get(id: string): Promise<ReviewSession>
   finish(comparison: Comparison): Promise<ReviewSession>
 }

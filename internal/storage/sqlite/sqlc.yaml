@@ -1,0 +1,10 @@
+version: "2"
+sql:
+  - engine: sqlite
+    schema: migrations
+    queries: query
+    gen:
+      go:
+        package: sqldb
+        out: sqldb
+        emit_empty_slices: true

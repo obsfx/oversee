@@ -1,4 +1,5 @@
 import type { ReviewComment } from '@/src/lib/comment-gateway.ts'
+import type { Comparison } from '@/src/lib/comparison-rules.ts'
 import type { InMemoryCommentGateway } from '@/src/lib/in-memory-comment-gateway.ts'
 import type {
   ReviewSession,
@@ -30,7 +31,17 @@ export class InMemoryReviewSessionGateway implements ReviewSessionGateway {
     return Promise.resolve([...this.sessions])
   }
 
-  finish() {
+  get(id: string) {
+    const session = this.sessions.find((candidate) => {
+      return candidate.id === id
+    })
+    if (!session) {
+      return Promise.reject(new Error(`review session ${id} not found`))
+    }
+    return Promise.resolve(session)
+  }
+
+  finish(comparison: Comparison) {
     const taken = this.comments.takeAll()
     if (taken.length === 0) {
       return Promise.reject(new Error('no open review session'))
@@ -39,6 +50,7 @@ export class InMemoryReviewSessionGateway implements ReviewSessionGateway {
     const now = Date.now()
     const session: ReviewSession = {
       id: `memory-session-${this.sequence}`,
+      comparison,
       status: 'created',
       createdAt: Math.min(
         ...taken.map((comment) => {
@@ -47,7 +59,7 @@ export class InMemoryReviewSessionGateway implements ReviewSessionGateway {
       ),
       finishedAt: now,
       comments: taken.map((comment) => {
-        return { ...comment, lines: this.snapshotOf(comment) }
+        return { ...comment, lines: this.snapshotOf(comment), replies: [] }
       }),
     }
     this.sessions = [session, ...this.sessions]

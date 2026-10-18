@@ -11,26 +11,40 @@ import {
   FileDiffRequests,
 } from '@/src/lib/file-diff-gateway.ts'
 import { ResourceCache } from '@/src/lib/resource-cache.ts'
+import type { NotificationGateway } from '@/src/lib/notification-gateway.ts'
+import { Notifications } from '@/src/lib/notifications.ts'
 import { ReviewComments } from '@/src/lib/review-comments.ts'
 import type { ReviewSessionGateway } from '@/src/lib/review-session-gateway.ts'
 import { ReviewSessions } from '@/src/lib/review-sessions.ts'
+import { ServerEventSync } from '@/src/lib/server-event-sync.ts'
+import type { EventStream } from '@/src/lib/server-events.ts'
+import type { WorkspaceGateway, WorkspaceInfo } from '@/src/lib/workspace-gateway.ts'
 
 interface Gateways {
+  workspace: WorkspaceGateway
   branches: BranchGateway
   comments: CommentGateway
   sessions: ReviewSessionGateway
   changeSets: ChangeSetGateway
   fileDiffs: FileDiffGateway
+  notifications: NotificationGateway
+  events: EventStream
 }
 
 export class Services {
+  readonly workspace: AsyncResource<WorkspaceInfo>
   readonly branches: AsyncResource<BranchList>
   readonly comments: ReviewComments
   readonly sessions: ReviewSessions
   readonly changeSets: ComparisonCache<ChangeSet>
   readonly fileDiffs: ResourceCache<FileDiffRequest, FileDiff>
+  readonly notifications: Notifications
+  readonly serverSync: ServerEventSync
 
   constructor(gateways: Gateways) {
+    this.workspace = new AsyncResource(() => {
+      return gateways.workspace.load()
+    })
     this.branches = new AsyncResource(() => {
       return gateways.branches.list()
     })
@@ -42,5 +56,12 @@ export class Services {
     this.fileDiffs = new ResourceCache(FileDiffRequests.key, (request) => {
       return gateways.fileDiffs.load(request)
     })
+    this.notifications = new Notifications(gateways.notifications)
+    this.serverSync = new ServerEventSync(
+      gateways.events,
+      this.sessions,
+      this.comments,
+      this.notifications,
+    )
   }
 }

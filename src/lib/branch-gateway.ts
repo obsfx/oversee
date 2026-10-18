@@ -1,5 +1,6 @@
 export interface BranchList {
   branches: string[]
+  remoteBranches: string[]
   current: string
 }
 

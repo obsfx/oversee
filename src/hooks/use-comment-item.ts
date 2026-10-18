@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useNow } from '@/src/hooks/use-now.ts'
 import { useServices } from '@/src/context/services/use-services.ts'
 import type { ReviewComment } from '@/src/lib/comment-gateway.ts'
 import { LineRanges } from '@/src/lib/line-range.ts'
@@ -13,7 +13,7 @@ export const useCommentItem = (comment: ReviewComment) => {
   const openDraft = useAnnotationStore((state) => {
     return state.openDraft
   })
-  const [now] = useState(Date.now)
+  const now = useNow()
 
   const edit = () => {
     openDraft({ path: comment.filePath, range: comment.range, commentId: comment.id })

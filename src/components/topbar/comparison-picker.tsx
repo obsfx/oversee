@@ -19,7 +19,7 @@ export function ComparisonPicker() {
     return <ComparisonPickerLoading />
   }
 
-  const { branches } = branchesState.data
+  const { branches, remoteBranches } = branchesState.data
   const sourceLabel = ComparisonRules.sourceLabel(comparison.source)
   const sourceBranch = comparison.source.kind === 'branch' ? comparison.source.name : null
   const description = `Compare ${sourceLabel} to ${comparison.target}`
@@ -37,6 +37,7 @@ export function ComparisonPicker() {
         <BranchOptions
           placeholder={'Filter source'}
           branches={branches}
+          remoteBranches={remoteBranches}
           selected={sourceBranch}
           onSelect={(branch) => {
             selectSource(ComparisonRules.branch(branch))
@@ -52,6 +53,7 @@ export function ComparisonPicker() {
         <BranchOptions
           placeholder={'Filter target'}
           branches={branches}
+          remoteBranches={remoteBranches}
           selected={comparison.target}
           onSelect={selectTarget}
         />

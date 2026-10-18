@@ -5,9 +5,16 @@ interface SessionCommentProps {
   location: string
   snippet: ReactNode
   body: string
+  replies?: ReactNode
 }
 
-export function SessionComment({ filePath, location, snippet, body }: SessionCommentProps) {
+export function SessionComment({
+  filePath,
+  location,
+  snippet,
+  body,
+  replies,
+}: SessionCommentProps) {
   return (
     <div className={'flex flex-col gap-1 px-1.5 py-1.5'}>
       <span className={'flex items-center gap-1.5 text-mini text-fg-muted'}>
@@ -16,6 +23,7 @@ export function SessionComment({ filePath, location, snippet, body }: SessionCom
       </span>
       {snippet}
       <span className={'block'}>{body}</span>
+      {replies}
     </div>
   )
 }

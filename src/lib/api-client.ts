@@ -64,8 +64,20 @@ export class ApiClient {
     )
   }
 
-  async delete(path: string) {
-    const response = await fetch(this.url(path), { method: 'DELETE' })
+  sendWithoutContent(method: WriteMethod, path: string, payload: unknown) {
+    return this.requestWithoutContent(path, {
+      method,
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+  }
+
+  delete(path: string) {
+    return this.requestWithoutContent(path, { method: 'DELETE' })
+  }
+
+  private async requestWithoutContent(path: string, init: RequestInit) {
+    const response = await fetch(this.url(path), init)
     if (!response.ok) {
       throw new ApiError(path, 'request failed', response.status)
     }

@@ -1,3 +1,4 @@
+import { CommentReplies } from '@/src/components/topbar/comment-replies.tsx'
 import { ReviewSessionSummary } from '@/src/components/topbar/review-session-summary.tsx'
 import { SessionSnippet } from '@/src/components/topbar/session-snippet.tsx'
 import { CommentMarkdown } from '@/src/lib/comment-markdown.ts'
@@ -28,6 +29,7 @@ export function ReviewSessionDetail({ session, onBack }: ReviewSessionDetailProp
                 location={LineRanges.shortLabel(comment.range)}
                 snippet={<SessionSnippet lines={comment.lines} filePath={comment.filePath} />}
                 body={CommentMarkdown.summary(comment.body)}
+                replies={<CommentReplies replies={comment.replies} />}
               />
             )
           })}

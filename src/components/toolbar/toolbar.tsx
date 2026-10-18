@@ -33,7 +33,7 @@ export function Toolbar() {
         />
         <ToolbarDivider />
         <ViewModeToggle />
-        <ReviewedToggle path={file.path} />
+        <ReviewedToggle path={file.path} onMarked={navigation.next} />
       </ToolbarGroup>
     </ToolbarShell>
   )

@@ -1,5 +1,5 @@
 import { WorkerPoolContextProvider, type WorkerPoolOptions } from '@pierre/diffs/react'
-import DiffsWorker from '@pierre/diffs/worker/worker.js?worker'
+import DiffsWorker from '@pierre/diffs/worker/worker.js?worker&inline'
 import type { ReactNode } from 'react'
 import { DiffThemeSync } from '@/src/components/diff-viewer/diff-theme-sync.tsx'
 import { DiffThemeCatalog } from '@/src/lib/diff-theme-catalog.ts'

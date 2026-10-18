@@ -9,6 +9,7 @@ const meta = {
   args: {
     placeholder: 'Filter target',
     branches: branchList.branches,
+    remoteBranches: branchList.remoteBranches,
     selected: 'main',
     onSelect: fn(),
   },
@@ -37,4 +38,6 @@ export const SourceWithUncommitted: Story = {
   },
 }
 
-export const NoBranches: Story = { args: { branches: [] } }
+export const LocalOnly: Story = { args: { remoteBranches: [] } }
+
+export const NoBranches: Story = { args: { branches: [], remoteBranches: [] } }

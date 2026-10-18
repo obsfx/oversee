@@ -6,7 +6,7 @@ import { CommentShapes } from '@/src/lib/comment-shapes.ts'
 import { ValueGuards } from '@/src/lib/value-guards.ts'
 
 export class HttpCommentGateway extends HttpGateway implements CommentGateway {
-  private static readonly path = '/comments'
+  private static readonly path = '/api/comments'
 
   private static isCommentList(value: unknown): value is ReviewComment[] {
     return ValueGuards.isListOf(value, CommentShapes.isReviewComment)

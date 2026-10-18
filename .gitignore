@@ -25,3 +25,14 @@ dist-ssr
 
 *storybook.log
 storybook-static
+
+.oversee
+internal/webui/dist/*
+!internal/webui/dist/.gitkeep
+/bin
+
+npm-dist
+
+.agents
+.claude/skills
+skills-lock.json

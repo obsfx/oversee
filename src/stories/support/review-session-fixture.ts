@@ -1,5 +1,6 @@
 import { ChangeSets } from '@/src/lib/change-set.ts'
 import type { ReviewComment } from '@/src/lib/comment-gateway.ts'
+import type { Comparison } from '@/src/lib/comparison-rules.ts'
 import type { LineRange } from '@/src/lib/line-range.ts'
 import type { ReviewSession, SnapshotLine } from '@/src/lib/review-session-gateway.ts'
 import { changeSet } from '@/src/stories/support/change-set-fixture.ts'
@@ -32,9 +33,15 @@ export const snapshotOf = (comment: ReviewComment): SnapshotLine[] => {
   return numbered(start, file.contents.split('\n').slice(start - 1, end))
 }
 
+const comparison: Comparison = {
+  source: { kind: 'branch', name: 'feat/upgrade-deprecated-versions' },
+  target: 'main',
+}
+
 export const reviewSessions: ReviewSession[] = [
   {
     id: 's3',
+    comparison,
     status: 'created',
     createdAt: Date.now() - 4 * HOUR,
     finishedAt: Date.now() - 3 * HOUR,
@@ -46,6 +53,7 @@ export const reviewSessions: ReviewSession[] = [
         body: 'Move the node version to `.nvmrc` so local and CI stay in sync.',
         createdAt: Date.now() - 4 * HOUR,
         updatedAt: Date.now() - 4 * HOUR,
+        replies: [],
         lines: numbered(14, [
           '      - uses: actions/setup-node@v4',
           '        with:',
@@ -60,12 +68,14 @@ export const reviewSessions: ReviewSession[] = [
         body: 'Validate the **range** here, a `0` would expire every session instantly.',
         createdAt: Date.now() - 4 * HOUR,
         updatedAt: Date.now() - 4 * HOUR,
+        replies: [],
         lines: numbered(24, ['    const expiresAt = Date.now() + config.sessionTtl']),
       },
     ],
   },
   {
     id: 's2',
+    comparison,
     status: 'in-progress',
     createdAt: Date.now() - 1 * DAY - 2 * HOUR,
     finishedAt: Date.now() - 1 * DAY,
@@ -77,6 +87,15 @@ export const reviewSessions: ReviewSession[] = [
         body: 'This loop runs one query per user. Batch it with `whereIn`.',
         createdAt: Date.now() - 1 * DAY - HOUR,
         updatedAt: Date.now() - 1 * DAY - HOUR,
+        replies: [
+          {
+            id: 's2c1r1',
+            commentId: 's2c1',
+            author: 'agent',
+            body: 'The script runs once per deploy, so the extra query is not on a hot path. Keeping it as is.',
+            createdAt: Date.now() - 20 * HOUR,
+          },
+        ],
         lines: numbered(6, [
           'for (const user of users) {',
           '  await db.updateTable("users")',
@@ -91,12 +110,14 @@ export const reviewSessions: ReviewSession[] = [
         body: 'Add a comment explaining the unit.',
         createdAt: Date.now() - 1 * DAY - HOUR,
         updatedAt: Date.now() - 1 * DAY - HOUR,
+        replies: [],
         lines: numbered(3, ['SESSION_TTL=3600000']),
       },
     ],
   },
   {
     id: 's1',
+    comparison,
     status: 'closed',
     createdAt: Date.now() - 6 * DAY - 2 * HOUR,
     finishedAt: Date.now() - 6 * DAY,
@@ -108,6 +129,7 @@ export const reviewSessions: ReviewSession[] = [
         body: 'Wrap this in a transaction.',
         createdAt: Date.now() - 6 * DAY - HOUR,
         updatedAt: Date.now() - 6 * DAY - HOUR,
+        replies: [],
         lines: numbered(18, [
           '  await db.deleteFrom("sessions").where("userId", "in", ids).execute()',
           '  await db.deleteFrom("users").where("id", "in", ids).execute()',

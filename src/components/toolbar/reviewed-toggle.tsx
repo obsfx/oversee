@@ -1,22 +1,16 @@
+import { useReviewedToggle } from '@/src/hooks/use-reviewed-toggle.ts'
 import { CheckToggle } from '@/src/primitives/check-toggle.tsx'
-import { useReviewStore } from '@/src/store/review-store.ts'
 
-export function ReviewedToggle({ path }: { path: string }) {
-  const reviewed = useReviewStore((review) => {
-    return review.reviewed.has(path)
-  })
-  const toggleReviewed = useReviewStore((review) => {
-    return review.toggleReviewed
-  })
+interface ReviewedToggleProps {
+  path: string
+  onMarked: () => void
+}
+
+export function ReviewedToggle({ path, onMarked }: ReviewedToggleProps) {
+  const { reviewed, toggle, title } = useReviewedToggle(path, onMarked)
 
   return (
-    <CheckToggle
-      checked={reviewed}
-      title={reviewed ? 'Unmark as reviewed' : 'Mark as reviewed'}
-      onClick={() => {
-        toggleReviewed(path)
-      }}
-    >
+    <CheckToggle checked={reviewed} title={title} onClick={toggle}>
       Reviewed
     </CheckToggle>
   )

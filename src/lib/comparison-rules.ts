@@ -18,20 +18,12 @@ export abstract class ComparisonRules {
     return { kind: 'branch', name }
   }
 
-  static defaultFor({ branches, current }: BranchList): Comparison | null {
-    if (!branches.includes(current)) {
-      return null
-    }
-    const others = branches.filter((branch) => {
-      return branch !== current
-    })
+  static defaultFor({ branches, current }: BranchList): Comparison {
     const target =
       PREFERRED_TARGETS.find((branch) => {
-        return others.includes(branch)
-      }) ??
-      others[0] ??
-      current
-    return { source: ComparisonRules.branch(current), target }
+        return branches.includes(branch)
+      }) ?? current
+    return { source: ComparisonRules.uncommitted, target }
   }
 
   static key({ source, target }: Comparison) {
@@ -41,6 +33,13 @@ export abstract class ComparisonRules {
 
   static query({ source, target }: Comparison) {
     return { source: source.kind === 'branch' ? source.name : UNCOMMITTED_REF, target }
+  }
+
+  static fromQuery(source: string, target: string): Comparison {
+    if (source === UNCOMMITTED_REF) {
+      return { source: ComparisonRules.uncommitted, target }
+    }
+    return { source: ComparisonRules.branch(source), target }
   }
 
   static searchParams(comparison: Comparison) {

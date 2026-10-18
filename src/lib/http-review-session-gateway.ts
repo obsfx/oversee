@@ -3,6 +3,7 @@ import { CommentShapes } from '@/src/lib/comment-shapes.ts'
 import { ComparisonRules, type Comparison } from '@/src/lib/comparison-rules.ts'
 import { HttpGateway } from '@/src/lib/http-gateway.ts'
 import type {
+  CommentReply,
   ReviewSession,
   ReviewSessionGateway,
   SessionComment,
@@ -11,27 +12,47 @@ import type {
 import { SessionStatuses } from '@/src/lib/session-statuses.ts'
 import { ValueGuards } from '@/src/lib/value-guards.ts'
 
+interface WireSession extends Omit<ReviewSession, 'comparison'> {
+  source: string
+  target: string
+}
+
 export class HttpReviewSessionGateway extends HttpGateway implements ReviewSessionGateway {
-  private static readonly path = '/review-sessions'
-  private static readonly finishPath = '/review-sessions/finish'
+  private static readonly path = '/api/review-sessions'
+  private static readonly finishPath = '/api/review-sessions/finish'
 
   private static isSnapshotLine(value: unknown): value is SnapshotLine {
     const { number, text } = ApiClient.fieldsOf(value)
     return ValueGuards.isPositiveInteger(number) && ValueGuards.isString(text)
   }
 
-  private static isSessionComment(value: unknown): value is SessionComment {
-    const { lines } = ApiClient.fieldsOf(value)
+  private static isReply(value: unknown): value is CommentReply {
+    const { id, commentId, author, body, createdAt } = ApiClient.fieldsOf(value)
     return (
-      CommentShapes.isReviewComment(value) &&
-      ValueGuards.isListOf(lines, HttpReviewSessionGateway.isSnapshotLine)
+      ValueGuards.isString(id) &&
+      ValueGuards.isString(commentId) &&
+      ValueGuards.isString(author) &&
+      ValueGuards.isString(body) &&
+      ValueGuards.isNumber(createdAt)
     )
   }
 
-  private static isReviewSession(value: unknown): value is ReviewSession {
-    const { id, status, createdAt, finishedAt, comments } = ApiClient.fieldsOf(value)
+  private static isSessionComment(value: unknown): value is SessionComment {
+    const { lines, replies } = ApiClient.fieldsOf(value)
+    return (
+      CommentShapes.isReviewComment(value) &&
+      ValueGuards.isListOf(lines, HttpReviewSessionGateway.isSnapshotLine) &&
+      ValueGuards.isListOf(replies, HttpReviewSessionGateway.isReply)
+    )
+  }
+
+  private static isWireSession(value: unknown): value is WireSession {
+    const { id, source, target, status, createdAt, finishedAt, comments } =
+      ApiClient.fieldsOf(value)
     return (
       ValueGuards.isString(id) &&
+      ValueGuards.isString(source) &&
+      ValueGuards.isString(target) &&
       SessionStatuses.isStatus(status) &&
       ValueGuards.isNumber(createdAt) &&
       ValueGuards.isNumber(finishedAt) &&
@@ -39,9 +60,18 @@ export class HttpReviewSessionGateway extends HttpGateway implements ReviewSessi
     )
   }
 
-  private static toSession({ id, status, createdAt, finishedAt, comments }: ReviewSession) {
+  private static toSession({
+    id,
+    source,
+    target,
+    status,
+    createdAt,
+    finishedAt,
+    comments,
+  }: WireSession): ReviewSession {
     return {
       id,
+      comparison: ComparisonRules.fromQuery(source, target),
       status,
       createdAt,
       finishedAt,
@@ -49,13 +79,16 @@ export class HttpReviewSessionGateway extends HttpGateway implements ReviewSessi
         const lines = comment.lines.map(({ number, text }) => {
           return { number, text }
         })
-        return { ...CommentShapes.toComment(comment), lines }
+        const replies = comment.replies.map(({ id, commentId, author, body, createdAt }) => {
+          return { id, commentId, author, body, createdAt }
+        })
+        return { ...CommentShapes.toComment(comment), lines, replies }
       }),
     }
   }
 
-  private static isSessionList(value: unknown): value is ReviewSession[] {
-    return ValueGuards.isListOf(value, HttpReviewSessionGateway.isReviewSession)
+  private static isSessionList(value: unknown): value is WireSession[] {
+    return ValueGuards.isListOf(value, HttpReviewSessionGateway.isWireSession)
   }
 
   private static parseList(body: unknown): ReviewSession[] {
@@ -72,8 +105,8 @@ export class HttpReviewSessionGateway extends HttpGateway implements ReviewSessi
       ApiClient.field(
         body,
         'session',
-        HttpReviewSessionGateway.isReviewSession,
-        HttpReviewSessionGateway.finishPath,
+        HttpReviewSessionGateway.isWireSession,
+        HttpReviewSessionGateway.path,
       ),
     )
   }
@@ -82,6 +115,13 @@ export class HttpReviewSessionGateway extends HttpGateway implements ReviewSessi
     return this.api.get(
       ApiClient.withQuery(HttpReviewSessionGateway.path, ComparisonRules.searchParams(comparison)),
       HttpReviewSessionGateway.parseList,
+    )
+  }
+
+  get(id: string) {
+    return this.api.get(
+      `${HttpReviewSessionGateway.path}/${encodeURIComponent(id)}`,
+      HttpReviewSessionGateway.parseOne,
     )
   }
 

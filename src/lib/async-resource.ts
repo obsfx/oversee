@@ -55,6 +55,18 @@ export class AsyncResource<T> {
     }
   }
 
+  async refresh() {
+    if (this.store.getState().status !== 'ready') {
+      return
+    }
+    try {
+      const data = await this.fetcher()
+      this.store.setState({ status: 'ready', data }, true)
+    } catch {
+      return
+    }
+  }
+
   reload() {
     if (this.pending) {
       return this.pending

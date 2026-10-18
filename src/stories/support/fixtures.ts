@@ -2,12 +2,17 @@ import type { BranchList } from '@/src/lib/branch-gateway.ts'
 import type { ChangeSet } from '@/src/lib/change-set.ts'
 import type { ReviewComment } from '@/src/lib/comment-gateway.ts'
 import type { FileDiff, FileDiffRequest } from '@/src/lib/file-diff-gateway.ts'
+import { InMemoryEventStream } from '@/src/lib/in-memory-event-stream.ts'
+import { InMemoryNotificationGateway } from '@/src/lib/in-memory-notification-gateway.ts'
+import type { ReviewNotification } from '@/src/lib/notification-gateway.ts'
 import { InMemoryCommentGateway } from '@/src/lib/in-memory-comment-gateway.ts'
 import { InMemoryReviewSessionGateway } from '@/src/lib/in-memory-review-session-gateway.ts'
 import type { ReviewSession } from '@/src/lib/review-session-gateway.ts'
 import { Services } from '@/src/lib/services.ts'
+import type { WorkspaceInfo } from '@/src/lib/workspace-gateway.ts'
 import { changeSet } from '@/src/stories/support/change-set-fixture.ts'
 import { fileDiffFor } from '@/src/stories/support/file-diff-fixture.ts'
+import { reviewNotifications } from '@/src/stories/support/notification-fixture.ts'
 import { reviewSessions, snapshotOf } from '@/src/stories/support/review-session-fixture.ts'
 
 export const branchList: BranchList = {
@@ -20,6 +25,13 @@ export const branchList: BranchList = {
     'fix/session-timeout',
     'chore/bump-deps',
     'release/2026.10',
+  ],
+  remoteBranches: [
+    'origin/main',
+    'origin/develop',
+    'origin/feat/upgrade-deprecated-versions',
+    'origin/configuration',
+    'origin/release/2026.09',
   ],
 }
 
@@ -61,19 +73,32 @@ export const reviewComments: ReviewComment[] = [
 ]
 
 interface StoryServicesOptions {
+  workspace?: () => Promise<WorkspaceInfo>
   branches?: () => Promise<BranchList>
   comments?: ReviewComment[]
   sessions?: ReviewSession[]
+  notifications?: ReviewNotification[]
+  events?: InMemoryEventStream
   changeSets?: () => Promise<ChangeSet>
   fileDiffs?: (request: FileDiffRequest) => Promise<FileDiff>
 }
 
+export const workspaceInfo: WorkspaceInfo = {
+  name: 'now-api',
+  path: '/Users/dev/oaks-lab/storyvine/now-api',
+}
+
 export const createStoryServices = ({
+  workspace = () => {
+    return Promise.resolve(workspaceInfo)
+  },
   branches = () => {
     return Promise.resolve(branchList)
   },
   comments = reviewComments,
   sessions = reviewSessions,
+  notifications = reviewNotifications,
+  events = new InMemoryEventStream(),
   changeSets = () => {
     return Promise.resolve(changeSet)
   },
@@ -83,11 +108,14 @@ export const createStoryServices = ({
 }: StoryServicesOptions = {}) => {
   const commentGateway = new InMemoryCommentGateway(comments)
   return new Services({
+    workspace: { load: workspace },
     branches: { list: branches },
     comments: commentGateway,
     sessions: new InMemoryReviewSessionGateway(commentGateway, sessions, snapshotOf),
     changeSets: { load: changeSets },
     fileDiffs: { load: fileDiffs },
+    notifications: new InMemoryNotificationGateway(notifications),
+    events,
   })
 }
 

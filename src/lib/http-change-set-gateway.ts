@@ -6,7 +6,7 @@ import { ComparisonRules, type Comparison } from '@/src/lib/comparison-rules.ts'
 import { ValueGuards } from '@/src/lib/value-guards.ts'
 
 export class HttpChangeSetGateway extends HttpGateway implements ChangeSetGateway {
-  private static readonly path = '/get-file-tree'
+  private static readonly path = '/api/file-tree'
 
   private static isFileChange(value: unknown): value is FileChange {
     const { path, status, additions, deletions, previousPath } = ApiClient.fieldsOf(value)

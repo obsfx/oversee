@@ -13,8 +13,8 @@ import { ImageFiles, type ImagePair } from '@/src/lib/image-files.ts'
 import { ValueGuards } from '@/src/lib/value-guards.ts'
 
 export class HttpFileDiffGateway extends HttpGateway implements FileDiffGateway {
-  private static readonly path = '/get-file-diff'
-  private static readonly blobPath = '/get-file-blob'
+  private static readonly path = '/api/file-diff'
+  private static readonly blobPath = '/api/file-blob'
 
   private static queryFor({ comparison, change }: FileDiffRequest) {
     const query = ComparisonRules.searchParams(comparison)

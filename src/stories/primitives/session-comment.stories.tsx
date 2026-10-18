@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { CodeSnippetView } from '@/src/primitives/code-snippet-view.tsx'
+import { ReplyEntry } from '@/src/primitives/reply-entry.tsx'
+import { ReplyThread } from '@/src/primitives/reply-thread.tsx'
 import { SessionComment } from '@/src/primitives/session-comment.tsx'
 
 const meta = {
@@ -34,4 +36,16 @@ const meta = {
 
 export default meta
 
-export const Default: StoryObj<typeof meta> = {}
+type Story = StoryObj<typeof meta>
+
+export const Default: Story = {}
+
+export const WithReplies: Story = {
+  args: {
+    replies: (
+      <ReplyThread>
+        <ReplyEntry author={'agent'} age={'20m ago'} body={'Moved the version to .nvmrc.'} />
+      </ReplyThread>
+    ),
+  },
+}
