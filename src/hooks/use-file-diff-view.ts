@@ -3,6 +3,7 @@ import { useRef } from 'react'
 import type { RenderedDiff } from '@/src/lib/diff-line-reveal.ts'
 import type { FileDiff } from '@/src/lib/file-diff-gateway.ts'
 import { DiffSurface } from '@/src/lib/diff-surface.ts'
+import { ParsedDiffs } from '@/src/lib/parsed-diffs.ts'
 import { useSettingsStore } from '@/src/store/settings-store.ts'
 import { useCommentFocus } from '@/src/hooks/use-comment-focus.ts'
 import { useDiffAnnotations } from '@/src/hooks/use-diff-annotations.ts'
@@ -26,8 +27,7 @@ export const useFileDiffView = (path: string, diff: FileDiff) => {
   useCommentFocus(path, rendered, virtualizer)
 
   return {
-    oldFile: diff.oldFile ?? DiffSurface.emptyFile(path, 'old'),
-    newFile: diff.newFile ?? DiffSurface.emptyFile(path, 'new'),
+    fileDiff: ParsedDiffs.of(path, diff),
     options,
     metrics: DiffSurface.metrics(editorFontSize, editorLineHeight),
     annotations,

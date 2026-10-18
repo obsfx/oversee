@@ -1,4 +1,4 @@
-import { MultiFileDiff } from '@pierre/diffs/react'
+import { FileDiff as PierreFileDiff } from '@pierre/diffs/react'
 import { useFileDiffView } from '@/src/hooks/use-file-diff-view.ts'
 import type { FileDiff } from '@/src/lib/file-diff-gateway.ts'
 import { DiffSurface } from '@/src/lib/diff-surface.ts'
@@ -10,15 +10,11 @@ interface FileDiffViewProps {
 }
 
 export function FileDiffView({ path, diff }: FileDiffViewProps) {
-  const { oldFile, newFile, options, metrics, annotations, selectedLines } = useFileDiffView(
-    path,
-    diff,
-  )
+  const { fileDiff, options, metrics, annotations, selectedLines } = useFileDiffView(path, diff)
 
   return (
-    <MultiFileDiff
-      oldFile={oldFile}
-      newFile={newFile}
+    <PierreFileDiff
+      fileDiff={fileDiff}
       options={options}
       metrics={metrics}
       lineAnnotations={annotations}

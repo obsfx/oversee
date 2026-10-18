@@ -35,6 +35,9 @@ const googleFonts = (): Plugin => {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), babel({ presets: [reactCompilerPreset()] }), tailwindcss(), googleFonts()],
+  worker: {
+    format: 'es',
+  },
   resolve: {
     alias: [{ find: /^@\//, replacement: PROJECT_ROOT }],
   },
