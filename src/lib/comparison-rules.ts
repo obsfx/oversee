@@ -8,6 +8,11 @@ export interface Comparison {
   target: string
 }
 
+export interface ComparisonReplacement {
+  comparison: Comparison
+  deleted: string[]
+}
+
 const PREFERRED_TARGETS = ['main', 'master', 'develop']
 const UNCOMMITTED_REF = ':uncommitted'
 
@@ -33,6 +38,25 @@ export abstract class ComparisonRules {
         return branches.includes(branch)
       }) ?? current
     return { source: ComparisonRules.uncommitted, target }
+  }
+
+  static replaceMissing(comparison: Comparison, list: BranchList): ComparisonReplacement | null {
+    const known = new Set([...list.branches, ...list.remoteBranches, list.current])
+    const deleted: string[] = []
+    let { source, target } = comparison
+    const sourceName = ComparisonRules.branchName(source)
+    if (sourceName !== null && !known.has(sourceName)) {
+      deleted.push(sourceName)
+      source = ComparisonRules.uncommitted
+    }
+    if (!known.has(target)) {
+      deleted.push(target)
+      target = ComparisonRules.defaultFor(list).target
+    }
+    if (deleted.length === 0) {
+      return null
+    }
+    return { comparison: { source, target }, deleted }
   }
 
   static key({ source, target }: Comparison) {

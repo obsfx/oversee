@@ -3,6 +3,7 @@ package git
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -12,7 +13,10 @@ import (
 	"github.com/obsfx/oversee/internal/domain"
 )
 
-const noMergeBaseExitCode = 1
+const (
+	noMergeBaseExitCode = 1
+	missingRefExitCode  = 1
+)
 
 type Repository struct {
 	root   string
@@ -45,6 +49,9 @@ func (r *Repository) Branches(ctx context.Context) (domain.BranchList, error) {
 }
 
 func (r *Repository) Tree(ctx context.Context, comparison domain.Comparison) (domain.FileTree, error) {
+	if err := r.requireRefs(ctx, comparison); err != nil {
+		return domain.FileTree{}, err
+	}
 	if comparison.IsUncommitted() {
 		return r.uncommittedTree(ctx)
 	}
@@ -52,6 +59,29 @@ func (r *Repository) Tree(ctx context.Context, comparison domain.Comparison) (do
 }
 
 func (r *Repository) Contents(ctx context.Context, comparison domain.Comparison, path string, side domain.FileSide) (domain.Blob, error) {
+	blob, err := r.contents(ctx, comparison, path, side)
+	if _, failed := errors.AsType[*CommandError](err); failed {
+		if refErr := r.requireRefs(ctx, comparison); errors.Is(refErr, domain.ErrUnknownBranch) {
+			return nil, refErr
+		}
+	}
+	return blob, err
+}
+
+func (r *Repository) requireRefs(ctx context.Context, comparison domain.Comparison) error {
+	for _, ref := range comparison.Refs() {
+		_, err := r.runner.Text(ctx, "rev-parse", "--verify", "--quiet", ref+"^{commit}")
+		if commandErr, ok := errors.AsType[*CommandError](err); ok && commandErr.ExitCode == missingRefExitCode {
+			return fmt.Errorf("%w: %s", domain.ErrUnknownBranch, ref)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *Repository) contents(ctx context.Context, comparison domain.Comparison, path string, side domain.FileSide) (domain.Blob, error) {
 	if side == domain.FileSideNew && comparison.IsUncommitted() {
 		return r.workingFile(path)
 	}

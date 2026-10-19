@@ -60,6 +60,7 @@ func newServices(db *sqlite.DB, gitRepository *git.Repository) service.Services 
 		Comments:      comments,
 		Reviews:       service.NewReviewService(tx, reads, runtime),
 		Notifications: service.NewNotificationService(tx, reads, runtime),
+		Settings:      service.NewSettingsService(tx, reads, runtime),
 		Events: service.NewEventFeed(reads, func(ctx context.Context) (service.ChangeDetector, error) {
 			return db.NewChangeDetector(ctx)
 		}),

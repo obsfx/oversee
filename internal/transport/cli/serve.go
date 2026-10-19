@@ -2,7 +2,9 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"net"
 	"os/exec"
 	"runtime"
@@ -13,7 +15,10 @@ import (
 	"github.com/obsfx/oversee/internal/app"
 )
 
-const listenHost = "127.0.0.1"
+const (
+	listenHost  = "127.0.0.1"
+	defaultPort = 6999
+)
 
 func serveCommand(opts *options) *cobra.Command {
 	var port int
@@ -25,11 +30,11 @@ func serveCommand(opts *options) *cobra.Command {
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return opts.withApp(cmd, func(ctx context.Context, application *app.App) error {
-				listener, err := net.Listen("tcp", net.JoinHostPort(listenHost, strconv.Itoa(port)))
+				listener, err := listen(port, cmd.ErrOrStderr())
 				if err != nil {
 					return err
 				}
-				address := fmt.Sprintf("http://localhost:%d", listener.Addr().(*net.TCPAddr).Port)
+				address := fmt.Sprintf("http://localhost:%d", listenerPort(listener))
 				fmt.Fprintf(cmd.OutOrStdout(), "oversee serving %s at %s\n", application.Workspace.RepoRoot, address)
 				if open {
 					openBrowser(address)
@@ -38,10 +43,31 @@ func serveCommand(opts *options) *cobra.Command {
 			})
 		},
 	}
-	command.Flags().IntVarP(&port, "port", "p", 0, "port to listen on, 0 picks an available one")
+	command.Flags().IntVarP(&port, "port", "p", defaultPort, "port to listen on, falls back to an available one when busy, 0 picks any")
 	command.Flags().BoolVar(&open, "open", false, "open the UI in the default browser")
 	command.Flags().BoolVar(&dev, "dev", false, "accept websocket connections from local dev servers")
 	return command
+}
+
+func listen(port int, notices io.Writer) (net.Listener, error) {
+	listener, err := net.Listen("tcp", listenAddress(port))
+	if err == nil || port == 0 {
+		return listener, err
+	}
+	fallback, fallbackErr := net.Listen("tcp", listenAddress(0))
+	if fallbackErr != nil {
+		return nil, errors.Join(err, fallbackErr)
+	}
+	fmt.Fprintf(notices, "port %d is unavailable, using port %d\n", port, listenerPort(fallback))
+	return fallback, nil
+}
+
+func listenAddress(port int) string {
+	return net.JoinHostPort(listenHost, strconv.Itoa(port))
+}
+
+func listenerPort(listener net.Listener) int {
+	return listener.Addr().(*net.TCPAddr).Port
 }
 
 func openBrowser(address string) {

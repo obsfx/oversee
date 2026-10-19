@@ -21,6 +21,7 @@ type Repositories struct {
 	Comments      CommentRepository
 	Replies       ReplyRepository
 	Notifications NotificationRepository
+	Settings      SettingsRepository
 	Events        EventRepository
 }
 
@@ -31,6 +32,7 @@ func New(db sqldb.DBTX, codec EventCodec) Repositories {
 		Comments:      CommentRepository{queries: queries},
 		Replies:       ReplyRepository{queries: queries},
 		Notifications: NotificationRepository{queries: queries},
+		Settings:      SettingsRepository{queries: queries},
 		Events:        EventRepository{queries: queries, codec: codec},
 	}
 }

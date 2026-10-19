@@ -7,6 +7,7 @@ import { HttpFileDiffGateway } from '@/src/lib/http-file-diff-gateway.ts'
 import { HttpNotificationGateway } from '@/src/lib/http-notification-gateway.ts'
 import { HttpReviewSessionGateway } from '@/src/lib/http-review-session-gateway.ts'
 import { Services } from '@/src/lib/services.ts'
+import { HttpSettingsGateway } from '@/src/lib/http-settings-gateway.ts'
 import { HttpWorkspaceGateway } from '@/src/lib/http-workspace-gateway.ts'
 import { SocketEventStream } from '@/src/lib/socket-event-stream.ts'
 
@@ -22,5 +23,6 @@ export const appServices = new Services({
   changeSets: new HttpChangeSetGateway(apiClient),
   fileDiffs: new HttpFileDiffGateway(apiClient),
   notifications: new HttpNotificationGateway(apiClient),
+  settings: new HttpSettingsGateway(apiClient),
   events: new SocketEventStream(appGlobals.wsUrl),
 })

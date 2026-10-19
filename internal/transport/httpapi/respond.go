@@ -33,7 +33,9 @@ func statusOf(err error) int {
 		return http.StatusBadRequest
 	}
 	switch {
-	case errors.Is(err, domain.ErrNotFound), errors.Is(err, domain.ErrNoOpenSession):
+	case errors.Is(err, domain.ErrNotFound),
+		errors.Is(err, domain.ErrNoOpenSession),
+		errors.Is(err, domain.ErrUnknownBranch):
 		return http.StatusNotFound
 	case errors.Is(err, domain.ErrSessionFinished),
 		errors.Is(err, domain.ErrSessionNotFinished),

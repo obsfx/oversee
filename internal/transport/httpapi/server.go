@@ -73,6 +73,7 @@ func (s *Server) routes() http.Handler {
 	comments := commentHandler{comments: s.services.Comments}
 	sessions := sessionHandler{reviews: s.services.Reviews}
 	notifications := notificationHandler{notifications: s.services.Notifications}
+	settings := settingsHandler{settings: s.services.Settings}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/workspace", s.index.workspace)
 	mux.HandleFunc("GET /api/branches", diffs.branches)
@@ -88,6 +89,8 @@ func (s *Server) routes() http.Handler {
 	mux.HandleFunc("POST /api/review-sessions/finish", sessions.finish)
 	mux.HandleFunc("GET /api/notifications", notifications.list)
 	mux.HandleFunc("POST /api/notifications/read", notifications.markRead)
+	mux.HandleFunc("GET /api/settings", settings.get)
+	mux.HandleFunc("PATCH /api/settings", settings.update)
 	mux.Handle("GET /ws", s.hub)
 	mux.HandleFunc("GET /{$}", s.index.serve)
 	return mux

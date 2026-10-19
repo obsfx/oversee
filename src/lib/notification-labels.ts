@@ -1,4 +1,4 @@
-import { ComparisonRules } from '@/src/lib/comparison-rules.ts'
+import { ComparisonLabels } from '@/src/lib/comparison-labels.ts'
 import { CountLabels } from '@/src/lib/count-labels.ts'
 import type { ReviewNotification } from '@/src/lib/notification-gateway.ts'
 import { RelativeTime } from '@/src/lib/relative-time.ts'
@@ -17,8 +17,7 @@ export abstract class NotificationLabels {
   }
 
   static comparison(notification: ReviewNotification) {
-    const { source, target } = notification.comparison
-    return `${ComparisonRules.sourceLabel(source)} into ${target}`
+    return ComparisonLabels.of(notification.comparison)
   }
 
   static age(notification: ReviewNotification, now: number) {

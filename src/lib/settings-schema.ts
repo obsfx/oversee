@@ -40,7 +40,7 @@ export abstract class SettingsSchema {
     return uiFontSize / SettingsSchema.baseUiFontSize
   }
 
-  private static readonly stored = v.pipe(
+  static readonly schema = v.pipe(
     v.fallback(
       v.object({
         theme: v.fallback(v.picklist(SettingsSchema.themes), SettingsSchema.defaults.theme),
@@ -81,6 +81,6 @@ export abstract class SettingsSchema {
   )
 
   static parse(raw: unknown): Settings {
-    return v.parse(SettingsSchema.stored, raw)
+    return v.parse(SettingsSchema.schema, raw)
   }
 }

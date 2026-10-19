@@ -26,6 +26,13 @@ func (c Comparison) IsUncommitted() bool {
 	return c.Source == UncommittedSource
 }
 
+func (c Comparison) Refs() []string {
+	if c.IsUncommitted() {
+		return []string{c.Target}
+	}
+	return []string{c.Source, c.Target}
+}
+
 type FileSide string
 
 const (

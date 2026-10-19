@@ -57,3 +57,9 @@ type ReviewSession struct {
 	FinishedAt sql.NullInt64
 	UpdatedAt  int64
 }
+
+type Setting struct {
+	Key       string
+	Value     string
+	UpdatedAt int64
+}

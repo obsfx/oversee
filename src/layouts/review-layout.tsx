@@ -5,14 +5,10 @@ import { ResizeHandle } from '@/src/primitives/resize-handle.tsx'
 import { useLayoutStore } from '@/src/store/layout-store.ts'
 import { useSettingsStore } from '@/src/store/settings-store.ts'
 import { ReviewMain } from '@/src/layouts/review-main.tsx'
-import { useFaviconBlink } from '@/src/hooks/use-favicon-blink.ts'
-import { useServerEventSync } from '@/src/hooks/use-server-event-sync.ts'
-import { useDocumentTitle } from '@/src/hooks/use-document-title.ts'
+import { useReviewSync } from '@/src/hooks/use-review-sync.ts'
 
 export function ReviewLayout() {
-  useServerEventSync()
-  useFaviconBlink()
-  useDocumentTitle()
+  useReviewSync()
   const sidebarExpanded = useLayoutStore((layout) => {
     return layout.sidebarExpanded
   })

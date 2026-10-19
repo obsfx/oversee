@@ -35,6 +35,12 @@ func (r *commentReconciliation) add(comment domain.Comment, placement domain.Pla
 	}
 }
 
+func (r *commentReconciliation) outdate(comments []domain.Comment) {
+	for _, comment := range comments {
+		r.outdated = append(r.outdated, comment.ID)
+	}
+}
+
 func (r commentReconciliation) isEmpty() bool {
 	return len(r.moves) == 0 && len(r.outdated) == 0
 }
@@ -71,7 +77,10 @@ func (s *CommentService) Create(ctx context.Context, comparison domain.Compariso
 	if err := draft.Validate(); err != nil {
 		return domain.Comment{}, err
 	}
-	blob, readable := s.commentedBlob(ctx, comparison, draft)
+	blob, readable, err := s.commentedBlob(ctx, comparison, draft)
+	if err != nil {
+		return domain.Comment{}, err
+	}
 	snapshot := draft.Range.Snapshot(blob)
 	if readable {
 		if err := draft.CheckFresh(snapshot); err != nil {
@@ -80,7 +89,7 @@ func (s *CommentService) Create(ctx context.Context, comparison domain.Compariso
 	}
 	now := s.runtime.Now()
 	var comment domain.Comment
-	err := s.tx.Within(ctx, func(repos repository.Repositories) error {
+	err = s.tx.Within(ctx, func(repos repository.Repositories) error {
 		session, err := s.openSession(ctx, repos, comparison)
 		if err != nil {
 			return err
@@ -130,12 +139,16 @@ func (s *CommentService) reconcileSession(ctx context.Context, session domain.Se
 	if len(touched) == 0 {
 		return nil
 	}
+	result := commentReconciliation{}
 	tree, err := s.git.Tree(ctx, session.Comparison)
+	if errors.Is(err, domain.ErrUnknownBranch) {
+		result.outdate(touched)
+		return s.applyReconciliation(ctx, session, result)
+	}
 	if err != nil {
 		return err
 	}
 	blobs := map[commentBlobKey]domain.Blob{}
-	result := commentReconciliation{}
 	for _, comment := range touched {
 		placement := domain.Placement{Kind: domain.PlacementOutdated}
 		if fileChange, inDiff := tree.Find(comment.FilePath); inDiff {
@@ -200,12 +213,15 @@ func (s *CommentService) openSession(ctx context.Context, repos repository.Repos
 	return session, repos.Sessions.Insert(ctx, session)
 }
 
-func (s *CommentService) commentedBlob(ctx context.Context, comparison domain.Comparison, draft domain.CommentDraft) (domain.Blob, bool) {
+func (s *CommentService) commentedBlob(ctx context.Context, comparison domain.Comparison, draft domain.CommentDraft) (domain.Blob, bool, error) {
 	path := draft.File().SnapshotPath(draft.Range)
 	blob, err := s.git.Contents(ctx, comparison, path, draft.Range.SnapshotSide())
+	if errors.Is(err, domain.ErrUnknownBranch) {
+		return nil, false, err
+	}
 	if err != nil {
 		slog.Warn("comment snapshot unavailable", "path", path, "error", err)
-		return nil, false
+		return nil, false, nil
 	}
-	return blob, true
+	return blob, true, nil
 }

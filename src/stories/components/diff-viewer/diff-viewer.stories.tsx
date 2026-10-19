@@ -24,7 +24,7 @@ const meta = {
       </StoryFrame>
     )
   },
-} satisfies Meta<{ services: Services; path: string }>
+} satisfies Meta<{ services: Services; path: string | null }>
 
 export default meta
 
@@ -41,6 +41,33 @@ export const AddedFile: Story = { args: { path: '.env.template' } }
 export const ImageFile: Story = { args: { path: 'src/assets/emptyPhotoPlaceholder.png' } }
 
 export const OtherBinaryFile: Story = { args: { path: 'src/assets/emptyVideoPlaceholder.mp4' } }
+
+export const NoChanges: Story = {
+  args: {
+    services: createStoryServices({
+      changeSets: () => {
+        return Promise.resolve({ changes: [] })
+      },
+    }),
+    path: null,
+  },
+}
+
+export const NoContentChanges: Story = {
+  args: {
+    services: createStoryServices({
+      fileDiffs: ({ change }) => {
+        const file = { name: change.path, contents: 'export const ttl = 30\n' }
+        return Promise.resolve({
+          binary: false,
+          images: null,
+          oldFile: { ...file, cacheKey: 'story::same::old' },
+          newFile: { ...file, cacheKey: 'story::same::new' },
+        })
+      },
+    }),
+  },
+}
 
 export const Loading: Story = {
   args: { services: createStoryServices({ fileDiffs: neverResolves }) },

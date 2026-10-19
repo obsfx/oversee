@@ -5,6 +5,7 @@ type Services struct {
 	Comments      *CommentService
 	Reviews       *ReviewService
 	Notifications *NotificationService
+	Settings      *SettingsService
 	Events        *EventFeed
 	Watcher       *WorkspaceWatcher
 }

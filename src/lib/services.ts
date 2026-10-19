@@ -17,6 +17,8 @@ import { ReviewComments } from '@/src/lib/review-comments.ts'
 import type { ReviewSessionGateway } from '@/src/lib/review-session-gateway.ts'
 import { ReviewSessions } from '@/src/lib/review-sessions.ts'
 import { ServerEventSync } from '@/src/lib/server-event-sync.ts'
+import type { SettingsGateway } from '@/src/lib/settings-gateway.ts'
+import { SettingsSync } from '@/src/lib/settings-sync.ts'
 import type { EventStream } from '@/src/lib/server-events.ts'
 import type { WorkspaceGateway, WorkspaceInfo } from '@/src/lib/workspace-gateway.ts'
 import { WorkspaceRefresh } from '@/src/lib/workspace-refresh.ts'
@@ -29,6 +31,7 @@ interface Gateways {
   changeSets: ChangeSetGateway
   fileDiffs: FileDiffGateway
   notifications: NotificationGateway
+  settings: SettingsGateway
   events: EventStream
 }
 
@@ -40,6 +43,7 @@ export class Services {
   readonly changeSets: ComparisonCache<ChangeSet>
   readonly fileDiffs: ResourceCache<FileDiffRequest, FileDiff>
   readonly notifications: Notifications
+  readonly settings: SettingsSync
   readonly serverSync: ServerEventSync
 
   constructor(gateways: Gateways) {
@@ -58,6 +62,7 @@ export class Services {
       return gateways.fileDiffs.load(request)
     })
     this.notifications = new Notifications(gateways.notifications)
+    this.settings = new SettingsSync(gateways.settings)
     this.serverSync = new ServerEventSync(
       gateways.events,
       this.sessions,

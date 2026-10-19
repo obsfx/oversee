@@ -11,6 +11,7 @@ var (
 	ErrSessionNotFinished = errors.New("review session is not finished")
 	ErrSessionFinished    = errors.New("review session is already finished")
 	ErrStaleContent       = errors.New("the commented lines changed after they were loaded")
+	ErrUnknownBranch      = errors.New("branch does not exist")
 )
 
 type ValidationError struct {

@@ -13,7 +13,7 @@ This file contains the information and direction for the application we call `ov
 
 ```text
 oversee serve (cwd = workspace, git root = repo)
-  → pick an available port on 127.0.0.1
+  → listen on 127.0.0.1:6999 (or --port), fall back to an available port when it is busy
     → HTTP mux (localhost hosts only)
       → GET /        → embedded index.html.gz + injected window.__overseeGlobal
       → /api/*       → httpapi handler → service → git.Repository | repositories (sqlite)
@@ -43,20 +43,23 @@ app                            composition root: workspace, db, repositories, se
 - dependencies point down only. `domain` imports nothing from the project.
 - services declare the small interfaces they consume (`GitReader`, `Transactor`, `ChangeDetector`, `WorkspaceProbe`, `Audience`, `Reconciler`); repositories and the git repository are concrete structs.
 - `git.Repository.Contents` returns `nil, nil` for a missing file (path not in the ref, deleted or a directory in the working tree) and an error for a failed read. code that makes one-way decisions (outdating comments) must only act on a missing file, never on an error.
+- a comparison is **gone** when one of its refs no longer exists (`Comparison.Refs`: the source branch and the target, the target also for uncommitted comparisons). `git.Repository.Tree` checks them with `rev-parse --verify` first, `Contents` checks them only after a failed git read, and a missing ref returns `domain.ErrUnknownBranch`.
 - every multi-write runs in `TxRunner.Within`, and its events are appended in the same transaction (outbox).
 - the JSON contract lives only in `internal/transport/dto`: HTTP responses, CLI `--json`, event payloads (`dto.EventCodec`) and the websocket envelope. changing it means changing the UI parsers too.
-- errors: `domain.ValidationError` maps to 400, `domain.ErrNotFound`/`ErrNoOpenSession` to 404, session state conflicts and `ErrStaleContent` to 409, everything else to 500 and a log line.
+- errors: `domain.ValidationError` maps to 400, `domain.ErrNotFound`/`ErrNoOpenSession`/`ErrUnknownBranch` to 404, session state conflicts and `ErrStaleContent` to 409, everything else to 500 and a log line.
 
 - **HTTP** carries queries and commands. the **websocket** only pushes server events to the UI.
 - every write appends a row to the `events` table in the same transaction. this lets CLI processes reach a running server without knowing its port, and lets a reconnecting UI replay missed events with `?after=<lastEventId>`.
-- the one exception is `workspace.changed`: a websocket envelope **without an id** that is never stored and never replayed. it only describes the files on disk right now, so a reconnecting UI refreshes everything instead of replaying it.
+- one exception is `workspace.changed`: a websocket envelope **without an id** that is never stored and never replayed. it only describes the files on disk right now, so a reconnecting UI refreshes everything instead of replaying it.
+- settings writes are the other exception: they append no event. they are UI preferences with no CLI writer, so another open tab picks them up on its next load.
 - `window.__overseeGlobal` holds `baseUrl`, `wsUrl` and `workspace` (folder `name`, `path`, and `repoName` when served from a repo subdirectory). without it (vite dev server, storybook), the UI falls back to `window.location` and `GET /api/workspace`.
 
 ## CLI interface
 
 - `oversee init`: creates the `.oversee` directory inside the `cwd` and the `sqlite` database in it. it also adds `.oversee/` to `.git/info/exclude`, so it never shows up as an untracked change.
-- `oversee serve`: picks an available port and serves the UI shell and the backend on the same address.
-    - `--port` fixes the port, `--open` opens the browser, `--dev` accepts websocket connections from local dev servers.
+- `oversee serve`: serves the UI shell and the backend on the same address, port `6999` by default.
+    - `--port`/`-p` sets the port. when the port (default or passed) can not be bound, serve falls back to an available port and prints `port N is unavailable, using port M`. `--port 0` picks any port.
+    - `--open` opens the browser, `--dev` accepts websocket connections from local dev servers.
 - `oversee review list`: lists finished review sessions, newest first, paginated with `--page` and `--limit`.
 - `oversee review get <session-id>`: shows all details of a session: comments, saved code lines and replies. outdated comments are marked with `outdated since ...`, see **outdated comments**.
 - `oversee review start <session-id>`: sets the session status to `in progress`.
@@ -87,12 +90,15 @@ Check the layout representation: `/Users/omercanbalandi/studio-2/oversee-visual-
 - the **branch selection**: source and target branch, plus an option for viewing uncommitted changes.
     - the initial selection is `Uncommitted changes` against `main` (falling back to `master`, `develop`, then the current branch).
     - uncommitted changes always diff the working tree against `HEAD`. the target only matters for branch comparisons, where the diff runs from the merge base (or the target itself when the branches share no history).
+    - the branch list follows git, see **file watcher**. when a selected source or target branch no longer exists (deleted, renamed, pruned), the selection switches by itself: a missing source becomes `Uncommitted changes`, a missing target becomes the default target. a warning bar between the topbar and the toolbar says what happened until it is dismissed or the next pick.
+    - `ComparisonRules.replaceMissing` decides the switch, `BranchSelectionGuard` (part of `ReviewSync`) applies it on every branch list refresh and stores the notice in the comparison store, and `DeletedBranchNotice` (`WarningBar`) shows it. a selection the user never made just follows the default, without a notice.
 - a `finish review` button, see **review sessions**.
 - a **comments** button with a popover. it shows the comment count, see **review sessions**.
 - a **notifications** button with a popover, see **notifications**.
 - a settings button and its menu:
     - theme selection, light or dark.
     - font selection for the UI and the editor, powered by google fonts.
+    - settings are saved in the workspace database, see **settings**.
 
 ##### toolbar
 - file navigation: `[prevButton] {currentFileNumber} / {totalFileNumber} [nextButton]`, for example `[<] 4 / 72 [>]`.
@@ -106,6 +112,10 @@ Check the layout representation: `/Users/omercanbalandi/studio-2/oversee-visual-
 - lines and line selections can be annotated. an annotation is sent to the backend and saved to the database.
 - opening a file diff shows its comments, fetched from the backend. outdated comments are not drawn.
 - shows a loader while the diff is loading. later refreshes from the **file watcher** are silent.
+- shows a centered placeholder (`DiffPlaceholder`) instead of a blank area:
+    - `No changes` when the comparison has no changed files, with `The working tree matches HEAD` or `<source> has no changes against <target>`.
+    - `No content changes` when the selected file's diff has no hunks: `Renamed from <path>`, `Empty file added`, `Empty file deleted` or `Only file metadata changed` (mode changes).
+    - `DiffPlaceholders.of` decides it, `useDiffPlaceholder` drives it. failed loads and binary files keep their own states.
 
 ## review sessions
 
@@ -131,7 +141,7 @@ Check the layout representation: `/Users/omercanbalandi/studio-2/oversee-visual-
 - agents reply to comments with `oversee review reply`. replies show as an always visible thread under their comment in the session detail, rendered as full markdown (`MarkdownView`), so multi-paragraph answers stay intact. `CommentMarkdown` parses with `breaks: true` (like GitHub comments) in both the renderer and the editor, so a single newline from the CLI is a line break and edits round-trip it as `  \n`.
 
 ##### outdated comments
-- an **outdated comment** is a comment of the **open (unfinished)** session whose saved lines can no longer be found in the current file, or whose file left the comparison's change set.
+- an **outdated comment** is a comment of the **open (unfinished)** session whose saved lines can no longer be found in the current file, whose file left the comparison's change set, or whose comparison is gone (a source or target branch no longer exists).
 - it is **one-way**: once outdated, a comment never becomes live again, even when the code comes back (`git stash pop`, undo).
 - comments follow moved code: when the saved lines still exist somewhere else (lines added above), the comment is **re-anchored** to the new range and its snapshot line numbers move with it.
     - the stored position is checked first, then the nearest match. the earlier match wins a tie.
@@ -144,7 +154,7 @@ Check the layout representation: `/Users/omercanbalandi/studio-2/oversee-visual-
     - the rules live in the domain: `Comment.Place` returns a `Placement` (unchanged, moved with the re-anchored comment, or outdated), `Blob.Lines` turns a file into lines, `LineRange.SnapshotSide` and `FileRef.SnapshotPath` pick the file a comment reads, and `FileTree.Find` and `WorkspaceChange.Touches` decide what to check.
     - `CommentService.Reconcile` checks only the live comments of open sessions that a change touches: every comment when refs moved, comments on changed paths for uncommitted comparisons.
     - it reads the end side of each file through `Change.File().SnapshotPath(range)`, so renamed files use their previous path on the old side. a comment whose file left the diff is outdated without reading it.
-    - moves and outdated marks are written in one transaction, compare-and-set, with a `comments.reconciled` event only when rows changed. a read error skips that session until the next change.
+    - moves and outdated marks are written in one transaction, compare-and-set, with a `comments.reconciled` event only when rows changed. a read error skips that session until the next change, while `ErrUnknownBranch` outdates every live comment of the session. `CommentService.Create` returns it as a 404, so no session starts on a gone comparison.
 
 ##### stale comment check
 - `POST /api/comments` takes `expectedLines` (the end-side lines the UI rendered for the range) and `previousPath`.
@@ -172,7 +182,16 @@ Check the layout representation: `/Users/omercanbalandi/studio-2/oversee-visual-
 
 ##### server events
 - `EventStream` is the push gateway: `SocketEventStream` in the app, `InMemoryEventStream` in stories.
-- `ServerEvents` validates incoming envelopes at the boundary. `ServerEventSync` applies them to the services, mounted by `useServerEventSync` in the review layout.
+- `ServerEvents` validates incoming envelopes at the boundary. `ServerEventSync` applies them to the services and is started by `ReviewSync`, see **review sync**.
+
+##### review sync
+- `ReviewLayout` mounts one hook, `useReviewSync`. it starts `ReviewSync` on mount and disposes it on unmount.
+- `ReviewSync.start()` starts each reaction and returns one dispose that undoes them all:
+    - `ServerEventSync`: event stream into the services. workspace changes clear the reviewed marks of the changed paths.
+    - `BranchSelectionGuard`: switches the comparison when a selected branch is gone, see **branch selection**.
+    - `NotificationBlink`: blinks the favicon when the unread count rises, unless reduced motion is preferred.
+    - `DocumentTitleSync`: keeps `document.title` on `<folder> - oversee`.
+- reactions subscribe to the zustand stores outside React (`AsyncResource.store`, and the app stores through the `ComparisonSelection` and `ReviewedFiles` ports that the hook builds), so they never re-render the layout and they act before React renders.
 - event kinds: `session.finished`, `session.status`, `comment.replied`, `notification.created`, `notifications.read`, `comments.reconciled`. session events silently refresh the cached session lists, without showing a loader. `comments.reconciled {sessionId, comparison}` silently refreshes that comparison's comments.
 - signals: `workspace.changed {paths, refs}` has no id and is never stored, see **file watcher**. `stream.resumed` is emitted by `SocketEventStream` itself when the socket reconnects.
 
@@ -189,7 +208,7 @@ Check the layout representation: `/Users/omercanbalandi/studio-2/oversee-visual-
 - `.oversee/` is in `.git/info/exclude`, so database writes never look like a workspace change.
 - several `serve` processes on one workspace are safe: each one reconciles, the writes are compare-and-set, and an event is appended only when rows changed.
 - **UI side**: `ServerEventSync` hands the change to `WorkspaceRefresh`.
-    - refs moved: invalidate the branch list, every change set and every cached file diff.
+    - refs moved: invalidate the branch list, every change set and every cached file diff. the refreshed branch list drives the deleted branch switch, see **branch selection**.
     - otherwise: invalidate the uncommitted change sets and the cached diffs whose `path` or `previousPath` changed.
     - `AsyncResource.invalidate()` refreshes resources on screen (`useResource` registers them through `watch()`) without a loader, and marks the others stale so they refetch on their next view.
     - reviewed marks of the changed paths are cleared. when the selected file leaves the change set, the selection moves to the file now at its position.
@@ -197,9 +216,30 @@ Check the layout representation: `/Users/omercanbalandi/studio-2/oversee-visual-
     - `HttpFileDiffGateway` puts a per-load revision into the `@pierre/diffs` `cacheKey`. with a fixed key, pierre keeps rendering the cached old contents after a refetch.
     - `stream.resumed` refreshes everything, because missed signals are not replayed.
 
+## settings
+
+- UI settings (theme, fonts, sizes, diff colors) live in the `settings` table of the workspace database (migration `0003`), one row per key with the JSON encoded value. each workspace keeps its own settings.
+- the server stores values as they are and only checks the shape: a flat JSON object, at most 64 keys of 1 to 64 characters, values up to 4096 bytes. the UI owns the meaning of each key and validates with `SettingsSchema` (lenient, a default per field).
+- `GET /api/settings` returns the stored object (`{}` when nothing is saved). `PATCH /api/settings` upserts only the keys it carries, so two tabs never overwrite each other's keys, and returns 204.
+
+```text
+main.tsx
+  → SettingsSync.start(useSettingsStore)
+    → HttpSettingsGateway.load: GET /api/settings → SettingsSchema → store.setState (defaults on failure)
+  → render App
+
+useSettingsStore.update(patch)
+  → SettingsSync store subscriber, writes queued one at a time
+    → changed keys against the last persisted values → PATCH /api/settings
+      → success marks them persisted, failure leaves them for the next change
+```
+
+- `SettingsGateway` has http and in-memory versions. stories use the in-memory one and never start the sync.
+- settings no longer use `localStorage`. values saved there before are ignored.
+
 ## development
 
-- `pnpm dev:server`: runs the go server on port `4400` against the test repository (`OVERSEE_DEV_REPO`, defaults to `/Users/omercanbalandi/oaks-lab/storyvine/now-api`). run `oversee init` there once.
+- `pnpm dev:server`: runs the go server on port `4400` (falls back to another port when 4400 is busy, then the vite proxy can not reach it) against the test repository (`OVERSEE_DEV_REPO`, defaults to `/Users/omercanbalandi/oaks-lab/storyvine/now-api`). run `oversee init` there once.
 - `pnpm dev`: runs vite. it proxies `/api` and `/ws` to the go server (`OVERSEE_DEV_API` overrides the target).
 - `pnpm storybook`: storybook with in-memory gateways.
 - `pnpm build:ui`: builds the UI shell into a single, gzipped `internal/webui/dist/index.html.gz` (vite `embed` mode, `vite-plugin-singlefile`, inlined diff worker).
@@ -230,6 +270,7 @@ Check the layout representation: `/Users/omercanbalandi/studio-2/oversee-visual-
 - if a class is only created once, use an **abstract class**.
 - if a class can be injected somewhere, use a normal class.
 - we never put logic and complexity in components. complexity is placed in custom hooks, and custom hooks orchestrate the necessary classes for the intended actions.
+- side effects that react to service or store changes (syncing, document title, favicon) are lib classes with `start(): () => void`, composed by `ReviewSync` and mounted by one hook. components and layouts do not subscribe to state they do not render, and lib reaches app stores only through small ports declared by the class that uses them.
 - when styling components with tailwind, use `/Users/omercanbalandi/studio-2/oversee/src/c.ts` for long or conditional class names.
 - state management is `zustand`. stores live in `./src/store`.
 - react contexts live in `./src/context/<name>/`, together with their provider and the hook that consumes them.
@@ -277,8 +318,8 @@ Check the layout representation: `/Users/omercanbalandi/studio-2/oversee-visual-
 - `./cmd/oversee`: the binary entry point, calls `transport/cli`.
 - `./internal/app`: composition root, wires workspace, database, repositories, services and the http server.
 - `./internal/domain`: entities, value objects, rules, domain events and errors.
-- `./internal/service`: `DiffService`, `CommentService`, `ReviewService`, `NotificationService`, `EventFeed`, `WorkspaceWatcher`.
-- `./internal/repository`: session, comment, reply, notification and event repositories, `TxRunner`.
+- `./internal/service`: `DiffService`, `CommentService`, `ReviewService`, `NotificationService`, `SettingsService`, `EventFeed`, `WorkspaceWatcher`.
+- `./internal/repository`: session, comment, reply, notification, settings and event repositories, `TxRunner`.
 - `./internal/storage/sqlite`: database open, migrations, sqlc config, queries and generated `sqldb` code, change detector.
 - `./internal/git`: git runner, output parsers and repository.
 - `./internal/transport/httpapi`: http handlers per resource, error mapping, index page rendering, localhost guard.
