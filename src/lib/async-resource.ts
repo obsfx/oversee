@@ -16,6 +16,10 @@ export class AsyncResource<T> {
   readonly store: StoreApi<ResourceState<T>>
   private readonly fetcher: () => Promise<T>
   private pending: Promise<void> | null = null
+  private watchers = 0
+  private stale = false
+  private refreshTicket = 0
+  private settledTicket = 0
 
   constructor(fetcher: () => Promise<T>) {
     this.fetcher = fetcher
@@ -48,22 +52,58 @@ export class AsyncResource<T> {
     return this.pending
   }
 
+  watch() {
+    this.watchers += 1
+    if (this.stale) {
+      void this.refresh()
+    }
+    return () => {
+      this.watchers -= 1
+    }
+  }
+
+  invalidate() {
+    if (this.store.getState().status === 'idle') {
+      return
+    }
+    this.stale = true
+    if (this.watchers > 0) {
+      void this.refresh()
+    }
+  }
+
   update(change: (data: T) => T) {
     const state = this.store.getState()
-    if (state.status === 'ready') {
-      this.store.setState({ status: 'ready', data: change(state.data) }, true)
+    if (state.status !== 'ready') {
+      return
+    }
+    this.store.setState({ status: 'ready', data: change(state.data) }, true)
+    if (this.refreshTicket !== this.settledTicket) {
+      void this.refresh()
     }
   }
 
   async refresh() {
+    if (this.pending) {
+      await this.pending
+    }
     if (this.store.getState().status !== 'ready') {
       return
     }
+    this.refreshTicket += 1
+    const ticket = this.refreshTicket
     try {
       const data = await this.fetcher()
-      this.store.setState({ status: 'ready', data }, true)
+      if (ticket === this.refreshTicket) {
+        this.stale = false
+        this.store.setState({ status: 'ready', data }, true)
+      }
     } catch {
       return
+    } finally {
+      if (ticket === this.refreshTicket) {
+        this.settledTicket = ticket
+      }
     }
   }
 

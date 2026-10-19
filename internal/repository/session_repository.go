@@ -23,6 +23,14 @@ func (r SessionRepository) FindOpen(ctx context.Context, comparison domain.Compa
 	return sessionOf(sqldb.GetSessionRow(row)), nil
 }
 
+func (r SessionRepository) ListOpen(ctx context.Context) ([]domain.Session, error) {
+	rows, err := r.queries.ListOpenSessions(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return sessionsOf(rows), nil
+}
+
 func (r SessionRepository) Get(ctx context.Context, id string) (domain.Session, error) {
 	row, err := r.queries.GetSession(ctx, id)
 	if err != nil {
@@ -39,11 +47,7 @@ func (r SessionRepository) ListFinishedByComparison(ctx context.Context, compari
 	if err != nil {
 		return nil, err
 	}
-	sessions := make([]domain.Session, 0, len(rows))
-	for _, row := range rows {
-		sessions = append(sessions, sessionOf(sqldb.GetSessionRow(row)))
-	}
-	return sessions, nil
+	return sessionsOf(rows), nil
 }
 
 func (r SessionRepository) ListFinished(ctx context.Context, page domain.PageRequest) ([]domain.Session, error) {
@@ -54,11 +58,7 @@ func (r SessionRepository) ListFinished(ctx context.Context, page domain.PageReq
 	if err != nil {
 		return nil, err
 	}
-	sessions := make([]domain.Session, 0, len(rows))
-	for _, row := range rows {
-		sessions = append(sessions, sessionOf(sqldb.GetSessionRow(row)))
-	}
-	return sessions, nil
+	return sessionsOf(rows), nil
 }
 
 func (r SessionRepository) CountFinished(ctx context.Context) (int, error) {
@@ -92,6 +92,26 @@ func (r SessionRepository) SaveStatus(ctx context.Context, session domain.Sessio
 		UpdatedAt: millis(at),
 		ID:        session.ID,
 	})
+}
+
+type sessionRow interface {
+	~struct {
+		ID           string
+		Source       string
+		Target       string
+		Status       string
+		CreatedAt    int64
+		FinishedAt   sql.NullInt64
+		CommentCount int64
+	}
+}
+
+func sessionsOf[R sessionRow](rows []R) []domain.Session {
+	sessions := make([]domain.Session, 0, len(rows))
+	for _, row := range rows {
+		sessions = append(sessions, sessionOf(sqldb.GetSessionRow(row)))
+	}
+	return sessions
 }
 
 func sessionOf(row sqldb.GetSessionRow) domain.Session {

@@ -35,7 +35,9 @@ func statusOf(err error) int {
 	switch {
 	case errors.Is(err, domain.ErrNotFound), errors.Is(err, domain.ErrNoOpenSession):
 		return http.StatusNotFound
-	case errors.Is(err, domain.ErrSessionFinished), errors.Is(err, domain.ErrSessionNotFinished):
+	case errors.Is(err, domain.ErrSessionFinished),
+		errors.Is(err, domain.ErrSessionNotFinished),
+		errors.Is(err, domain.ErrStaleContent):
 		return http.StatusConflict
 	default:
 		return http.StatusInternalServerError

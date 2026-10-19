@@ -13,14 +13,18 @@ export class InMemoryCommentGateway implements CommentGateway {
     return Promise.resolve([...this.comments])
   }
 
-  create(_comparison: unknown, input: NewComment) {
+  create(_comparison: unknown, { filePath, range, body }: NewComment) {
     const now = Date.now()
     this.sequence += 1
     const comment: ReviewComment = {
-      ...input,
+      filePath,
+      range,
+      body,
       id: `memory-${this.sequence}`,
+      lines: [],
       createdAt: now,
       updatedAt: now,
+      outdatedAt: null,
     }
     this.comments = [...this.comments, comment]
     return Promise.resolve(comment)

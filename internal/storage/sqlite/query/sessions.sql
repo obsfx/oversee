@@ -12,6 +12,13 @@ LEFT JOIN comments c ON c.session_id = s.id
 WHERE s.id = ?
 GROUP BY s.id;
 
+-- name: ListOpenSessions :many
+SELECT s.id, s.source, s.target, s.status, s.created_at, s.finished_at, COUNT(c.id) AS comment_count
+FROM review_sessions s
+LEFT JOIN comments c ON c.session_id = s.id
+WHERE s.finished_at IS NULL
+GROUP BY s.id;
+
 -- name: ListFinishedSessionsByComparison :many
 SELECT s.id, s.source, s.target, s.status, s.created_at, s.finished_at, COUNT(c.id) AS comment_count
 FROM review_sessions s

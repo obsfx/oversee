@@ -3,9 +3,11 @@ package git
 import (
 	"context"
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
+	"syscall"
 
 	"github.com/obsfx/oversee/internal/domain"
 )
@@ -14,11 +16,12 @@ const noMergeBaseExitCode = 1
 
 type Repository struct {
 	root   string
+	gitDir string
 	runner Runner
 }
 
-func NewRepository(root string) *Repository {
-	return &Repository{root: root, runner: NewRunner(root)}
+func NewRepository(root, gitDir string) *Repository {
+	return &Repository{root: root, gitDir: gitDir, runner: NewRunner(root)}
 }
 
 func (r *Repository) Branches(ctx context.Context) (domain.BranchList, error) {
@@ -50,7 +53,7 @@ func (r *Repository) Tree(ctx context.Context, comparison domain.Comparison) (do
 
 func (r *Repository) Contents(ctx context.Context, comparison domain.Comparison, path string, side domain.FileSide) (domain.Blob, error) {
 	if side == domain.FileSideNew && comparison.IsUncommitted() {
-		return r.workingFile(path), nil
+		return r.workingFile(path)
 	}
 	ref := comparison.Source
 	if side == domain.FileSideOld {
@@ -60,7 +63,30 @@ func (r *Repository) Contents(ctx context.Context, comparison domain.Comparison,
 		}
 		ref = base
 	}
-	return r.blobAt(ctx, ref, path), nil
+	return r.blobAt(ctx, ref, path)
+}
+
+func (r *Repository) Fingerprint(ctx context.Context) (domain.WorkspaceFingerprint, error) {
+	status, err := r.runner.Bytes(ctx, "--no-optional-locks", "status", "--porcelain=v2", "-z", "--branch", "--no-ahead-behind", "--untracked-files=all")
+	if err != nil {
+		return domain.WorkspaceFingerprint{}, err
+	}
+	refs, err := r.runner.Text(ctx, "for-each-ref", "--format=%(objectname) %(refname)", "refs/heads", "refs/remotes")
+	if err != nil {
+		return domain.WorkspaceFingerprint{}, err
+	}
+	report := statusOutput(status).Report()
+	worktree := make(map[string]domain.PathState, len(report.entries))
+	for _, entry := range report.entries {
+		worktree[entry.path] = r.pathState(entry)
+	}
+	return domain.WorkspaceFingerprint{
+		Head:                report.head,
+		Branch:              report.branch,
+		Refs:                refListOutput(refs).Refs(),
+		Worktree:            worktree,
+		OperationInProgress: r.indexLocked(),
+	}, nil
 }
 
 func (r *Repository) uncommittedTree(ctx context.Context) (domain.FileTree, error) {
@@ -78,10 +104,11 @@ func (r *Repository) uncommittedTree(ctx context.Context) (domain.FileTree, erro
 	}
 	untrackedPaths := lineOutput(untracked).Lines()
 	for _, path := range untrackedPaths {
+		content, _ := r.workingFile(path)
 		changes = append(changes, domain.Change{
 			Path:      path,
 			Status:    domain.ChangeUntracked,
-			Additions: r.workingFile(path).LineCount(),
+			Additions: content.LineCount(),
 		})
 	}
 	return domain.FileTree{Paths: append(lineOutput(tracked).Lines(), untrackedPaths...), Changes: changes}, nil
@@ -126,18 +153,54 @@ func (r *Repository) base(ctx context.Context, comparison domain.Comparison) (st
 	return base, err
 }
 
-func (r *Repository) blobAt(ctx context.Context, ref, path string) domain.Blob {
-	content, err := r.runner.Bytes(ctx, "show", ref+":"+path)
-	if err != nil {
-		return nil
+func (r *Repository) blobAt(ctx context.Context, ref, path string) (domain.Blob, error) {
+	content, showErr := r.runner.Bytes(ctx, "show", ref+":"+path)
+	if showErr == nil {
+		return content, nil
 	}
-	return content
+	entry, err := r.runner.Bytes(ctx, "ls-tree", "-z", ref, "--", path)
+	if err != nil || treeEntryOutput(entry).HasBlob(path) {
+		return nil, showErr
+	}
+	return nil, nil
 }
 
-func (r *Repository) workingFile(path string) domain.Blob {
-	content, err := os.ReadFile(filepath.Join(r.root, filepath.FromSlash(path)))
-	if err != nil {
-		return nil
+func (r *Repository) workingFile(path string) (domain.Blob, error) {
+	absolute := r.absolute(path)
+	content, err := os.ReadFile(absolute)
+	if err == nil {
+		return content, nil
 	}
-	return content
+	if isMissing(err) {
+		return nil, nil
+	}
+	if info, statErr := os.Stat(absolute); statErr == nil && info.IsDir() {
+		return nil, nil
+	}
+	return nil, err
+}
+
+func (r *Repository) pathState(entry statusEntry) domain.PathState {
+	state := domain.PathState{Record: entry.signature()}
+	info, err := os.Stat(r.absolute(entry.path))
+	if err != nil {
+		return state
+	}
+	state.Exists = true
+	state.Size = info.Size()
+	state.ModTime = info.ModTime()
+	return state
+}
+
+func (r *Repository) indexLocked() bool {
+	_, err := os.Stat(filepath.Join(r.gitDir, "index.lock"))
+	return err == nil
+}
+
+func (r *Repository) absolute(path string) string {
+	return filepath.Join(r.root, filepath.FromSlash(path))
+}
+
+func isMissing(err error) bool {
+	return errors.Is(err, fs.ErrNotExist) || errors.Is(err, syscall.ENOTDIR)
 }

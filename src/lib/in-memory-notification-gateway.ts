@@ -1,4 +1,5 @@
 import type { NotificationGateway, ReviewNotification } from '@/src/lib/notification-gateway.ts'
+import { NotificationLists } from '@/src/lib/notification-lists.ts'
 
 export class InMemoryNotificationGateway implements NotificationGateway {
   private notifications: ReviewNotification[]
@@ -12,14 +13,7 @@ export class InMemoryNotificationGateway implements NotificationGateway {
   }
 
   markRead(ids: number[]) {
-    const targets = new Set(ids)
-    const readAt = Date.now()
-    this.notifications = this.notifications.map((notification) => {
-      if (notification.readAt !== null || !targets.has(notification.id)) {
-        return notification
-      }
-      return { ...notification, readAt }
-    })
+    this.notifications = NotificationLists.markRead(this.notifications, ids, Date.now())
     return Promise.resolve()
   }
 }

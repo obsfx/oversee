@@ -10,6 +10,7 @@ const idleStore = createStore<ResourceState<never>>()(() => {
 export const useResource = <T>(resource: AsyncResource<T> | null) => {
   useEffect(() => {
     void resource?.load()
+    return resource?.watch()
   }, [resource])
   const store = resource ? resource.store : (idleStore as StoreApi<ResourceState<T>>)
   return useStore(store)

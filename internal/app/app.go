@@ -46,7 +46,7 @@ func Open(ctx context.Context, dir string) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &App{Workspace: ws, Services: newServices(db, git.NewRepository(ws.RepoRoot)), db: db}, nil
+	return &App{Workspace: ws, Services: newServices(db, git.NewRepository(ws.RepoRoot, ws.GitDir)), db: db}, nil
 }
 
 func newServices(db *sqlite.DB, gitRepository *git.Repository) service.Services {
@@ -54,14 +54,16 @@ func newServices(db *sqlite.DB, gitRepository *git.Repository) service.Services 
 	reads := repository.New(db, codec)
 	tx := repository.NewTxRunner(db, codec)
 	runtime := service.DefaultRuntime()
+	comments := service.NewCommentService(tx, reads, gitRepository, runtime)
 	return service.Services{
 		Diffs:         service.NewDiffService(gitRepository),
-		Comments:      service.NewCommentService(tx, reads, gitRepository, runtime),
+		Comments:      comments,
 		Reviews:       service.NewReviewService(tx, reads, runtime),
 		Notifications: service.NewNotificationService(tx, reads, runtime),
 		Events: service.NewEventFeed(reads, func(ctx context.Context) (service.ChangeDetector, error) {
 			return db.NewChangeDetector(ctx)
 		}),
+		Watcher: service.NewWorkspaceWatcher(gitRepository, comments),
 	}
 }
 

@@ -72,11 +72,8 @@ export abstract class DiffThemeCatalog {
     }),
   )
 
-  static isDiffTheme(value: unknown): value is string {
-    return (
-      typeof value === 'string' &&
-      (value === DiffThemeCatalog.auto || DiffThemeCatalog.schemesById.has(value))
-    )
+  static isDiffTheme(id: string) {
+    return id === DiffThemeCatalog.auto || DiffThemeCatalog.schemesById.has(id)
   }
 
   static ofType(type: Theme) {

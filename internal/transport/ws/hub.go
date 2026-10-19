@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/coder/websocket"
 
@@ -40,13 +41,33 @@ func (h *Hub) Publish(events []domain.RecordedEvent) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	for _, event := range events {
-		envelope := dto.EnvelopeOf(event)
-		for c := range h.clients {
-			select {
-			case c.send <- envelope:
-			default:
-				h.drop(c)
-			}
+		h.broadcast(dto.EnvelopeOf(event))
+	}
+}
+
+func (h *Hub) PublishWorkspaceChange(change domain.WorkspaceChange) {
+	envelope, err := dto.WorkspaceChangedOf(change, time.Now())
+	if err != nil {
+		slog.Warn("workspace change signal encoding failed", "error", err)
+		return
+	}
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.broadcast(envelope)
+}
+
+func (h *Hub) HasClients() bool {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return len(h.clients) > 0
+}
+
+func (h *Hub) broadcast(envelope dto.Envelope) {
+	for c := range h.clients {
+		select {
+		case c.send <- envelope:
+		default:
+			h.drop(c)
 		}
 	}
 }
@@ -97,14 +118,16 @@ func (h *Hub) stream(ctx context.Context, conn *websocket.Conn, c *client, after
 				conn.Close(websocket.StatusPolicyViolation, "client fell behind")
 				return
 			}
-			if envelope.ID <= after {
+			if envelope.Replayable() && envelope.ID <= after {
 				continue
 			}
 			if err := write(ctx, conn, envelope); err != nil {
 				slog.Debug("websocket write failed", "error", err)
 				return
 			}
-			after = envelope.ID
+			if envelope.Replayable() {
+				after = envelope.ID
+			}
 		}
 	}
 }

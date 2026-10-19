@@ -2,6 +2,7 @@ import { Popover } from '@base-ui/react/popover'
 import { Tabs } from '@base-ui/react/tabs'
 import { VscComment } from 'react-icons/vsc'
 import { CurrentCommentsPanel } from '@/src/components/topbar/current-comments-panel.tsx'
+import { OutdatedCommentsPanel } from '@/src/components/topbar/outdated-comments-panel.tsx'
 import { ReviewSessionsPanel } from '@/src/components/topbar/review-sessions-panel.tsx'
 import { useCommentsMenu } from '@/src/hooks/use-comments-menu.ts'
 import { IconButton } from '@/src/primitives/icon-button.tsx'
@@ -28,7 +29,12 @@ export function CommentsMenu() {
             <PopoverTab value={'sessions'} label={'Sessions'} count={menu.sessionCount} />
           </PopoverTabsHeader>
           <Tabs.Panel value={'current'} className={'outline-none'}>
-            <CurrentCommentsPanel onNavigate={menu.close} />
+            {menu.outdatedOpen && (
+              <OutdatedCommentsPanel onBack={menu.closeOutdated} onNavigate={menu.close} />
+            )}
+            {!menu.outdatedOpen && (
+              <CurrentCommentsPanel onNavigate={menu.close} onOpenOutdated={menu.openOutdated} />
+            )}
           </Tabs.Panel>
           <Tabs.Panel value={'sessions'} className={'outline-none'}>
             <ReviewSessionsPanel

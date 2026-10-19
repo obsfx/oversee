@@ -20,6 +20,9 @@ oversee serve (cwd = workspace, git root = repo)
       → GET /ws      → ws.Hub
         → service.EventFeed (PRAGMA data_version check every 100ms on the events table)
           → broadcast new events to every connected UI
+    → service.WorkspaceWatcher (1s tick, see file watcher)
+      → git fingerprint changed and settled → CommentService.Reconcile → comments.reconciled row
+        → ws.Hub workspace.changed signal (never stored) → UI silently refreshes tree, diff, branches
 
 oversee review start|close|reply (another process, usually an agent)
   → cli command → service.ReviewService
@@ -38,13 +41,15 @@ transport (httpapi, ws, cli)   decode input, map errors, render DTOs or presente
 app                            composition root: workspace, db, repositories, services, http server
 ```
 - dependencies point down only. `domain` imports nothing from the project.
-- services declare the small interfaces they consume (`GitReader`, `Transactor`, `ChangeDetector`); repositories and the git repository are concrete structs.
+- services declare the small interfaces they consume (`GitReader`, `Transactor`, `ChangeDetector`, `WorkspaceProbe`, `Audience`, `Reconciler`); repositories and the git repository are concrete structs.
+- `git.Repository.Contents` returns `nil, nil` for a missing file (path not in the ref, deleted or a directory in the working tree) and an error for a failed read. code that makes one-way decisions (outdating comments) must only act on a missing file, never on an error.
 - every multi-write runs in `TxRunner.Within`, and its events are appended in the same transaction (outbox).
 - the JSON contract lives only in `internal/transport/dto`: HTTP responses, CLI `--json`, event payloads (`dto.EventCodec`) and the websocket envelope. changing it means changing the UI parsers too.
-- errors: `domain.ValidationError` maps to 400, `domain.ErrNotFound`/`ErrNoOpenSession` to 404, session state conflicts to 409, everything else to 500 and a log line.
+- errors: `domain.ValidationError` maps to 400, `domain.ErrNotFound`/`ErrNoOpenSession` to 404, session state conflicts and `ErrStaleContent` to 409, everything else to 500 and a log line.
 
 - **HTTP** carries queries and commands. the **websocket** only pushes server events to the UI.
 - every write appends a row to the `events` table in the same transaction. this lets CLI processes reach a running server without knowing its port, and lets a reconnecting UI replay missed events with `?after=<lastEventId>`.
+- the one exception is `workspace.changed`: a websocket envelope **without an id** that is never stored and never replayed. it only describes the files on disk right now, so a reconnecting UI refreshes everything instead of replaying it.
 - `window.__overseeGlobal` holds `baseUrl`, `wsUrl` and `workspace` (folder `name`, `path`, and `repoName` when served from a repo subdirectory). without it (vite dev server, storybook), the UI falls back to `window.location` and `GET /api/workspace`.
 
 ## CLI interface
@@ -53,7 +58,7 @@ app                            composition root: workspace, db, repositories, se
 - `oversee serve`: picks an available port and serves the UI shell and the backend on the same address.
     - `--port` fixes the port, `--open` opens the browser, `--dev` accepts websocket connections from local dev servers.
 - `oversee review list`: lists finished review sessions, newest first, paginated with `--page` and `--limit`.
-- `oversee review get <session-id>`: shows all details of a session: comments, saved code lines and replies.
+- `oversee review get <session-id>`: shows all details of a session: comments, saved code lines and replies. outdated comments are marked with `outdated since ...`, see **outdated comments**.
 - `oversee review start <session-id>`: sets the session status to `in progress`.
 - `oversee review close <session-id>`: sets the session status to `closed`.
 - `oversee review reply <comment-id>`: when a comment is a question or not something to fix, the agent replies to it with `--body` or stdin. `--author` defaults to `agent`.
@@ -74,6 +79,7 @@ Check the layout representation: `/Users/omercanbalandi/studio-2/oversee-visual-
 - the sidebar is **expandable/collapsible** with a toggle button in the **topbar**.
 - selecting an item in the file tree shows that file in the **diff viewer**.
 - shows a loader while the file tree is loading.
+- the tree follows the files on disk without a reload, see **file watcher**.
 
 ##### topbar
 - a button that toggles the **sidebar**. it is an icon button that reflects the `expanded` or `collapsed` state with the proper icon.
@@ -98,8 +104,8 @@ Check the layout representation: `/Users/omercanbalandi/studio-2/oversee-visual-
 - powered by `@pierre/diffs`. install its skill for a better understanding of the tool: `npx skills add https://github.com/pierrecomputer/pierre --skill diffs`.
 - shows `1 file at a time`.
 - lines and line selections can be annotated. an annotation is sent to the backend and saved to the database.
-- opening a file diff shows its comments, fetched from the backend.
-- shows a loader while the diff is loading.
+- opening a file diff shows its comments, fetched from the backend. outdated comments are not drawn.
+- shows a loader while the diff is loading. later refreshes from the **file watcher** are silent.
 
 ## review sessions
 
@@ -122,17 +128,40 @@ Check the layout representation: `/Users/omercanbalandi/studio-2/oversee-visual-
 - status is **read-only** in the UI. agents change it through the CLI, the UI only displays it (leading status icon on each session row).
 
 ##### replies
-- agents reply to comments with `oversee review reply`. replies show as an always visible thread under their comment in the session detail.
+- agents reply to comments with `oversee review reply`. replies show as an always visible thread under their comment in the session detail, rendered as full markdown (`MarkdownView`), so multi-paragraph answers stay intact. `CommentMarkdown` parses with `breaks: true` (like GitHub comments) in both the renderer and the editor, so a single newline from the CLI is a line break and edits round-trip it as `  \n`.
+
+##### outdated comments
+- an **outdated comment** is a comment of the **open (unfinished)** session whose saved lines can no longer be found in the current file, or whose file left the comparison's change set.
+- it is **one-way**: once outdated, a comment never becomes live again, even when the code comes back (`git stash pop`, undo).
+- comments follow moved code: when the saved lines still exist somewhere else (lines added above), the comment is **re-anchored** to the new range and its snapshot line numbers move with it.
+    - the stored position is checked first, then the nearest match. the earlier match wins a tie.
+    - ranges that cross sides (a unified selection from deletions into additions) are never re-anchored, only checked in place.
+    - a comment with an empty snapshot can not be located, so only the change set rule applies to it.
+- outdated comments are **hidden from the diff**. the `Current` tab shows a notice row (`2 outdated comments`) that drills into an **Outdated** view: each comment with its saved code, `Open file` and `Delete`, plus `Delete all`.
+- they stay in the session and move to Sessions on finish, and the finish confirmation says they keep their saved code. finished sessions are never reconciled, so the flag freezes there: the session detail shows an `outdated` label and dims the comment, `oversee review get` prints `outdated since ...`, and `--json` carries `outdatedAt` (`0` while live).
+- **backend**
+    - `comments.outdated_at`, added by migration `0002`.
+    - the rules live in the domain: `Comment.Place` returns a `Placement` (unchanged, moved with the re-anchored comment, or outdated), `Blob.Lines` turns a file into lines, `LineRange.SnapshotSide` and `FileRef.SnapshotPath` pick the file a comment reads, and `FileTree.Find` and `WorkspaceChange.Touches` decide what to check.
+    - `CommentService.Reconcile` checks only the live comments of open sessions that a change touches: every comment when refs moved, comments on changed paths for uncommitted comparisons.
+    - it reads the end side of each file through `Change.File().SnapshotPath(range)`, so renamed files use their previous path on the old side. a comment whose file left the diff is outdated without reading it.
+    - moves and outdated marks are written in one transaction, compare-and-set, with a `comments.reconciled` event only when rows changed. a read error skips that session until the next change.
+
+##### stale comment check
+- `POST /api/comments` takes `expectedLines` (the end-side lines the UI rendered for the range) and `previousPath`.
+- the server compares `expectedLines` with the snapshot of the current file. a mismatch returns **409** (`domain.ErrStaleContent`), so a comment never attaches to code the reviewer did not see.
+- an absent or `null` `expectedLines` (CLI, older clients) skips the check, and `[]` means "no lines expected" and is compared like any other value. the DTO keeps it as `*[]string` and the draft carries an explicit `VerifyLines` flag. files that can not be read skip the check too.
+- in the UI, `CommentSnapshots.expectedLines` builds the lines with the server's snapshot rule, `HttpCommentGateway` turns the 409 into `StaleCommentError`, and the composer keeps the draft, refreshes the diff and asks the reviewer to check the lines and send again.
 
 ##### comments popover
-- the topbar `comments` button opens a tabbed popover:
-    - `Current`: comments of the open session. clicking one navigates to its file and scrolls to its line.
+- the topbar `comments` button opens a tabbed popover. its count and tooltip include outdated comments (`7 comments, 5 outdated`).
+    - `Current`: comments of the open session. clicking one navigates to its file and scrolls to its line. outdated comments sit behind the notice row, see **outdated comments**.
     - `Sessions`: finished sessions of the current comparison, newest first. each row shows the status icon, finish date, branch and comment count.
-- selecting a session drills into it inside the same popover (with a back button). each comment shows its file, line range, the saved code lines with **syntax highlighting** (same theme as the diff view), the comment text and its replies.
+- selecting a session drills into it inside the same popover (with a back button). each comment shows its file, line range, the saved code lines with **syntax highlighting** (same theme as the diff view), the full comment text as markdown and its replies. one-line rows (the `Current` tab) use `CommentMarkdown.summary` instead.
 
 ##### how it works
 - `ReviewSessionGateway` (http, and in-memory for stories) and the `ReviewSessions` class own the data. finishing updates the session list and clears the active comments. `ReviewSessions.session(id)` loads a single session from any comparison.
 - `useFinishReview`, `useReviewSessions`, `useReviewSession`, `useCommentsMenu` and `useSnippetHighlight` drive the UI. `SnippetHighlighter` tokenizes saved lines with the shared `@pierre/diffs` highlighter.
+- `ReviewComment` carries `lines` (the saved snapshot) and `outdatedAt` (`null` while live). `CommentLists.live`/`outdated` split them, `CommentLabels` builds the count, notice, age and finish texts, and `useOutdatedComments`/`useOutdatedComment` drive the Outdated view.
 
 ## notifications
 
@@ -144,7 +173,29 @@ Check the layout representation: `/Users/omercanbalandi/studio-2/oversee-visual-
 ##### server events
 - `EventStream` is the push gateway: `SocketEventStream` in the app, `InMemoryEventStream` in stories.
 - `ServerEvents` validates incoming envelopes at the boundary. `ServerEventSync` applies them to the services, mounted by `useServerEventSync` in the review layout.
-- event kinds: `session.finished`, `session.status`, `comment.replied`, `notification.created`, `notifications.read`. session events silently refresh the cached session lists, without showing a loader.
+- event kinds: `session.finished`, `session.status`, `comment.replied`, `notification.created`, `notifications.read`, `comments.reconciled`. session events silently refresh the cached session lists, without showing a loader. `comments.reconciled {sessionId, comparison}` silently refreshes that comparison's comments.
+- signals: `workspace.changed {paths, refs}` has no id and is never stored, see **file watcher**. `stream.resumed` is emitted by `SocketEventStream` itself when the socket reconnects.
+
+## file watcher
+
+- `oversee serve` keeps the UI in sync with the files on disk, so nobody reloads the page after editing a file or running git.
+- **detection**: `WorkspaceWatcher` polls git instead of using OS file events. every tick builds a `WorkspaceFingerprint`:
+    - `git --no-optional-locks status --porcelain=v2 -z --branch --no-ahead-behind --untracked-files=all`, plus `os.Stat` (size and mtime) of every listed path. status alone does not change when an already modified file is edited again.
+    - `git for-each-ref` over `refs/heads` and `refs/remotes`, plus HEAD and the current branch.
+    - `ChangesSince(previous)` returns the changed paths and whether any ref moved.
+- **timing**: one tick per second. the first tick runs at startup and reconciles every open session. later ticks run only while a websocket client is connected.
+- **settle rule**: a change is applied only when two ticks in a row agree and `.git/index.lock` does not exist, so a half-done checkout, stash or rebase is never acted on. the UI updates in 1-2s.
+- on a settled change, `CommentService.Reconcile` runs first (see **outdated comments**), then the hub broadcasts `workspace.changed`.
+- `.oversee/` is in `.git/info/exclude`, so database writes never look like a workspace change.
+- several `serve` processes on one workspace are safe: each one reconciles, the writes are compare-and-set, and an event is appended only when rows changed.
+- **UI side**: `ServerEventSync` hands the change to `WorkspaceRefresh`.
+    - refs moved: invalidate the branch list, every change set and every cached file diff.
+    - otherwise: invalidate the uncommitted change sets and the cached diffs whose `path` or `previousPath` changed.
+    - `AsyncResource.invalidate()` refreshes resources on screen (`useResource` registers them through `watch()`) without a loader, and marks the others stale so they refetch on their next view.
+    - reviewed marks of the changed paths are cleared. when the selected file leaves the change set, the selection moves to the file now at its position.
+    - an open comment composer keeps its draft across refreshes.
+    - `HttpFileDiffGateway` puts a per-load revision into the `@pierre/diffs` `cacheKey`. with a fixed key, pierre keeps rendering the cached old contents after a refetch.
+    - `stream.resumed` refreshes everything, because missed signals are not replayed.
 
 ## development
 
@@ -192,7 +243,10 @@ Check the layout representation: `/Users/omercanbalandi/studio-2/oversee-visual-
 - in `./src/lib`, helper functions live in a class: private static methods of the class that uses them, or a small abstract utility class when shared (for example `ResponseGuards`). no module-level helper functions.
 - use `dayjs` for date and time work.
 - import from the project root with the `@/` alias, for example `@/src/primitives/kbd.tsx`. eslint rejects relative imports (`./`, `../`).
-- validate external data (http responses, socket messages, injected globals) at the boundary, in the gateway or parser classes.
+- validate external data (http responses, socket messages, injected globals, persisted settings) at the boundary, in the gateway or parser classes, with `valibot` schemas.
+    - schemas are static members of those classes (`import * as v from 'valibot'`). shared building blocks live next to their owner (`LineRanges.schema`, `ChangeStatuses.schema`, `SessionStatuses.schema`, `ComparisonRules.wireSchema`, `CommentShapes.wire`) or in `ValueSchemas` for primitives such as `count`.
+    - http gateways pass their body schema to `ApiClient.get`/`send`, which validate the response and throw `ApiError.unexpectedShape` on a mismatch. other strict values (the injected workspace) use `ApiClient.parse(schema, value, path)`. lenient parsers (notifications, server events, settings) use `v.safeParse` or `v.fallback` and drop or default bad values.
+    - models stay declared `interface`s. a parser's return type checks the schema output, and wire-to-model differences (`outdatedAt` 0 to `null`, `source`/`target` to `comparison`) are `v.transform` steps.
 
 ##### go
 - use the `use-modern-go` skill (`https://github.com/JetBrains/go-modern-guidelines`) before writing go code.
@@ -223,7 +277,7 @@ Check the layout representation: `/Users/omercanbalandi/studio-2/oversee-visual-
 - `./cmd/oversee`: the binary entry point, calls `transport/cli`.
 - `./internal/app`: composition root, wires workspace, database, repositories, services and the http server.
 - `./internal/domain`: entities, value objects, rules, domain events and errors.
-- `./internal/service`: `DiffService`, `CommentService`, `ReviewService`, `NotificationService`, `EventFeed`.
+- `./internal/service`: `DiffService`, `CommentService`, `ReviewService`, `NotificationService`, `EventFeed`, `WorkspaceWatcher`.
 - `./internal/repository`: session, comment, reply, notification and event repositories, `TxRunner`.
 - `./internal/storage/sqlite`: database open, migrations, sqlc config, queries and generated `sqldb` code, change detector.
 - `./internal/git`: git runner, output parsers and repository.

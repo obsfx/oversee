@@ -27,6 +27,7 @@ var (
 type Workspace struct {
 	Dir      string
 	RepoRoot string
+	GitDir   string
 }
 
 func Resolve(ctx context.Context, dir string) (Workspace, error) {
@@ -38,11 +39,15 @@ func Resolve(ctx context.Context, dir string) (Workspace, error) {
 	if err != nil {
 		return Workspace{}, err
 	}
-	root, err := gitOutput(ctx, resolved, "rev-parse", "--show-toplevel")
+	output, err := gitOutput(ctx, resolved, "rev-parse", "--show-toplevel", "--absolute-git-dir")
 	if err != nil {
 		return Workspace{}, ErrNotRepository
 	}
-	return Workspace{Dir: resolved, RepoRoot: root}, nil
+	root, gitDir, found := strings.Cut(output, "\n")
+	if !found {
+		return Workspace{}, ErrNotRepository
+	}
+	return Workspace{Dir: resolved, RepoRoot: root, GitDir: gitDir}, nil
 }
 
 func (w Workspace) Info() domain.WorkspaceInfo {

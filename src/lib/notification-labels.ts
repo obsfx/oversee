@@ -3,11 +3,12 @@ import { CountLabels } from '@/src/lib/count-labels.ts'
 import type { ReviewNotification } from '@/src/lib/notification-gateway.ts'
 import { RelativeTime } from '@/src/lib/relative-time.ts'
 import { SessionStatuses } from '@/src/lib/session-statuses.ts'
+import { TreePaths } from '@/src/lib/tree-paths.ts'
 
 export abstract class NotificationLabels {
   static title(notification: ReviewNotification) {
     if (notification.kind === 'comment-reply') {
-      return `Agent replied on ${NotificationLabels.fileName(notification.filePath)}:${notification.line}`
+      return `Agent replied on ${TreePaths.split(notification.filePath).name}:${notification.line}`
     }
     if (notification.status === 'closed') {
       return 'Review closed'
@@ -33,9 +34,5 @@ export abstract class NotificationLabels {
 
   static count(count: number) {
     return CountLabels.of(count, 'notification')
-  }
-
-  private static fileName(path: string) {
-    return path.split('/').pop() ?? path
   }
 }

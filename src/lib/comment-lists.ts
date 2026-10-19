@@ -7,6 +7,20 @@ export abstract class CommentLists {
     })
   }
 
+  static isOutdated(comment: ReviewComment) {
+    return comment.outdatedAt !== null
+  }
+
+  static live<T extends ReviewComment>(comments: readonly T[]) {
+    return comments.filter((comment) => {
+      return !CommentLists.isOutdated(comment)
+    })
+  }
+
+  static outdated<T extends ReviewComment>(comments: readonly T[]) {
+    return comments.filter(CommentLists.isOutdated)
+  }
+
   static without(comments: readonly ReviewComment[], id: string) {
     return comments.filter((comment) => {
       return comment.id !== id

@@ -1,4 +1,4 @@
-import { ValueGuards } from '@/src/lib/value-guards.ts'
+import * as v from 'valibot'
 
 const STATUSES = ['created', 'in-progress', 'closed'] as const
 
@@ -11,9 +11,7 @@ const LABELS: Record<SessionStatus, string> = {
 }
 
 export abstract class SessionStatuses {
-  static isStatus(value: unknown): value is SessionStatus {
-    return ValueGuards.isOneOf(STATUSES, value)
-  }
+  static readonly schema = v.picklist(STATUSES)
 
   static label(status: SessionStatus) {
     return LABELS[status]

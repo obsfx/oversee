@@ -22,4 +22,17 @@ const meta = {
 
 export default meta
 
-export const Default: StoryObj<typeof meta> = {}
+type Story = StoryObj<typeof meta>
+
+export const Default: Story = {}
+
+export const RichBody: Story = {
+  args: {
+    body: (
+      <div className={'flex flex-col gap-1'}>
+        <p>The script runs once per deploy.</p>
+        <p>Keeping it as is, the extra query is not on a hot path.</p>
+      </div>
+    ),
+  },
+}

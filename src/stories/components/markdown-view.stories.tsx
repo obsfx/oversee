@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { MarkdownView } from '@/src/components/diff-viewer/markdown-view.tsx'
+import { MarkdownView } from '@/src/components/markdown-view.tsx'
 
 const RICH_BODY = [
   'Extract **expiry math** into `nextExpiry`, keep ~~magic numbers~~ out, see *docs*.',
@@ -20,7 +20,7 @@ const RICH_BODY = [
 ].join('\n')
 
 const meta = {
-  title: 'Components/DiffViewer/MarkdownView',
+  title: 'Components/MarkdownView',
   component: MarkdownView,
   args: { body: RICH_BODY },
   decorators: [

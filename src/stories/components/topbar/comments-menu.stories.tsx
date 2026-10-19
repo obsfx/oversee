@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { CommentsMenu } from '@/src/components/topbar/comments-menu.tsx'
 import { FinishReviewButton } from '@/src/components/topbar/finish-review-button.tsx'
 import type { Services } from '@/src/lib/services.ts'
-import { createStoryServices } from '@/src/stories/support/fixtures.ts'
+import { createStoryServices, reviewCommentsWithOutdated } from '@/src/stories/support/fixtures.ts'
 import { StoryFrame } from '@/src/stories/support/story-frame.tsx'
 
 const meta = {
@@ -33,3 +33,7 @@ export const Empty: Story = {
 }
 
 export const NoActiveReview: Story = { args: { services: createStoryServices({ comments: [] }) } }
+
+export const WithOutdated: Story = {
+  args: { services: createStoryServices({ comments: reviewCommentsWithOutdated }) },
+}

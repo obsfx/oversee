@@ -3,11 +3,41 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
+	"slices"
 
 	"github.com/obsfx/oversee/internal/domain"
 	"github.com/obsfx/oversee/internal/repository"
 )
+
+type commentBlobKey struct {
+	path string
+	side domain.FileSide
+}
+
+type commentMove struct {
+	moved domain.Comment
+	from  domain.LineRange
+}
+
+type commentReconciliation struct {
+	moves    []commentMove
+	outdated []string
+}
+
+func (r *commentReconciliation) add(comment domain.Comment, placement domain.Placement) {
+	switch placement.Kind {
+	case domain.PlacementOutdated:
+		r.outdated = append(r.outdated, comment.ID)
+	case domain.PlacementMoved:
+		r.moves = append(r.moves, commentMove{moved: placement.Moved, from: comment.Range})
+	}
+}
+
+func (r commentReconciliation) isEmpty() bool {
+	return len(r.moves) == 0 && len(r.outdated) == 0
+}
 
 type CommentService struct {
 	tx      Transactor
@@ -41,7 +71,13 @@ func (s *CommentService) Create(ctx context.Context, comparison domain.Compariso
 	if err := draft.Validate(); err != nil {
 		return domain.Comment{}, err
 	}
-	snapshot := draft.Range.Snapshot(s.commentedBlob(ctx, comparison, draft))
+	blob, readable := s.commentedBlob(ctx, comparison, draft)
+	snapshot := draft.Range.Snapshot(blob)
+	if readable {
+		if err := draft.CheckFresh(snapshot); err != nil {
+			return domain.Comment{}, err
+		}
+	}
 	now := s.runtime.Now()
 	var comment domain.Comment
 	err := s.tx.Within(ctx, func(repos repository.Repositories) error {
@@ -69,6 +105,92 @@ func (s *CommentService) Delete(ctx context.Context, id string) error {
 	return s.reads.Comments.Delete(ctx, id)
 }
 
+func (s *CommentService) Reconcile(ctx context.Context, change domain.WorkspaceChange) error {
+	sessions, err := s.reads.Sessions.ListOpen(ctx)
+	if err != nil {
+		return err
+	}
+	var failures []error
+	for _, session := range sessions {
+		if err := s.reconcileSession(ctx, session, change); err != nil {
+			failures = append(failures, fmt.Errorf("reconcile review session %s: %w", session.ID, err))
+		}
+	}
+	return errors.Join(failures...)
+}
+
+func (s *CommentService) reconcileSession(ctx context.Context, session domain.Session, change domain.WorkspaceChange) error {
+	comments, err := s.reads.Comments.ListBySession(ctx, session.ID)
+	if err != nil {
+		return err
+	}
+	touched := slices.DeleteFunc(comments, func(comment domain.Comment) bool {
+		return comment.IsOutdated() || !change.Touches(session.Comparison, comment.FilePath)
+	})
+	if len(touched) == 0 {
+		return nil
+	}
+	tree, err := s.git.Tree(ctx, session.Comparison)
+	if err != nil {
+		return err
+	}
+	blobs := map[commentBlobKey]domain.Blob{}
+	result := commentReconciliation{}
+	for _, comment := range touched {
+		placement := domain.Placement{Kind: domain.PlacementOutdated}
+		if fileChange, inDiff := tree.Find(comment.FilePath); inDiff {
+			blob, err := s.reconcileBlob(ctx, session.Comparison, comment, fileChange.File(), blobs)
+			if err != nil {
+				return err
+			}
+			placement = comment.Place(blob)
+		}
+		result.add(comment, placement)
+	}
+	return s.applyReconciliation(ctx, session, result)
+}
+
+func (s *CommentService) reconcileBlob(ctx context.Context, comparison domain.Comparison, comment domain.Comment, file domain.FileRef, cache map[commentBlobKey]domain.Blob) (domain.Blob, error) {
+	key := commentBlobKey{path: file.SnapshotPath(comment.Range), side: comment.Range.SnapshotSide()}
+	if blob, cached := cache[key]; cached {
+		return blob, nil
+	}
+	blob, err := s.git.Contents(ctx, comparison, key.path, key.side)
+	if err != nil {
+		return nil, err
+	}
+	cache[key] = blob
+	return blob, nil
+}
+
+func (s *CommentService) applyReconciliation(ctx context.Context, session domain.Session, result commentReconciliation) error {
+	if result.isEmpty() {
+		return nil
+	}
+	now := s.runtime.Now()
+	return s.tx.Within(ctx, func(repos repository.Repositories) error {
+		changed := false
+		for _, move := range result.moves {
+			moved, err := repos.Comments.Move(ctx, move.moved, move.from)
+			if err != nil {
+				return err
+			}
+			changed = changed || moved
+		}
+		for _, id := range result.outdated {
+			marked, err := repos.Comments.MarkOutdated(ctx, id, now)
+			if err != nil {
+				return err
+			}
+			changed = changed || marked
+		}
+		if !changed {
+			return nil
+		}
+		return repos.Events.Append(ctx, domain.CommentsReconciled{SessionID: session.ID, Comparison: session.Comparison, At: now})
+	})
+}
+
 func (s *CommentService) openSession(ctx context.Context, repos repository.Repositories, comparison domain.Comparison) (domain.Session, error) {
 	session, err := repos.Sessions.FindOpen(ctx, comparison)
 	if !errors.Is(err, domain.ErrNotFound) {
@@ -78,11 +200,12 @@ func (s *CommentService) openSession(ctx context.Context, repos repository.Repos
 	return session, repos.Sessions.Insert(ctx, session)
 }
 
-func (s *CommentService) commentedBlob(ctx context.Context, comparison domain.Comparison, draft domain.CommentDraft) domain.Blob {
-	blob, err := s.git.Contents(ctx, comparison, draft.FilePath, draft.Range.EndSide.FileSide())
+func (s *CommentService) commentedBlob(ctx context.Context, comparison domain.Comparison, draft domain.CommentDraft) (domain.Blob, bool) {
+	path := draft.File().SnapshotPath(draft.Range)
+	blob, err := s.git.Contents(ctx, comparison, path, draft.Range.SnapshotSide())
 	if err != nil {
-		slog.Warn("comment snapshot unavailable", "path", draft.FilePath, "error", err)
-		return nil
+		slog.Warn("comment snapshot unavailable", "path", path, "error", err)
+		return nil, false
 	}
-	return blob
+	return blob, true
 }

@@ -1,6 +1,10 @@
 package domain
 
-import "bytes"
+import (
+	"bytes"
+	"slices"
+	"strings"
+)
 
 type BranchList struct {
 	Local   []string
@@ -26,6 +30,10 @@ type Change struct {
 	Deletions    int
 }
 
+func (c Change) File() FileRef {
+	return FileRef{Path: c.Path, PreviousPath: c.PreviousPath}
+}
+
 type FileTree struct {
 	Paths   []string
 	Changes []Change
@@ -40,6 +48,16 @@ func NewFileTree(paths []string, changes []Change) FileTree {
 	return FileTree{Paths: paths, Changes: changes}
 }
 
+func (t FileTree) Find(path string) (Change, bool) {
+	index := slices.IndexFunc(t.Changes, func(change Change) bool {
+		return change.Path == path
+	})
+	if index < 0 {
+		return Change{}, false
+	}
+	return t.Changes[index], true
+}
+
 type Blob []byte
 
 func (b Blob) Exists() bool {
@@ -48,6 +66,13 @@ func (b Blob) Exists() bool {
 
 func (b Blob) IsBinary() bool {
 	return bytes.IndexByte(b, 0) >= 0
+}
+
+func (b Blob) Lines() ([]string, bool) {
+	if !b.Exists() || b.IsBinary() {
+		return nil, false
+	}
+	return strings.Split(string(b), "\n"), true
 }
 
 func (b Blob) LineCount() int {

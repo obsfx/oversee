@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json/v2"
 	"time"
 
@@ -74,6 +75,30 @@ func (r CommentRepository) Delete(ctx context.Context, id string) error {
 	return requireAffected(commentEntity, id, affected, err)
 }
 
+func (r CommentRepository) MarkOutdated(ctx context.Context, id string, at time.Time) (bool, error) {
+	affected, err := r.queries.MarkCommentOutdated(ctx, sqldb.MarkCommentOutdatedParams{
+		OutdatedAt: sql.NullInt64{Int64: millis(at), Valid: true},
+		ID:         id,
+	})
+	return affected > 0, err
+}
+
+func (r CommentRepository) Move(ctx context.Context, moved domain.Comment, from domain.LineRange) (bool, error) {
+	snapshot, err := encodeSnapshot(moved.Snapshot)
+	if err != nil {
+		return false, err
+	}
+	affected, err := r.queries.MoveComment(ctx, sqldb.MoveCommentParams{
+		StartLine:     int64(moved.Range.Start),
+		EndLine:       int64(moved.Range.End),
+		Snapshot:      snapshot,
+		ID:            moved.ID,
+		FromStartLine: int64(from.Start),
+		FromEndLine:   int64(from.End),
+	})
+	return affected > 0, err
+}
+
 func commentOf(row sqldb.Comment) (domain.Comment, error) {
 	snapshot, err := decodeSnapshot(row.Snapshot)
 	if err != nil {
@@ -89,10 +114,11 @@ func commentOf(row sqldb.Comment) (domain.Comment, error) {
 			Side:    domain.Side(row.Side),
 			EndSide: domain.Side(row.EndSide),
 		},
-		Body:      row.Body,
-		Snapshot:  snapshot,
-		CreatedAt: timeOf(row.CreatedAt),
-		UpdatedAt: timeOf(row.UpdatedAt),
+		Body:       row.Body,
+		Snapshot:   snapshot,
+		CreatedAt:  timeOf(row.CreatedAt),
+		UpdatedAt:  timeOf(row.UpdatedAt),
+		OutdatedAt: optionalTime(row.OutdatedAt),
 	}, nil
 }
 

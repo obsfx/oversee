@@ -10,6 +10,7 @@ var (
 	ErrNoOpenSession      = errors.New("no open review session")
 	ErrSessionNotFinished = errors.New("review session is not finished")
 	ErrSessionFinished    = errors.New("review session is already finished")
+	ErrStaleContent       = errors.New("the commented lines changed after they were loaded")
 )
 
 type ValidationError struct {

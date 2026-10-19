@@ -1,5 +1,6 @@
 import type { AnnotationSide, SelectedLineRange } from '@pierre/diffs/react'
-import { ValueGuards } from '@/src/lib/value-guards.ts'
+import * as v from 'valibot'
+import { ValueSchemas } from '@/src/lib/value-schemas.ts'
 
 const SIDES: readonly AnnotationSide[] = ['additions', 'deletions']
 
@@ -16,9 +17,14 @@ export interface LineAnchor {
 }
 
 export abstract class LineRanges {
-  static isSide(value: unknown): value is AnnotationSide {
-    return ValueGuards.isOneOf(SIDES, value)
-  }
+  static readonly sideSchema = v.picklist(SIDES)
+
+  static readonly schema = v.object({
+    start: ValueSchemas.positiveInteger,
+    end: ValueSchemas.positiveInteger,
+    side: LineRanges.sideSchema,
+    endSide: LineRanges.sideSchema,
+  })
 
   static fromSelection({ start, end, side, endSide }: SelectedLineRange): LineRange {
     const startSide = side ?? 'additions'

@@ -1,28 +1,33 @@
 import type { ReactNode } from 'react'
+import { c } from '@/src/c.ts'
+import { CommentLocation } from '@/src/primitives/comment-location.tsx'
 
 interface SessionCommentProps {
   filePath: string
   location: string
+  marker?: ReactNode
+  dimmed?: boolean
   snippet: ReactNode
-  body: string
+  body: ReactNode
   replies?: ReactNode
 }
 
 export function SessionComment({
   filePath,
   location,
+  marker,
+  dimmed = false,
   snippet,
   body,
   replies,
 }: SessionCommentProps) {
   return (
-    <div className={'flex flex-col gap-1 px-1.5 py-1.5'}>
-      <span className={'flex items-center gap-1.5 text-mini text-fg-muted'}>
-        <span className={'truncate'}>{filePath}</span>
-        <span className={'shrink-0 font-editor text-fg-faint'}>{location}</span>
-      </span>
+    <div className={c('flex flex-col gap-1 px-1.5 py-1.5', dimmed && 'opacity-70')}>
+      <CommentLocation filePath={filePath} location={location}>
+        {marker}
+      </CommentLocation>
       {snippet}
-      <span className={'block'}>{body}</span>
+      <div>{body}</div>
       {replies}
     </div>
   )

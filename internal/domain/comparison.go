@@ -59,6 +59,10 @@ func (f FileRef) PathOn(side FileSide) string {
 	return f.Path
 }
 
+func (f FileRef) SnapshotPath(r LineRange) string {
+	return f.PathOn(r.SnapshotSide())
+}
+
 func (f FileRef) Validate() error {
 	if !isRepoPath(f.Path) {
 		return invalid("path", "must be a path inside the repository")

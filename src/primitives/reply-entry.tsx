@@ -1,9 +1,10 @@
+import type { ReactNode } from 'react'
 import { VscReply } from 'react-icons/vsc'
 
 interface ReplyEntryProps {
   author: string
   age: string
-  body: string
+  body: ReactNode
 }
 
 export function ReplyEntry({ author, age, body }: ReplyEntryProps) {
@@ -14,7 +15,7 @@ export function ReplyEntry({ author, age, body }: ReplyEntryProps) {
         <span className={'font-medium text-fg'}>{author}</span>
         <span className={'text-fg-faint'}>{age}</span>
       </span>
-      <span>{body}</span>
+      <div>{body}</div>
     </div>
   )
 }

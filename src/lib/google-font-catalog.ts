@@ -24,22 +24,21 @@ export abstract class GoogleFontCatalog {
     }),
   )
 
-  static isUiFamily(value: unknown): value is string {
-    return typeof value === 'string' && GoogleFontCatalog.uiFamilySet.has(value)
+  static isUiFamily(family: string) {
+    return GoogleFontCatalog.uiFamilySet.has(family)
   }
 
-  static isEditorFamily(value: unknown): value is string {
-    return typeof value === 'string' && GoogleFontCatalog.editorFamilySet.has(value)
+  static isEditorFamily(family: string) {
+    return GoogleFontCatalog.editorFamilySet.has(family)
   }
 
   static weightsOf(family: string) {
     return GoogleFontCatalog.weightsByFamily.get(family) ?? [REGULAR_WEIGHT]
   }
 
-  static closestWeight(family: string, weight: unknown) {
-    const target = typeof weight === 'number' ? weight : REGULAR_WEIGHT
+  static closestWeight(family: string, weight: number) {
     return GoogleFontCatalog.weightsOf(family).reduce((closest, candidate) => {
-      return Math.abs(candidate - target) < Math.abs(closest - target) ? candidate : closest
+      return Math.abs(candidate - weight) < Math.abs(closest - weight) ? candidate : closest
     })
   }
 

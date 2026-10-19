@@ -4,7 +4,7 @@ import { useAnnotationStore } from '@/src/store/annotation-store.ts'
 import { useComments } from '@/src/hooks/use-comments.ts'
 
 export const useDiffAnnotations = (path: string) => {
-  const { list } = useComments()
+  const { live } = useComments()
   const selection = useAnnotationStore((store) => {
     return store.selection
   })
@@ -15,7 +15,7 @@ export const useDiffAnnotations = (path: string) => {
     return store.draft
   })
 
-  const fileComments = list.filter((comment) => {
+  const fileComments = live.filter((comment) => {
     return comment.filePath === path
   })
   const composer = draft?.path === path ? draft : null

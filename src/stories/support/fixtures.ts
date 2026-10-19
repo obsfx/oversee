@@ -45,6 +45,8 @@ export const reviewComments: ReviewComment[] = [
     body: 'Good call reading this from config. Should we validate the **range** too? A `0` here would expire every session instantly.',
     createdAt: Date.now() - 42 * MINUTE,
     updatedAt: Date.now() - 42 * MINUTE,
+    lines: [],
+    outdatedAt: null,
   },
   {
     id: 'c2',
@@ -53,6 +55,8 @@ export const reviewComments: ReviewComment[] = [
     body: 'Nice, one query instead of N.\n\n- does `deleteByUser` emit the audit event?\n- should this return the count?',
     createdAt: Date.now() - 8 * MINUTE,
     updatedAt: Date.now() - 8 * MINUTE,
+    lines: [],
+    outdatedAt: null,
   },
   {
     id: 'c3',
@@ -61,6 +65,8 @@ export const reviewComments: ReviewComment[] = [
     body: 'Pin the node version in `.nvmrc` instead so local and CI match.',
     createdAt: Date.now() - 3 * MINUTE,
     updatedAt: Date.now() - 3 * MINUTE,
+    lines: [],
+    outdatedAt: null,
   },
   {
     id: 'c4',
@@ -69,7 +75,41 @@ export const reviewComments: ReviewComment[] = [
     body: 'Generated, but should `updatedAt` be a `Date` scalar instead of **string**?',
     createdAt: Date.now() - 1 * MINUTE,
     updatedAt: Date.now() - 1 * MINUTE,
+    lines: [],
+    outdatedAt: null,
   },
+]
+
+const withSnapshot = (comment: ReviewComment): ReviewComment => {
+  return { ...comment, lines: snapshotOf(comment) }
+}
+
+export const outdatedReviewComments: ReviewComment[] = [
+  withSnapshot({
+    id: 'o1',
+    filePath: 'src/graphql/resolvers/User/mutations/auth.ts',
+    range: { start: 30, end: 32, side: 'additions', endSide: 'additions' },
+    body: 'This early return skips the audit log for failed logins.',
+    lines: [],
+    createdAt: Date.now() - 30 * MINUTE,
+    updatedAt: Date.now() - 30 * MINUTE,
+    outdatedAt: Date.now() - 6 * MINUTE,
+  }),
+  withSnapshot({
+    id: 'o2',
+    filePath: 'scripts/expire_password.ts',
+    range: { start: 2, end: 4, side: 'additions', endSide: 'additions' },
+    body: 'Batch these updates instead of running one query per user.',
+    lines: [],
+    createdAt: Date.now() - 20 * MINUTE,
+    updatedAt: Date.now() - 20 * MINUTE,
+    outdatedAt: Date.now() - 2 * MINUTE,
+  }),
+]
+
+export const reviewCommentsWithOutdated: ReviewComment[] = [
+  ...reviewComments,
+  ...outdatedReviewComments,
 ]
 
 interface StoryServicesOptions {
@@ -79,6 +119,7 @@ interface StoryServicesOptions {
   sessions?: ReviewSession[]
   notifications?: ReviewNotification[]
   events?: InMemoryEventStream
+  commentGateway?: InMemoryCommentGateway
   changeSets?: () => Promise<ChangeSet>
   fileDiffs?: (request: FileDiffRequest) => Promise<FileDiff>
 }
@@ -99,6 +140,7 @@ export const createStoryServices = ({
   sessions = reviewSessions,
   notifications = reviewNotifications,
   events = new InMemoryEventStream(),
+  commentGateway = new InMemoryCommentGateway(comments),
   changeSets = () => {
     return Promise.resolve(changeSet)
   },
@@ -106,7 +148,6 @@ export const createStoryServices = ({
     return Promise.resolve(fileDiffFor(change))
   },
 }: StoryServicesOptions = {}) => {
-  const commentGateway = new InMemoryCommentGateway(comments)
   return new Services({
     workspace: { load: workspace },
     branches: { list: branches },

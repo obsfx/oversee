@@ -1,3 +1,4 @@
+import * as v from 'valibot'
 import type { BranchList } from '@/src/lib/branch-gateway.ts'
 
 export type ComparisonSource = { kind: 'uncommitted' } | { kind: 'branch'; name: string }
@@ -18,6 +19,14 @@ export abstract class ComparisonRules {
     return { kind: 'branch', name }
   }
 
+  static isUncommitted(source: ComparisonSource) {
+    return source.kind === 'uncommitted'
+  }
+
+  static branchName(source: ComparisonSource) {
+    return source.kind === 'branch' ? source.name : null
+  }
+
   static defaultFor({ branches, current }: BranchList): Comparison {
     const target =
       PREFERRED_TARGETS.find((branch) => {
@@ -32,7 +41,7 @@ export abstract class ComparisonRules {
   }
 
   static query({ source, target }: Comparison) {
-    return { source: source.kind === 'branch' ? source.name : UNCOMMITTED_REF, target }
+    return { source: ComparisonRules.branchName(source) ?? UNCOMMITTED_REF, target }
   }
 
   static fromQuery(source: string, target: string): Comparison {
@@ -46,7 +55,14 @@ export abstract class ComparisonRules {
     return new URLSearchParams(ComparisonRules.query(comparison))
   }
 
+  static readonly wireSchema = v.pipe(
+    v.object({ source: v.string(), target: v.string() }),
+    v.transform(({ source, target }) => {
+      return ComparisonRules.fromQuery(source, target)
+    }),
+  )
+
   static sourceLabel(source: ComparisonSource) {
-    return source.kind === 'uncommitted' ? ComparisonRules.uncommittedLabel : source.name
+    return ComparisonRules.branchName(source) ?? ComparisonRules.uncommittedLabel
   }
 }

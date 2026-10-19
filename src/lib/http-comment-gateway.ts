@@ -1,59 +1,58 @@
-import { ApiClient } from '@/src/lib/api-client.ts'
+import * as v from 'valibot'
+import { ApiError } from '@/src/lib/api-client.ts'
 import { HttpGateway } from '@/src/lib/http-gateway.ts'
-import type { CommentGateway, NewComment, ReviewComment } from '@/src/lib/comment-gateway.ts'
+import {
+  type CommentGateway,
+  type NewComment,
+  StaleCommentError,
+} from '@/src/lib/comment-gateway.ts'
 import { ComparisonRules, type Comparison } from '@/src/lib/comparison-rules.ts'
 import { CommentShapes } from '@/src/lib/comment-shapes.ts'
-import { ValueGuards } from '@/src/lib/value-guards.ts'
 
 export class HttpCommentGateway extends HttpGateway implements CommentGateway {
   private static readonly path = '/api/comments'
+  private static readonly conflictStatus = 409
 
-  private static isCommentList(value: unknown): value is ReviewComment[] {
-    return ValueGuards.isListOf(value, CommentShapes.isReviewComment)
-  }
-
-  private static parseList(body: unknown): ReviewComment[] {
-    return ApiClient.field(
-      body,
-      'comments',
-      HttpCommentGateway.isCommentList,
-      HttpCommentGateway.path,
-    ).map(CommentShapes.toComment)
-  }
-
-  private static parseOne(body: unknown): ReviewComment {
-    return CommentShapes.toComment(
-      ApiClient.field(body, 'comment', CommentShapes.isReviewComment, HttpCommentGateway.path),
-    )
-  }
+  private static readonly listBody = v.object({ comments: v.array(CommentShapes.comment) })
+  private static readonly oneBody = v.object({ comment: CommentShapes.comment })
 
   private static commentPath(id: string) {
-    return `${HttpCommentGateway.path}/${encodeURIComponent(id)}`
+    return HttpGateway.resourcePath(HttpCommentGateway.path, id)
   }
 
-  list(comparison: Comparison) {
-    return this.api.get(
-      ApiClient.withQuery(HttpCommentGateway.path, ComparisonRules.searchParams(comparison)),
-      HttpCommentGateway.parseList,
+  async list(comparison: Comparison) {
+    const { comments } = await this.api.get(
+      HttpGateway.comparisonPath(HttpCommentGateway.path, comparison),
+      HttpCommentGateway.listBody,
     )
+    return comments
   }
 
-  create(comparison: Comparison, comment: NewComment) {
-    return this.api.send(
-      'POST',
-      HttpCommentGateway.path,
-      { ...ComparisonRules.query(comparison), ...comment },
-      HttpCommentGateway.parseOne,
-    )
+  async create(comparison: Comparison, comment: NewComment) {
+    try {
+      const { comment: created } = await this.api.send(
+        'POST',
+        HttpCommentGateway.path,
+        { ...ComparisonRules.query(comparison), ...comment },
+        HttpCommentGateway.oneBody,
+      )
+      return created
+    } catch (error) {
+      if (error instanceof ApiError && error.status === HttpCommentGateway.conflictStatus) {
+        throw new StaleCommentError()
+      }
+      throw error
+    }
   }
 
-  update(id: string, body: string) {
-    return this.api.send(
+  async update(id: string, body: string) {
+    const { comment } = await this.api.send(
       'PATCH',
       HttpCommentGateway.commentPath(id),
       { body },
-      HttpCommentGateway.parseOne,
+      HttpCommentGateway.oneBody,
     )
+    return comment
   }
 
   remove(id: string) {

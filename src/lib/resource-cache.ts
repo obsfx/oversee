@@ -1,7 +1,12 @@
 import { AsyncResource } from '@/src/lib/async-resource.ts'
 
+interface CacheEntry<K, T> {
+  key: K
+  resource: AsyncResource<T>
+}
+
 export class ResourceCache<K, T> {
-  private readonly resources = new Map<string, AsyncResource<T>>()
+  private readonly entries = new Map<string, CacheEntry<K, T>>()
   private readonly keyOf: (key: K) => string
   private readonly fetcher: (key: K) => Promise<T>
 
@@ -12,18 +17,30 @@ export class ResourceCache<K, T> {
 
   get(key: K) {
     const id = this.keyOf(key)
-    const existing = this.resources.get(id)
+    const existing = this.entries.get(id)
     if (existing) {
-      return existing
+      return existing.resource
     }
     const resource = new AsyncResource(() => {
       return this.fetcher(key)
     })
-    this.resources.set(id, resource)
+    this.entries.set(id, { key, resource })
     return resource
   }
 
   refresh(key: K) {
-    return this.resources.get(this.keyOf(key))?.refresh()
+    return this.entries.get(this.keyOf(key))?.resource.refresh()
+  }
+
+  invalidate(key: K) {
+    this.entries.get(this.keyOf(key))?.resource.invalidate()
+  }
+
+  invalidateWhere(matches: (key: K) => boolean) {
+    for (const { key, resource } of this.entries.values()) {
+      if (matches(key)) {
+        resource.invalidate()
+      }
+    }
   }
 }

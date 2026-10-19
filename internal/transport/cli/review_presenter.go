@@ -91,6 +91,9 @@ func writeThread(builder *strings.Builder, thread domain.CommentThread) {
 	fmt.Fprintf(builder, "\n--- comment %s\n%s:%d-%d (%s)\n",
 		thread.ID, thread.FilePath, thread.Range.Start, thread.Range.End, thread.Range.EndSide,
 	)
+	if thread.IsOutdated() {
+		fmt.Fprintf(builder, "outdated since %s: the commented code changed before the review was finished\n", formatTime(thread.OutdatedAt))
+	}
 	for _, line := range thread.Snapshot {
 		fmt.Fprintf(builder, "%6d | %s\n", line.Number, line.Text)
 	}

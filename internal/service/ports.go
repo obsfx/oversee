@@ -24,6 +24,18 @@ type ChangeDetector interface {
 	Close() error
 }
 
+type WorkspaceProbe interface {
+	Fingerprint(ctx context.Context) (domain.WorkspaceFingerprint, error)
+}
+
+type Audience interface {
+	HasClients() bool
+}
+
+type Reconciler interface {
+	Reconcile(ctx context.Context, change domain.WorkspaceChange) error
+}
+
 type Runtime struct {
 	Now   func() time.Time
 	NewID func() string

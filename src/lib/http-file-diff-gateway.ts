@@ -1,5 +1,6 @@
 import type { FileContents } from '@pierre/diffs/react'
-import { ApiClient, ApiError } from '@/src/lib/api-client.ts'
+import * as v from 'valibot'
+import { ApiClient } from '@/src/lib/api-client.ts'
 import { HttpGateway } from '@/src/lib/http-gateway.ts'
 import { ComparisonRules } from '@/src/lib/comparison-rules.ts'
 import {
@@ -10,11 +11,19 @@ import {
 } from '@/src/lib/file-diff-gateway.ts'
 import type { FileSide } from '@/src/lib/change-set.ts'
 import { ImageFiles, type ImagePair } from '@/src/lib/image-files.ts'
-import { ValueGuards } from '@/src/lib/value-guards.ts'
 
 export class HttpFileDiffGateway extends HttpGateway implements FileDiffGateway {
   private static readonly path = '/api/file-diff'
   private static readonly blobPath = '/api/file-blob'
+  private revision = 0
+
+  private static readonly file = v.nullable(v.object({ name: v.string(), contents: v.string() }))
+
+  private static readonly body = v.object({
+    binary: v.boolean(),
+    oldFile: HttpFileDiffGateway.file,
+    newFile: HttpFileDiffGateway.file,
+  })
 
   private static queryFor({ comparison, change }: FileDiffRequest) {
     const query = ComparisonRules.searchParams(comparison)
@@ -25,33 +34,24 @@ export class HttpFileDiffGateway extends HttpGateway implements FileDiffGateway 
     return query
   }
 
-  private static parseFile(value: unknown, cacheKey: string): FileContents | null {
-    if (value === null) {
+  private static withCacheKey(
+    file: v.InferOutput<typeof HttpFileDiffGateway.file>,
+    cacheKey: string,
+  ): FileContents | null {
+    if (!file) {
       return null
     }
-    const { name, contents } = ApiClient.fieldsOf(value)
-    if (!ValueGuards.isString(name) || !ValueGuards.isString(contents)) {
-      throw ApiError.unexpectedShape(HttpFileDiffGateway.path)
-    }
-    return { name, contents, cacheKey }
+    return { ...file, cacheKey }
   }
 
-  load(request: FileDiffRequest) {
+  async load(request: FileDiffRequest): Promise<FileDiff> {
     const path = ApiClient.withQuery(
       HttpFileDiffGateway.path,
       HttpFileDiffGateway.queryFor(request),
     )
-    return this.api.get(path, (body) => {
-      return this.parse(request, body)
-    })
-  }
-
-  private parse(request: FileDiffRequest, body: unknown): FileDiff {
-    const { binary, oldFile, newFile } = ApiClient.fieldsOf(body)
-    if (typeof binary !== 'boolean') {
-      throw ApiError.unexpectedShape(HttpFileDiffGateway.path)
-    }
-    const key = FileDiffRequests.key(request)
+    const { binary, oldFile, newFile } = await this.api.get(path, HttpFileDiffGateway.body)
+    this.revision += 1
+    const key = `${FileDiffRequests.key(request)}::${this.revision}`
     let images: ImagePair | null = null
     if (binary && ImageFiles.isImage(request.change.path)) {
       images = ImageFiles.pair(request.change, (side) => {
@@ -60,8 +60,8 @@ export class HttpFileDiffGateway extends HttpGateway implements FileDiffGateway 
     }
     return {
       binary,
-      oldFile: HttpFileDiffGateway.parseFile(oldFile, `${key}::old`),
-      newFile: HttpFileDiffGateway.parseFile(newFile, `${key}::new`),
+      oldFile: HttpFileDiffGateway.withCacheKey(oldFile, `${key}::old`),
+      newFile: HttpFileDiffGateway.withCacheKey(newFile, `${key}::new`),
       images,
     }
   }

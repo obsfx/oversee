@@ -16,7 +16,7 @@ interface CommentComposerProps {
 }
 
 export function CommentComposer({ path, range, comment }: CommentComposerProps) {
-  const { editor, submit, cancel, canSubmit, failed, submitLabel, label } = useCommentComposer({
+  const { editor, submit, cancel, canSubmit, error, submitLabel, label } = useCommentComposer({
     path,
     range,
     comment,
@@ -35,7 +35,7 @@ export function CommentComposer({ path, range, comment }: CommentComposerProps) 
             <ShortcutHint keys={['escape']} label={'to cancel'} />
           </>
         }
-        error={failed ? 'Could not save the comment. Try again.' : null}
+        error={error}
       >
         <Button variant={'ghost'} onClick={cancel}>
           Cancel

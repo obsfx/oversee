@@ -1,11 +1,7 @@
-import type { ReviewComment } from '@/src/lib/comment-gateway.ts'
+import type { ReviewComment, SnapshotLine } from '@/src/lib/comment-gateway.ts'
 import type { Comparison } from '@/src/lib/comparison-rules.ts'
 import type { InMemoryCommentGateway } from '@/src/lib/in-memory-comment-gateway.ts'
-import type {
-  ReviewSession,
-  ReviewSessionGateway,
-  SnapshotLine,
-} from '@/src/lib/review-session-gateway.ts'
+import type { ReviewSession, ReviewSessionGateway } from '@/src/lib/review-session-gateway.ts'
 
 type SnapshotResolver = (comment: ReviewComment) => SnapshotLine[]
 

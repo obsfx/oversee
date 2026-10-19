@@ -8,7 +8,7 @@ import { CommentActions } from '@/src/primitives/comment-actions.tsx'
 import { CommentEntry } from '@/src/primitives/comment-entry.tsx'
 import { CommentMeta } from '@/src/primitives/comment-meta.tsx'
 import { Tooltip } from '@/src/primitives/tooltip.tsx'
-import { MarkdownView } from '@/src/components/diff-viewer/markdown-view.tsx'
+import { MarkdownView } from '@/src/components/markdown-view.tsx'
 
 export function CommentItem({ comment }: { comment: ReviewComment }) {
   const { edit, remove, removing, failed, meta } = useCommentItem(comment)

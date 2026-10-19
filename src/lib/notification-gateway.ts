@@ -1,7 +1,7 @@
-import { ApiClient } from '@/src/lib/api-client.ts'
+import * as v from 'valibot'
 import { ComparisonRules, type Comparison } from '@/src/lib/comparison-rules.ts'
 import { SessionStatuses, type SessionStatus } from '@/src/lib/session-statuses.ts'
-import { ValueGuards } from '@/src/lib/value-guards.ts'
+import { ValueSchemas } from '@/src/lib/value-schemas.ts'
 
 interface NotificationBase {
   id: number
@@ -31,47 +31,37 @@ export interface NotificationGateway {
 }
 
 export abstract class NotificationShapes {
+  private static readonly base = {
+    id: ValueSchemas.count,
+    sessionId: v.string(),
+    source: v.string(),
+    target: v.string(),
+    createdAt: v.number(),
+    readAt: v.fallback(v.nullable(v.number()), null),
+  }
+
+  private static readonly schema = v.pipe(
+    v.variant('kind', [
+      v.object({
+        ...NotificationShapes.base,
+        kind: v.literal('session-status'),
+        status: SessionStatuses.schema,
+      }),
+      v.object({
+        ...NotificationShapes.base,
+        kind: v.literal('comment-reply'),
+        commentId: v.string(),
+        filePath: v.string(),
+        line: ValueSchemas.positiveInteger,
+      }),
+    ]),
+    v.transform(({ source, target, ...notification }): ReviewNotification => {
+      return { ...notification, comparison: ComparisonRules.fromQuery(source, target) }
+    }),
+  )
+
   static parse(value: unknown): ReviewNotification | null {
-    const {
-      id,
-      kind,
-      sessionId,
-      source,
-      target,
-      status,
-      commentId,
-      filePath,
-      line,
-      createdAt,
-      readAt,
-    } = ApiClient.fieldsOf(value)
-    const valid =
-      ValueGuards.isCount(id) &&
-      ValueGuards.isString(sessionId) &&
-      ValueGuards.isString(source) &&
-      ValueGuards.isString(target) &&
-      ValueGuards.isNumber(createdAt)
-    if (!valid) {
-      return null
-    }
-    const base = {
-      id,
-      sessionId,
-      comparison: ComparisonRules.fromQuery(source, target),
-      createdAt,
-      readAt: ValueGuards.isNumber(readAt) ? readAt : null,
-    }
-    if (kind === 'session-status' && SessionStatuses.isStatus(status)) {
-      return { ...base, kind, status }
-    }
-    const isReply =
-      kind === 'comment-reply' &&
-      ValueGuards.isString(commentId) &&
-      ValueGuards.isString(filePath) &&
-      ValueGuards.isPositiveInteger(line)
-    if (isReply) {
-      return { ...base, kind, commentId, filePath, line }
-    }
-    return null
+    const result = v.safeParse(NotificationShapes.schema, value)
+    return result.success ? result.output : null
   }
 }

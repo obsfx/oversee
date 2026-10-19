@@ -6,4 +6,5 @@ type Services struct {
 	Reviews       *ReviewService
 	Notifications *NotificationService
 	Events        *EventFeed
+	Watcher       *WorkspaceWatcher
 }

@@ -1,32 +1,21 @@
-import { ApiClient, ApiError } from '@/src/lib/api-client.ts'
+import * as v from 'valibot'
 import { HttpGateway } from '@/src/lib/http-gateway.ts'
-import {
-  NotificationShapes,
-  type NotificationGateway,
-  type ReviewNotification,
-} from '@/src/lib/notification-gateway.ts'
+import { NotificationShapes, type NotificationGateway } from '@/src/lib/notification-gateway.ts'
 
 export class HttpNotificationGateway extends HttpGateway implements NotificationGateway {
   private static readonly path = '/api/notifications'
   private static readonly readPath = '/api/notifications/read'
 
-  private static parseList(body: unknown): ReviewNotification[] {
-    const { notifications } = ApiClient.fieldsOf(body)
-    if (!Array.isArray(notifications)) {
-      throw ApiError.unexpectedShape(HttpNotificationGateway.path)
-    }
-    const parsed: ReviewNotification[] = []
-    for (const value of notifications) {
-      const notification = NotificationShapes.parse(value)
-      if (notification) {
-        parsed.push(notification)
-      }
-    }
-    return parsed
-  }
+  private static readonly body = v.object({ notifications: v.array(v.unknown()) })
 
-  list() {
-    return this.api.get(HttpNotificationGateway.path, HttpNotificationGateway.parseList)
+  async list() {
+    const { notifications } = await this.api.get(
+      HttpNotificationGateway.path,
+      HttpNotificationGateway.body,
+    )
+    return notifications.map(NotificationShapes.parse).filter((notification) => {
+      return notification !== null
+    })
   }
 
   markRead(ids: number[]) {

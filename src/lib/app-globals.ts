@@ -1,5 +1,4 @@
-import { ApiClient } from '@/src/lib/api-client.ts'
-import { ValueGuards } from '@/src/lib/value-guards.ts'
+import * as v from 'valibot'
 
 export interface OverseeGlobal {
   baseUrl: string
@@ -16,17 +15,18 @@ declare global {
 export abstract class AppGlobals {
   private static readonly socketPath = '/ws'
 
+  private static readonly injected = v.object({
+    baseUrl: v.string(),
+    wsUrl: v.string(),
+    workspace: v.optional(v.unknown()),
+  })
+
   static read(): OverseeGlobal {
-    const injected = window.__overseeGlobal
-    if (AppGlobals.isOverseeGlobal(injected)) {
-      return injected
+    const result = v.safeParse(AppGlobals.injected, window.__overseeGlobal)
+    if (result.success) {
+      return result.output
     }
     return AppGlobals.fromLocation()
-  }
-
-  private static isOverseeGlobal(value: unknown): value is OverseeGlobal {
-    const { baseUrl, wsUrl } = ApiClient.fieldsOf(value)
-    return ValueGuards.isString(baseUrl) && ValueGuards.isString(wsUrl)
   }
 
   private static fromLocation(): OverseeGlobal {

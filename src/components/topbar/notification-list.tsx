@@ -4,6 +4,7 @@ import { useNow } from '@/src/hooks/use-now.ts'
 import type { ResourceState } from '@/src/lib/async-resource.ts'
 import type { ReviewNotification } from '@/src/lib/notification-gateway.ts'
 import { NotificationLabels } from '@/src/lib/notification-labels.ts'
+import { NotificationLists } from '@/src/lib/notification-lists.ts'
 import { MutedHint } from '@/src/primitives/muted-hint.tsx'
 import { NotificationRow } from '@/src/primitives/notification-row.tsx'
 import { PopoverEmptyState } from '@/src/primitives/popover-empty-state.tsx'
@@ -35,7 +36,7 @@ export function NotificationList({ state, notifications, onOpen }: NotificationL
             title={NotificationLabels.title(notification)}
             subtitle={NotificationLabels.comparison(notification)}
             meta={NotificationLabels.age(notification, now)}
-            unread={notification.readAt === null}
+            unread={NotificationLists.isUnread(notification)}
             onSelect={() => {
               onOpen(notification)
             }}

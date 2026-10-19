@@ -9,16 +9,22 @@ const starterKit = StarterKit.configure({
 
 const MARKDOWN_TOKENS = /[*_`#>~[\]]/g
 const LIST_MARKER = /^\s*([-+]|\d+\.)\s+/
+const MARKED_OPTIONS = { breaks: true }
 
 export abstract class CommentMarkdown {
   static readonly renderExtensions = [starterKit]
 
   private static readonly manager = new MarkdownManager({
     extensions: CommentMarkdown.renderExtensions,
+    markedOptions: MARKED_OPTIONS,
   })
 
   static editorExtensions(placeholder: string) {
-    return [starterKit, Markdown, Placeholder.configure({ placeholder })]
+    return [
+      starterKit,
+      Markdown.configure({ markedOptions: MARKED_OPTIONS }),
+      Placeholder.configure({ placeholder }),
+    ]
   }
 
   static parse(body: string) {

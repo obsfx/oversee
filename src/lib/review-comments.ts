@@ -34,6 +34,10 @@ export class ReviewComments {
     return updated
   }
 
+  invalidate(comparison: Comparison) {
+    this.cache.invalidate(comparison)
+  }
+
   clear(comparison: Comparison) {
     this.of(comparison).update(() => {
       return []
@@ -45,5 +49,11 @@ export class ReviewComments {
     this.of(comparison).update((comments) => {
       return CommentLists.without(comments, id)
     })
+  }
+
+  async removeMany(comparison: Comparison, ids: readonly string[]) {
+    for (const id of ids) {
+      await this.remove(comparison, id)
+    }
   }
 }

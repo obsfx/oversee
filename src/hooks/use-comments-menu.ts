@@ -5,15 +5,20 @@ import { useReviewSessions } from '@/src/hooks/use-review-sessions.ts'
 export type CommentsMenuTab = 'current' | 'sessions'
 
 export const useCommentsMenu = () => {
-  const { list, countLabel } = useComments()
+  const { list, outdated, countLabel } = useComments()
   const { list: sessions } = useReviewSessions()
   const [open, setOpen] = useState(false)
   const [tab, setTab] = useState<CommentsMenuTab>('current')
   const [openedSessionId, setOpenedSessionId] = useState<string | null>(null)
+  const [outdatedOpen, setOutdatedOpen] = useState(false)
   const openedSession =
     sessions.find((session) => {
       return session.id === openedSessionId
     }) ?? null
+
+  if (outdatedOpen && outdated.length === 0) {
+    setOutdatedOpen(false)
+  }
 
   const selectTab = (value: CommentsMenuTab) => {
     setTab(value)
@@ -36,6 +41,13 @@ export const useCommentsMenu = () => {
     openSession: setOpenedSessionId,
     closeSession: () => {
       setOpenedSessionId(null)
+    },
+    outdatedOpen,
+    openOutdated: () => {
+      setOutdatedOpen(true)
+    },
+    closeOutdated: () => {
+      setOutdatedOpen(false)
     },
   }
 }

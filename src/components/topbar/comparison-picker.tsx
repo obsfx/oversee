@@ -21,7 +21,7 @@ export function ComparisonPicker() {
 
   const { branches, remoteBranches } = branchesState.data
   const sourceLabel = ComparisonRules.sourceLabel(comparison.source)
-  const sourceBranch = comparison.source.kind === 'branch' ? comparison.source.name : null
+  const sourceBranch = ComparisonRules.branchName(comparison.source)
   const description = `Compare ${sourceLabel} to ${comparison.target}`
 
   return (
@@ -44,7 +44,7 @@ export function ComparisonPicker() {
           }}
           pinned={{
             label: ComparisonRules.uncommittedLabel,
-            selected: comparison.source.kind === 'uncommitted',
+            selected: ComparisonRules.isUncommitted(comparison.source),
             onSelect: () => {
               selectSource(ComparisonRules.uncommitted)
             },

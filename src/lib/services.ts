@@ -19,6 +19,7 @@ import { ReviewSessions } from '@/src/lib/review-sessions.ts'
 import { ServerEventSync } from '@/src/lib/server-event-sync.ts'
 import type { EventStream } from '@/src/lib/server-events.ts'
 import type { WorkspaceGateway, WorkspaceInfo } from '@/src/lib/workspace-gateway.ts'
+import { WorkspaceRefresh } from '@/src/lib/workspace-refresh.ts'
 
 interface Gateways {
   workspace: WorkspaceGateway
@@ -62,6 +63,7 @@ export class Services {
       this.sessions,
       this.comments,
       this.notifications,
+      new WorkspaceRefresh(this.branches, this.changeSets, this.fileDiffs),
     )
   }
 }

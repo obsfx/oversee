@@ -1,6 +1,7 @@
 import {
   ServerEvents,
   type EventStream,
+  type ServerEvent,
   type ServerEventListener,
 } from '@/src/lib/server-events.ts'
 
@@ -14,6 +15,7 @@ export class SocketEventStream implements EventStream {
   private retryTimer: ReturnType<typeof setTimeout> | null = null
   private retryDelay = INITIAL_RETRY_MS
   private lastEventId: number | null = null
+  private opened = false
 
   constructor(url: string) {
     this.url = url
@@ -40,6 +42,10 @@ export class SocketEventStream implements EventStream {
     const socket = new WebSocket(url)
     socket.addEventListener('open', () => {
       this.retryDelay = INITIAL_RETRY_MS
+      if (this.opened) {
+        this.emit({ kind: 'stream.resumed' })
+      }
+      this.opened = true
     })
     socket.addEventListener('message', (message: MessageEvent<unknown>) => {
       if (typeof message.data === 'string') {
@@ -60,11 +66,16 @@ export class SocketEventStream implements EventStream {
     if (!envelope) {
       return
     }
-    this.lastEventId = envelope.id
-    const event = ServerEvents.fromEnvelope(envelope)
-    if (!event) {
-      return
+    if (envelope.id !== null) {
+      this.lastEventId = envelope.id
     }
+    const event = ServerEvents.fromEnvelope(envelope)
+    if (event) {
+      this.emit(event)
+    }
+  }
+
+  private emit(event: ServerEvent) {
     for (const listener of this.listeners) {
       listener(event)
     }

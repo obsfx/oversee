@@ -43,5 +43,9 @@ export const useFileDiff = () => {
     void resource?.reload()
   }
 
-  return { change, state, shown: change ? shown : null, loading, retry }
+  const refresh = () => {
+    void resource?.refresh()
+  }
+
+  return { change, state, shown: change ? shown : null, loading, retry, refresh }
 }

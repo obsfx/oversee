@@ -7,6 +7,7 @@ package sqldb
 
 import (
 	"context"
+	"database/sql"
 )
 
 const deleteComment = `-- name: DeleteComment :execrows
@@ -22,7 +23,7 @@ func (q *Queries) DeleteComment(ctx context.Context, id string) (int64, error) {
 }
 
 const getComment = `-- name: GetComment :one
-SELECT id, session_id, file_path, side, start_line, end_line, end_side, body, snapshot, created_at, updated_at
+SELECT id, session_id, file_path, side, start_line, end_line, end_side, body, snapshot, created_at, updated_at, outdated_at
 FROM comments
 WHERE id = ?
 `
@@ -42,6 +43,7 @@ func (q *Queries) GetComment(ctx context.Context, id string) (Comment, error) {
 		&i.Snapshot,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.OutdatedAt,
 	)
 	return i, err
 }
@@ -83,7 +85,7 @@ func (q *Queries) InsertComment(ctx context.Context, arg InsertCommentParams) er
 }
 
 const listSessionComments = `-- name: ListSessionComments :many
-SELECT id, session_id, file_path, side, start_line, end_line, end_side, body, snapshot, created_at, updated_at
+SELECT id, session_id, file_path, side, start_line, end_line, end_side, body, snapshot, created_at, updated_at, outdated_at
 FROM comments
 WHERE session_id = ?
 ORDER BY file_path, start_line, created_at
@@ -110,6 +112,7 @@ func (q *Queries) ListSessionComments(ctx context.Context, sessionID string) ([]
 			&i.Snapshot,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.OutdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -122,6 +125,55 @@ func (q *Queries) ListSessionComments(ctx context.Context, sessionID string) ([]
 		return nil, err
 	}
 	return items, nil
+}
+
+const markCommentOutdated = `-- name: MarkCommentOutdated :execrows
+UPDATE comments SET outdated_at = ?
+WHERE comments.id = ? AND comments.outdated_at IS NULL
+  AND EXISTS (SELECT 1 FROM review_sessions s WHERE s.id = comments.session_id AND s.finished_at IS NULL)
+`
+
+type MarkCommentOutdatedParams struct {
+	OutdatedAt sql.NullInt64
+	ID         string
+}
+
+func (q *Queries) MarkCommentOutdated(ctx context.Context, arg MarkCommentOutdatedParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, markCommentOutdated, arg.OutdatedAt, arg.ID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+const moveComment = `-- name: MoveComment :execrows
+UPDATE comments SET start_line = ?1, end_line = ?2, snapshot = ?3
+WHERE comments.id = ?4 AND comments.start_line = ?5 AND comments.end_line = ?6 AND comments.outdated_at IS NULL
+  AND EXISTS (SELECT 1 FROM review_sessions s WHERE s.id = comments.session_id AND s.finished_at IS NULL)
+`
+
+type MoveCommentParams struct {
+	StartLine     int64
+	EndLine       int64
+	Snapshot      string
+	ID            string
+	FromStartLine int64
+	FromEndLine   int64
+}
+
+func (q *Queries) MoveComment(ctx context.Context, arg MoveCommentParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, moveComment,
+		arg.StartLine,
+		arg.EndLine,
+		arg.Snapshot,
+		arg.ID,
+		arg.FromStartLine,
+		arg.FromEndLine,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const updateCommentBody = `-- name: UpdateCommentBody :execrows

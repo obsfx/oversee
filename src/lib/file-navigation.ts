@@ -10,7 +10,33 @@ export interface FilePosition {
   nextPath: string | null
 }
 
+export interface FileAnchor {
+  comparisonKey: string | null
+  index: number
+}
+
 export abstract class FileNavigationRules {
+  static anchor(position: FilePosition, comparisonKey: string | null): FileAnchor | null {
+    return position.current ? { comparisonKey, index: position.position - 1 } : null
+  }
+
+  static sameAnchor(previous: FileAnchor | null, next: FileAnchor) {
+    return previous?.comparisonKey === next.comparisonKey && previous.index === next.index
+  }
+
+  static fallbackPath(
+    files: readonly FileChange[],
+    position: FilePosition,
+    anchor: FileAnchor | null,
+    comparisonKey: string | null,
+  ) {
+    if (position.current) {
+      return null
+    }
+    const index = anchor?.comparisonKey === comparisonKey ? anchor.index : 0
+    return files[Math.min(index, files.length - 1)]?.path ?? null
+  }
+
   static of(files: readonly FileChange[], selectedPath: string | null): FilePosition {
     const index = files.findIndex((file) => {
       return file.path === selectedPath

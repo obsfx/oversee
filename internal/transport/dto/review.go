@@ -41,22 +41,30 @@ func (r LineRange) ToDomain() domain.LineRange {
 }
 
 type Comment struct {
-	ID        string    `json:"id"`
-	FilePath  string    `json:"filePath"`
-	Range     LineRange `json:"range"`
-	Body      string    `json:"body"`
-	CreatedAt int64     `json:"createdAt"`
-	UpdatedAt int64     `json:"updatedAt"`
+	ID         string         `json:"id"`
+	FilePath   string         `json:"filePath"`
+	Range      LineRange      `json:"range"`
+	Body       string         `json:"body"`
+	Lines      []SnapshotLine `json:"lines"`
+	CreatedAt  int64          `json:"createdAt"`
+	UpdatedAt  int64          `json:"updatedAt"`
+	OutdatedAt int64          `json:"outdatedAt"`
 }
 
 func CommentOf(comment domain.Comment) Comment {
+	lines := make([]SnapshotLine, 0, len(comment.Snapshot))
+	for _, line := range comment.Snapshot {
+		lines = append(lines, SnapshotLine{Number: line.Number, Text: line.Text})
+	}
 	return Comment{
-		ID:        comment.ID,
-		FilePath:  comment.FilePath,
-		Range:     lineRangeOf(comment.Range),
-		Body:      comment.Body,
-		CreatedAt: millis(comment.CreatedAt),
-		UpdatedAt: millis(comment.UpdatedAt),
+		ID:         comment.ID,
+		FilePath:   comment.FilePath,
+		Range:      lineRangeOf(comment.Range),
+		Body:       comment.Body,
+		Lines:      lines,
+		CreatedAt:  millis(comment.CreatedAt),
+		UpdatedAt:  millis(comment.UpdatedAt),
+		OutdatedAt: millis(comment.OutdatedAt),
 	}
 }
 
@@ -93,20 +101,15 @@ func ReplyOf(reply domain.Reply) Reply {
 
 type SessionComment struct {
 	Comment
-	Lines   []SnapshotLine `json:"lines"`
-	Replies []Reply        `json:"replies"`
+	Replies []Reply `json:"replies"`
 }
 
 func sessionCommentOf(thread domain.CommentThread) SessionComment {
-	lines := make([]SnapshotLine, 0, len(thread.Snapshot))
-	for _, line := range thread.Snapshot {
-		lines = append(lines, SnapshotLine{Number: line.Number, Text: line.Text})
-	}
 	replies := make([]Reply, 0, len(thread.Replies))
 	for _, reply := range thread.Replies {
 		replies = append(replies, ReplyOf(reply))
 	}
-	return SessionComment{Comment: CommentOf(thread.Comment), Lines: lines, Replies: replies}
+	return SessionComment{Comment: CommentOf(thread.Comment), Replies: replies}
 }
 
 type SessionSummary struct {
@@ -184,16 +187,28 @@ type SessionBody struct {
 }
 
 type CreateCommentRequest struct {
-	Source   string    `json:"source"`
-	Target   string    `json:"target"`
-	FilePath string    `json:"filePath"`
-	Range    LineRange `json:"range"`
-	Body     string    `json:"body"`
+	Source        string    `json:"source"`
+	Target        string    `json:"target"`
+	FilePath      string    `json:"filePath"`
+	PreviousPath  string    `json:"previousPath"`
+	Range         LineRange `json:"range"`
+	Body          string    `json:"body"`
+	ExpectedLines *[]string `json:"expectedLines"`
 }
 
 func (r CreateCommentRequest) ToDomain() (domain.Comparison, domain.CommentDraft) {
 	comparison := domain.Comparison{Source: r.Source, Target: r.Target}
-	return comparison, domain.CommentDraft{FilePath: r.FilePath, Range: r.Range.ToDomain(), Body: r.Body}
+	draft := domain.CommentDraft{
+		FilePath:     r.FilePath,
+		PreviousPath: r.PreviousPath,
+		Range:        r.Range.ToDomain(),
+		Body:         r.Body,
+	}
+	if r.ExpectedLines != nil {
+		draft.ExpectedLines = *r.ExpectedLines
+		draft.VerifyLines = true
+	}
+	return comparison, draft
 }
 
 type UpdateCommentRequest struct {

@@ -1,3 +1,5 @@
+import * as v from 'valibot'
+
 export class ApiError extends Error {
   readonly path: string
   readonly status: number | null
@@ -27,68 +29,66 @@ export class ApiClient {
     return `${path}?${query.toString()}`
   }
 
-  static fieldsOf(body: unknown) {
-    return (body ?? {}) as Record<string, unknown>
-  }
-
-  static field<T>(
+  static parse<TSchema extends v.GenericSchema>(
+    schema: TSchema,
     body: unknown,
-    name: string,
-    isValid: (value: unknown) => value is T,
     path: string,
-  ): T {
-    const value = ApiClient.fieldsOf(body)[name]
-    if (!isValid(value)) {
+  ): v.InferOutput<TSchema> {
+    const result = v.safeParse(schema, body)
+    if (!result.success) {
       throw ApiError.unexpectedShape(path)
     }
-    return value
+    return result.output
+  }
+
+  private static jsonInit(method: WriteMethod, payload: unknown): RequestInit {
+    return {
+      method,
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+    }
   }
 
   url(path: string) {
     return new URL(path, this.baseUrl).toString()
   }
 
-  get<T>(path: string, parse: (body: unknown) => T) {
-    return this.request(path, { method: 'GET' }, parse)
+  get<TSchema extends v.GenericSchema>(path: string, schema: TSchema) {
+    return this.request(path, { method: 'GET' }, schema)
   }
 
-  send<T>(method: WriteMethod, path: string, payload: unknown, parse: (body: unknown) => T) {
-    return this.request(
-      path,
-      {
-        method,
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(payload),
-      },
-      parse,
-    )
+  send<TSchema extends v.GenericSchema>(
+    method: WriteMethod,
+    path: string,
+    payload: unknown,
+    schema: TSchema,
+  ) {
+    return this.request(path, ApiClient.jsonInit(method, payload), schema)
   }
 
-  sendWithoutContent(method: WriteMethod, path: string, payload: unknown) {
-    return this.requestWithoutContent(path, {
-      method,
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
+  async sendWithoutContent(method: WriteMethod, path: string, payload: unknown) {
+    await this.fetchOk(path, ApiClient.jsonInit(method, payload))
   }
 
-  delete(path: string) {
-    return this.requestWithoutContent(path, { method: 'DELETE' })
+  async delete(path: string) {
+    await this.fetchOk(path, { method: 'DELETE' })
   }
 
-  private async requestWithoutContent(path: string, init: RequestInit) {
-    const response = await fetch(this.url(path), init)
-    if (!response.ok) {
-      throw new ApiError(path, 'request failed', response.status)
-    }
-  }
-
-  private async request<T>(path: string, init: RequestInit, parse: (body: unknown) => T) {
-    const response = await fetch(this.url(path), init)
-    if (!response.ok) {
-      throw new ApiError(path, 'request failed', response.status)
-    }
+  private async request<TSchema extends v.GenericSchema>(
+    path: string,
+    init: RequestInit,
+    schema: TSchema,
+  ) {
+    const response = await this.fetchOk(path, init)
     const body: unknown = await response.json()
-    return parse(body)
+    return ApiClient.parse(schema, body, path)
+  }
+
+  private async fetchOk(path: string, init: RequestInit) {
+    const response = await fetch(this.url(path), init)
+    if (!response.ok) {
+      throw new ApiError(path, 'request failed', response.status)
+    }
+    return response
   }
 }

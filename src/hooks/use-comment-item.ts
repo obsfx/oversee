@@ -1,15 +1,11 @@
 import { useNow } from '@/src/hooks/use-now.ts'
-import { useServices } from '@/src/context/services/use-services.ts'
 import type { ReviewComment } from '@/src/lib/comment-gateway.ts'
 import { LineRanges } from '@/src/lib/line-range.ts'
 import { RelativeTime } from '@/src/lib/relative-time.ts'
 import { useAnnotationStore } from '@/src/store/annotation-store.ts'
-import { useAsyncAction } from '@/src/hooks/use-async-action.ts'
-import { useComparison } from '@/src/hooks/use-comparison.ts'
+import { useDeleteComment } from '@/src/hooks/use-delete-comment.ts'
 
 export const useCommentItem = (comment: ReviewComment) => {
-  const { comments } = useServices()
-  const { comparison } = useComparison()
   const openDraft = useAnnotationStore((state) => {
     return state.openDraft
   })
@@ -19,11 +15,7 @@ export const useCommentItem = (comment: ReviewComment) => {
     openDraft({ path: comment.filePath, range: comment.range, commentId: comment.id })
   }
 
-  const remove = useAsyncAction(async () => {
-    if (comparison) {
-      await comments.remove(comparison, comment.id)
-    }
-  })
+  const { remove, removing, failed } = useDeleteComment(comment.id)
 
   const meta = [LineRanges.label(comment.range), RelativeTime.format(comment.createdAt, now)]
   if (comment.updatedAt > comment.createdAt) {
@@ -32,11 +24,9 @@ export const useCommentItem = (comment: ReviewComment) => {
 
   return {
     edit,
-    remove: () => {
-      void remove.run()
-    },
-    removing: remove.pending,
-    failed: remove.failed,
+    remove,
+    removing,
+    failed,
     meta,
   }
 }

@@ -229,6 +229,55 @@ func (q *Queries) ListFinishedSessionsByComparison(ctx context.Context, arg List
 	return items, nil
 }
 
+const listOpenSessions = `-- name: ListOpenSessions :many
+SELECT s.id, s.source, s.target, s.status, s.created_at, s.finished_at, COUNT(c.id) AS comment_count
+FROM review_sessions s
+LEFT JOIN comments c ON c.session_id = s.id
+WHERE s.finished_at IS NULL
+GROUP BY s.id
+`
+
+type ListOpenSessionsRow struct {
+	ID           string
+	Source       string
+	Target       string
+	Status       string
+	CreatedAt    int64
+	FinishedAt   sql.NullInt64
+	CommentCount int64
+}
+
+func (q *Queries) ListOpenSessions(ctx context.Context) ([]ListOpenSessionsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listOpenSessions)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListOpenSessionsRow{}
+	for rows.Next() {
+		var i ListOpenSessionsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Source,
+			&i.Target,
+			&i.Status,
+			&i.CreatedAt,
+			&i.FinishedAt,
+			&i.CommentCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateSessionFinished = `-- name: UpdateSessionFinished :exec
 UPDATE review_sessions SET finished_at = ?, status = ?, updated_at = ? WHERE id = ?
 `

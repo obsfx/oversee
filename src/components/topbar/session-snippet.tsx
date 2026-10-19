@@ -1,5 +1,5 @@
 import { useSnippetHighlight } from '@/src/hooks/use-snippet-highlight.ts'
-import type { SnapshotLine } from '@/src/lib/review-session-gateway.ts'
+import type { SnapshotLine } from '@/src/lib/comment-gateway.ts'
 import { CodeSnippetView } from '@/src/primitives/code-snippet-view.tsx'
 
 interface SessionSnippetProps {

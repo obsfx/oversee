@@ -4,7 +4,7 @@ import {
   getSharedHighlighter,
   type ThemedToken,
 } from '@pierre/diffs'
-import type { SnapshotLine } from '@/src/lib/review-session-gateway.ts'
+import type { SnapshotLine } from '@/src/lib/comment-gateway.ts'
 
 export interface SnippetToken {
   content: string

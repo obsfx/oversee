@@ -54,6 +54,7 @@ func (s *Server) Serve(ctx context.Context, listener net.Listener) error {
 			slog.Error("event feed stopped", "error", err)
 		}
 	}()
+	go s.services.Watcher.Follow(ctx, s.hub, s.hub.PublishWorkspaceChange)
 	go func() {
 		<-ctx.Done()
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)

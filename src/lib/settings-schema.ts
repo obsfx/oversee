@@ -1,7 +1,7 @@
+import * as v from 'valibot'
 import { DiffThemeCatalog } from '@/src/lib/diff-theme-catalog.ts'
 import { GoogleFontCatalog } from '@/src/lib/google-font-catalog.ts'
 import { NumericRange } from '@/src/lib/numeric-range.ts'
-import { ValueGuards } from '@/src/lib/value-guards.ts'
 
 export type Theme = 'light' | 'dark'
 
@@ -40,34 +40,47 @@ export abstract class SettingsSchema {
     return uiFontSize / SettingsSchema.baseUiFontSize
   }
 
+  private static readonly stored = v.pipe(
+    v.fallback(
+      v.object({
+        theme: v.fallback(v.picklist(SettingsSchema.themes), SettingsSchema.defaults.theme),
+        uiFont: v.fallback(
+          v.pipe(v.string(), v.check(GoogleFontCatalog.isUiFamily)),
+          SettingsSchema.defaults.uiFont,
+        ),
+        uiFontWeight: v.fallback(v.number(), SettingsSchema.defaults.uiFontWeight),
+        uiFontSize: SettingsSchema.uiFontSizeRange.schemaOr(SettingsSchema.defaults.uiFontSize),
+        editorFont: v.fallback(
+          v.pipe(v.string(), v.check(GoogleFontCatalog.isEditorFamily)),
+          SettingsSchema.defaults.editorFont,
+        ),
+        editorFontWeight: v.fallback(v.number(), SettingsSchema.defaults.editorFontWeight),
+        editorFontSize: SettingsSchema.editorFontSizeRange.schemaOr(
+          SettingsSchema.defaults.editorFontSize,
+        ),
+        editorLineHeight: SettingsSchema.lineHeightRange.schemaOr(
+          SettingsSchema.defaults.editorLineHeight,
+        ),
+        diffTheme: v.fallback(
+          v.pipe(v.string(), v.check(DiffThemeCatalog.isDiffTheme)),
+          SettingsSchema.defaults.diffTheme,
+        ),
+      }),
+      SettingsSchema.defaults,
+    ),
+    v.transform((stored): Settings => {
+      return {
+        ...stored,
+        uiFontWeight: GoogleFontCatalog.closestWeight(stored.uiFont, stored.uiFontWeight),
+        editorFontWeight: GoogleFontCatalog.closestWeight(
+          stored.editorFont,
+          stored.editorFontWeight,
+        ),
+      }
+    }),
+  )
+
   static parse(raw: unknown): Settings {
-    if (typeof raw !== 'object' || raw === null) {
-      return SettingsSchema.defaults
-    }
-    const value = raw as Partial<Record<keyof Settings, unknown>>
-    const { defaults } = SettingsSchema
-    const uiFont = GoogleFontCatalog.isUiFamily(value.uiFont) ? value.uiFont : defaults.uiFont
-    const editorFont = GoogleFontCatalog.isEditorFamily(value.editorFont)
-      ? value.editorFont
-      : defaults.editorFont
-    return {
-      theme: ValueGuards.isOneOf(SettingsSchema.themes, value.theme) ? value.theme : defaults.theme,
-      uiFont,
-      uiFontWeight: GoogleFontCatalog.closestWeight(uiFont, value.uiFontWeight),
-      uiFontSize: SettingsSchema.uiFontSizeRange.valueOr(value.uiFontSize, defaults.uiFontSize),
-      editorFont,
-      editorFontWeight: GoogleFontCatalog.closestWeight(editorFont, value.editorFontWeight),
-      editorFontSize: SettingsSchema.editorFontSizeRange.valueOr(
-        value.editorFontSize,
-        defaults.editorFontSize,
-      ),
-      editorLineHeight: SettingsSchema.lineHeightRange.valueOr(
-        value.editorLineHeight,
-        defaults.editorLineHeight,
-      ),
-      diffTheme: DiffThemeCatalog.isDiffTheme(value.diffTheme)
-        ? value.diffTheme
-        : defaults.diffTheme,
-    }
+    return v.parse(SettingsSchema.stored, raw)
   }
 }

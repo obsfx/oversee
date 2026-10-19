@@ -1,5 +1,5 @@
 import { useNow } from '@/src/hooks/use-now.ts'
-import { CommentMarkdown } from '@/src/lib/comment-markdown.ts'
+import { MarkdownView } from '@/src/components/markdown-view.tsx'
 import { RelativeTime } from '@/src/lib/relative-time.ts'
 import type { CommentReply } from '@/src/lib/review-session-gateway.ts'
 import { ReplyEntry } from '@/src/primitives/reply-entry.tsx'
@@ -18,7 +18,7 @@ export function CommentReplies({ replies }: { replies: CommentReply[] }) {
             key={reply.id}
             author={reply.author}
             age={RelativeTime.format(reply.createdAt, now)}
-            body={CommentMarkdown.summary(reply.body)}
+            body={<MarkdownView body={reply.body} />}
           />
         )
       })}

@@ -27,3 +27,5 @@ const meta = {
 export default meta
 
 export const Default: StoryObj<typeof meta> = {}
+
+export const WithOutdated: StoryObj<typeof meta> = { args: { session: reviewSessions[0] } }

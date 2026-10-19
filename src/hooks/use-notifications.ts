@@ -3,13 +3,13 @@ import { useResource } from '@/src/hooks/use-resource.ts'
 import { ResourceStates } from '@/src/lib/async-resource.ts'
 import type { ReviewNotification } from '@/src/lib/notification-gateway.ts'
 import { NotificationLabels } from '@/src/lib/notification-labels.ts'
-import { Notifications } from '@/src/lib/notifications.ts'
+import { NotificationLists } from '@/src/lib/notification-lists.ts'
 
 export const useNotifications = () => {
   const { notifications } = useServices()
   const state = useResource(notifications.list)
   const list = ResourceStates.dataOr(state, [])
-  const unread = Notifications.unread(list)
+  const unread = NotificationLists.unread(list)
 
   const markRead = (notification: ReviewNotification) => {
     void notifications.markRead([notification.id])

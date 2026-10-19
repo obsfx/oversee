@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { DiffThemeCatalog } from '@/src/lib/diff-theme-catalog.ts'
-import type { SnapshotLine } from '@/src/lib/review-session-gateway.ts'
+import type { SnapshotLine } from '@/src/lib/comment-gateway.ts'
 import { type HighlightedSnippet, SnippetHighlighter } from '@/src/lib/snippet-highlighter.ts'
 import { useDiffTheme } from '@/src/hooks/use-diff-theme.ts'
 

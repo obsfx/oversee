@@ -1,20 +1,20 @@
+import * as v from 'valibot'
+
 const DECIMAL = /^\d+(\.\d+)?$/
 
 export class NumericRange {
   readonly min: number
   readonly max: number
+  private readonly bounds: v.GenericSchema<number>
 
   constructor(min: number, max: number) {
     this.min = min
     this.max = max
+    this.bounds = v.pipe(v.number(), v.minValue(min), v.maxValue(max))
   }
 
-  contains(value: unknown): value is number {
-    return typeof value === 'number' && value >= this.min && value <= this.max
-  }
-
-  valueOr(value: unknown, fallback: number) {
-    return this.contains(value) ? value : fallback
+  schemaOr(fallback: number) {
+    return v.fallback(this.bounds, fallback)
   }
 
   parse(raw: string) {
@@ -23,6 +23,6 @@ export class NumericRange {
       return null
     }
     const value = Number(trimmed)
-    return this.contains(value) ? value : null
+    return v.is(this.bounds, value) ? value : null
   }
 }

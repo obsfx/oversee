@@ -9,17 +9,18 @@ import (
 )
 
 type Comment struct {
-	ID        string
-	SessionID string
-	FilePath  string
-	Side      string
-	StartLine int64
-	EndLine   int64
-	EndSide   string
-	Body      string
-	Snapshot  string
-	CreatedAt int64
-	UpdatedAt int64
+	ID         string
+	SessionID  string
+	FilePath   string
+	Side       string
+	StartLine  int64
+	EndLine    int64
+	EndSide    string
+	Body       string
+	Snapshot   string
+	CreatedAt  int64
+	UpdatedAt  int64
+	OutdatedAt sql.NullInt64
 }
 
 type CommentReply struct {

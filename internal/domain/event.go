@@ -10,6 +10,7 @@ const (
 	EventCommentReplied      EventKind = "comment.replied"
 	EventNotificationCreated EventKind = "notification.created"
 	EventNotificationsRead   EventKind = "notifications.read"
+	EventCommentsReconciled  EventKind = "comments.reconciled"
 )
 
 type Event interface {
@@ -83,6 +84,20 @@ func (e NotificationsRead) Kind() EventKind {
 }
 
 func (e NotificationsRead) OccurredAt() time.Time {
+	return e.At
+}
+
+type CommentsReconciled struct {
+	SessionID  string
+	Comparison Comparison
+	At         time.Time
+}
+
+func (e CommentsReconciled) Kind() EventKind {
+	return EventCommentsReconciled
+}
+
+func (e CommentsReconciled) OccurredAt() time.Time {
 	return e.At
 }
 

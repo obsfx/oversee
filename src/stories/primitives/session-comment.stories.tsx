@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { CodeSnippetView } from '@/src/primitives/code-snippet-view.tsx'
+import { OutdatedLabel } from '@/src/primitives/outdated-label.tsx'
 import { ReplyEntry } from '@/src/primitives/reply-entry.tsx'
 import { ReplyThread } from '@/src/primitives/reply-thread.tsx'
 import { SessionComment } from '@/src/primitives/session-comment.tsx'
@@ -48,4 +49,8 @@ export const WithReplies: Story = {
       </ReplyThread>
     ),
   },
+}
+
+export const Outdated: Story = {
+  args: { marker: <OutdatedLabel />, dimmed: true },
 }

@@ -3,6 +3,7 @@ import { create } from 'zustand'
 interface ReviewState {
   reviewed: ReadonlySet<string>
   toggleReviewed: (path: string) => void
+  unmarkReviewed: (paths: readonly string[]) => void
 }
 
 export const useReviewStore = create<ReviewState>()((set) => {
@@ -17,6 +18,15 @@ export const useReviewStore = create<ReviewState>()((set) => {
           reviewed.add(path)
         }
         return { reviewed }
+      })
+    },
+    unmarkReviewed: (paths) => {
+      set((state) => {
+        const reviewed = new Set(state.reviewed)
+        for (const path of paths) {
+          reviewed.delete(path)
+        }
+        return reviewed.size === state.reviewed.size ? state : { reviewed }
       })
     },
   }

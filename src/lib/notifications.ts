@@ -1,5 +1,6 @@
 import { AsyncResource } from '@/src/lib/async-resource.ts'
 import type { NotificationGateway, ReviewNotification } from '@/src/lib/notification-gateway.ts'
+import { NotificationLists } from '@/src/lib/notification-lists.ts'
 
 export class Notifications {
   readonly list: AsyncResource<ReviewNotification[]>
@@ -9,12 +10,6 @@ export class Notifications {
     this.gateway = gateway
     this.list = new AsyncResource(() => {
       return gateway.list()
-    })
-  }
-
-  static unread(notifications: ReviewNotification[]) {
-    return notifications.filter((notification) => {
-      return notification.readAt === null
     })
   }
 
@@ -28,14 +23,8 @@ export class Notifications {
   }
 
   applyRead(ids: number[], readAt: number) {
-    const targets = new Set(ids)
     this.list.update((notifications) => {
-      return notifications.map((notification) => {
-        if (notification.readAt !== null || !targets.has(notification.id)) {
-          return notification
-        }
-        return { ...notification, readAt }
-      })
+      return NotificationLists.markRead(notifications, ids, readAt)
     })
   }
 
