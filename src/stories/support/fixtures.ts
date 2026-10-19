@@ -8,6 +8,7 @@ import type { ReviewNotification } from '@/src/lib/notification-gateway.ts'
 import { InMemoryCommentGateway } from '@/src/lib/in-memory-comment-gateway.ts'
 import { InMemoryReviewSessionGateway } from '@/src/lib/in-memory-review-session-gateway.ts'
 import { InMemorySettingsGateway } from '@/src/lib/in-memory-settings-gateway.ts'
+import { InMemoryReviewedMarksGateway } from '@/src/lib/in-memory-reviewed-marks-gateway.ts'
 import type { ReviewSession } from '@/src/lib/review-session-gateway.ts'
 import { Services } from '@/src/lib/services.ts'
 import type { WorkspaceInfo } from '@/src/lib/workspace-gateway.ts'
@@ -158,6 +159,7 @@ export const createStoryServices = ({
     fileDiffs: { load: fileDiffs },
     notifications: new InMemoryNotificationGateway(notifications),
     settings: new InMemorySettingsGateway(),
+    reviewedMarks: new InMemoryReviewedMarksGateway(),
     events,
   })
 }

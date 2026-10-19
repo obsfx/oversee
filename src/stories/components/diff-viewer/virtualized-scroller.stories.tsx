@@ -12,6 +12,7 @@ const diff = fileDiffFor({
   status: 'modified',
   additions: 20,
   deletions: 20,
+  revision: 'fixture',
 })
 
 const meta = {

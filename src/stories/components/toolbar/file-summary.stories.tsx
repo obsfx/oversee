@@ -10,6 +10,7 @@ const meta = {
       status: 'modified',
       additions: 42,
       deletions: 17,
+      revision: 'fixture',
     },
   },
   decorators: [
@@ -30,5 +31,13 @@ type Story = StoryObj<typeof meta>
 export const Modified: Story = {}
 
 export const Added: Story = {
-  args: { file: { path: '.env.template', status: 'added', additions: 116, deletions: 0 } },
+  args: {
+    file: {
+      path: '.env.template',
+      status: 'added',
+      additions: 116,
+      deletions: 0,
+      revision: 'fixture',
+    },
+  },
 }

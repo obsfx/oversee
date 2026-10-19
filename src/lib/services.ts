@@ -11,6 +11,7 @@ import {
   FileDiffRequests,
 } from '@/src/lib/file-diff-gateway.ts'
 import { ResourceCache } from '@/src/lib/resource-cache.ts'
+import type { ReviewedMarksGateway } from '@/src/lib/reviewed-marks-gateway.ts'
 import type { NotificationGateway } from '@/src/lib/notification-gateway.ts'
 import { Notifications } from '@/src/lib/notifications.ts'
 import { ReviewComments } from '@/src/lib/review-comments.ts'
@@ -32,6 +33,7 @@ interface Gateways {
   fileDiffs: FileDiffGateway
   notifications: NotificationGateway
   settings: SettingsGateway
+  reviewedMarks: ReviewedMarksGateway
   events: EventStream
 }
 
@@ -45,6 +47,7 @@ export class Services {
   readonly notifications: Notifications
   readonly settings: SettingsSync
   readonly serverSync: ServerEventSync
+  readonly reviewedMarks: ReviewedMarksGateway
 
   constructor(gateways: Gateways) {
     this.workspace = new AsyncResource(() => {
@@ -63,6 +66,7 @@ export class Services {
     })
     this.notifications = new Notifications(gateways.notifications)
     this.settings = new SettingsSync(gateways.settings)
+    this.reviewedMarks = gateways.reviewedMarks
     this.serverSync = new ServerEventSync(
       gateways.events,
       this.sessions,

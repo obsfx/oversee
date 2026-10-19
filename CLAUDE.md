@@ -83,6 +83,8 @@ Check the layout representation: `/Users/omercanbalandi/studio-2/oversee-visual-
 - selecting an item in the file tree shows that file in the **diff viewer**.
 - shows a loader while the file tree is loading.
 - the tree follows the files on disk without a reload, see **file watcher**.
+- the toolbar `Reviewed` toggle and the tree context menu mark files reviewed. marks survive reloads and drop when the file changes, see **reviewed marks**.
+- the sidebar toolbar has an `Unmark all reviewed` icon button (`UnmarkAllButton`) next to hide/show reviewed. it is disabled when nothing is reviewed and opens a compact confirm with a caret (`PopoverSurface caret`, title only `ConfirmPrompt`). confirming clears the current comparison's marks.
 
 ##### topbar
 - a button that toggles the **sidebar**. it is an icon button that reflects the `expanded` or `collapsed` state with the proper icon.
@@ -187,11 +189,12 @@ Check the layout representation: `/Users/omercanbalandi/studio-2/oversee-visual-
 ##### review sync
 - `ReviewLayout` mounts one hook, `useReviewSync`. it starts `ReviewSync` on mount and disposes it on unmount.
 - `ReviewSync.start()` starts each reaction and returns one dispose that undoes them all:
-    - `ServerEventSync`: event stream into the services. workspace changes clear the reviewed marks of the changed paths.
+    - `ServerEventSync`: event stream into the services.
     - `BranchSelectionGuard`: switches the comparison when a selected branch is gone, see **branch selection**.
+    - `ReviewedMarksSync`: persists reviewed marks and prunes them against the current change set, see **reviewed marks**.
     - `NotificationBlink`: blinks the favicon when the unread count rises, unless reduced motion is preferred.
     - `DocumentTitleSync`: keeps `document.title` on `<folder> - oversee`.
-- reactions subscribe to the zustand stores outside React (`AsyncResource.store`, and the app stores through the `ComparisonSelection` and `ReviewedFiles` ports that the hook builds), so they never re-render the layout and they act before React renders.
+- reactions subscribe to the zustand stores outside React (`AsyncResource.store`, and the app stores through the `ComparisonSelection`, `FollowedComparison` and `ReviewedMarksStore` ports that the hook builds), so they never re-render the layout and they act before React renders.
 - event kinds: `session.finished`, `session.status`, `comment.replied`, `notification.created`, `notifications.read`, `comments.reconciled`. session events silently refresh the cached session lists, without showing a loader. `comments.reconciled {sessionId, comparison}` silently refreshes that comparison's comments.
 - signals: `workspace.changed {paths, refs}` has no id and is never stored, see **file watcher**. `stream.resumed` is emitted by `SocketEventStream` itself when the socket reconnects.
 
@@ -211,10 +214,32 @@ Check the layout representation: `/Users/omercanbalandi/studio-2/oversee-visual-
     - refs moved: invalidate the branch list, every change set and every cached file diff. the refreshed branch list drives the deleted branch switch, see **branch selection**.
     - otherwise: invalidate the uncommitted change sets and the cached diffs whose `path` or `previousPath` changed.
     - `AsyncResource.invalidate()` refreshes resources on screen (`useResource` registers them through `watch()`) without a loader, and marks the others stale so they refetch on their next view.
-    - reviewed marks of the changed paths are cleared. when the selected file leaves the change set, the selection moves to the file now at its position.
+    - reviewed marks whose file got a new revision drop when the change set refreshes, see **reviewed marks**. when the selected file leaves the change set, the selection moves to the file now at its position.
     - an open comment composer keeps its draft across refreshes.
     - `HttpFileDiffGateway` puts a per-load revision into the `@pierre/diffs` `cacheKey`. with a fixed key, pierre keeps rendering the cached old contents after a refetch.
     - `stream.resumed` refreshes everything, because missed signals are not replayed.
+
+## reviewed marks
+
+- reviewed marks are UI state in `localStorage`, not the database, under `oversee.reviewed:<workspace path>`. localStorage is per origin, so marks saved under one port are not visible when serve falls back to another port.
+- the stored value is `{ [comparisonKey]: { [path]: revision } }`. marks are scoped per comparison (`ComparisonRules.key`), like comments and sessions.
+- a mark is valid only while the file's `revision` is unchanged. `/api/file-tree` returns a revision per change:
+    - `git.Repository` reads `git diff --raw --no-abbrev -z -M` and builds `domain.RevisionOf(source, target)` (16 hex chars of sha256).
+    - branch comparisons use the blob ids of both sides. uncommitted comparisons use the HEAD blob id and `Blob.Digest` of the working file. untracked files hash their content, deleted files keep the raw id.
+    - so any content change drops the mark: a live edit, an edit while no tab was open, an agent that edits and commits within one watcher tick, a rebase. identical content keeps its revision, so touching a file or saving it unchanged keeps the mark.
+- `ReviewedMarkRules` owns the rules (toggle, clear, prune, the current comparison's reviewed set). `useReviewStore` holds `marks`, the current `scope` (comparison key and revisions by path) and the derived `reviewed` set that the tree, the toolbar toggle and the sidebar read.
+
+```text
+ReviewedMarksSync.start
+  → workspace ready → ReviewedMarksGateway.load → store.hydrate
+    → store marks change → ReviewedMarksGateway.save
+    → storage event from another tab → store.hydrate
+  → selected comparison (or the default) → its change set resource
+    → ready → store.focus(scope) → prune marks whose path left or revision changed
+```
+
+- `LocalReviewedMarksGateway` validates with valibot and falls back to `{}` on missing, invalid or blocked storage. writes ignore storage errors, so marks still work in memory. stories use `InMemoryReviewedMarksGateway` and seed marks with `seedReviewedMarks`.
+- the file watcher needs no reviewed specific path: `workspace.changed` refreshes the change set, and the new revisions prune the marks.
 
 ## settings
 

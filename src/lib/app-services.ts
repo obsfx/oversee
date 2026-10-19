@@ -9,6 +9,7 @@ import { HttpReviewSessionGateway } from '@/src/lib/http-review-session-gateway.
 import { Services } from '@/src/lib/services.ts'
 import { HttpSettingsGateway } from '@/src/lib/http-settings-gateway.ts'
 import { HttpWorkspaceGateway } from '@/src/lib/http-workspace-gateway.ts'
+import { LocalReviewedMarksGateway } from '@/src/lib/local-reviewed-marks-gateway.ts'
 import { SocketEventStream } from '@/src/lib/socket-event-stream.ts'
 
 export const appGlobals = AppGlobals.read()
@@ -24,5 +25,8 @@ export const appServices = new Services({
   fileDiffs: new HttpFileDiffGateway(apiClient),
   notifications: new HttpNotificationGateway(apiClient),
   settings: new HttpSettingsGateway(apiClient),
+  reviewedMarks: new LocalReviewedMarksGateway(() => {
+    return window.localStorage
+  }),
   events: new SocketEventStream(appGlobals.wsUrl),
 })

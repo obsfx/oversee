@@ -59,6 +59,13 @@ export abstract class ComparisonRules {
     return { comparison: { source, target }, deleted }
   }
 
+  static resolve(selected: Comparison | null, list: BranchList | null) {
+    if (selected) {
+      return selected
+    }
+    return list ? ComparisonRules.defaultFor(list) : null
+  }
+
   static key({ source, target }: Comparison) {
     const sourceKey = source.kind === 'branch' ? `branch:${source.name}` : 'uncommitted'
     return `${sourceKey}..${target}`

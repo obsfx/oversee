@@ -1,32 +1,51 @@
 import { create } from 'zustand'
+import {
+  ReviewedMarkRules,
+  type ReviewedMarks,
+  type ReviewedView,
+  type ReviewScope,
+} from '@/src/lib/reviewed-marks.ts'
 
-interface ReviewState {
-  reviewed: ReadonlySet<string>
+interface ReviewState extends ReviewedView {
   toggleReviewed: (path: string) => void
-  unmarkReviewed: (paths: readonly string[]) => void
+  unmarkAll: () => void
+  hydrate: (marks: ReviewedMarks) => void
+  focus: (scope: ReviewScope | null) => void
 }
 
 export const useReviewStore = create<ReviewState>()((set) => {
   return {
-    reviewed: new Set(),
+    marks: ReviewedMarkRules.empty,
+    scope: null,
+    reviewed: ReviewedMarkRules.none,
     toggleReviewed: (path) => {
       set((state) => {
-        const reviewed = new Set(state.reviewed)
-        if (reviewed.has(path)) {
-          reviewed.delete(path)
-        } else {
-          reviewed.add(path)
-        }
-        return { reviewed }
+        const marks = ReviewedMarkRules.toggle(state.marks, state.scope, path)
+        return ReviewedMarkRules.view(marks, state.scope, state.reviewed)
       })
     },
-    unmarkReviewed: (paths) => {
+    unmarkAll: () => {
       set((state) => {
-        const reviewed = new Set(state.reviewed)
-        for (const path of paths) {
-          reviewed.delete(path)
-        }
-        return reviewed.size === state.reviewed.size ? state : { reviewed }
+        const marks = ReviewedMarkRules.clear(state.marks, state.scope)
+        return ReviewedMarkRules.view(marks, state.scope, state.reviewed)
+      })
+    },
+    hydrate: (marks) => {
+      set((state) => {
+        return ReviewedMarkRules.view(
+          ReviewedMarkRules.prune(marks, state.scope),
+          state.scope,
+          state.reviewed,
+        )
+      })
+    },
+    focus: (scope) => {
+      set((state) => {
+        return ReviewedMarkRules.view(
+          ReviewedMarkRules.prune(state.marks, scope),
+          scope,
+          state.reviewed,
+        )
       })
     },
   }

@@ -16,6 +16,7 @@ export class HttpChangeSetGateway extends HttpGateway implements ChangeSetGatewa
         status: ChangeStatuses.schema,
         additions: ValueSchemas.count,
         deletions: ValueSchemas.count,
+        revision: v.string(),
       }),
     ),
   })

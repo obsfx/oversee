@@ -155,27 +155,46 @@ var statusByCode = map[byte]domain.ChangeStatus{
 	'T': domain.ChangeModified,
 }
 
-type nameStatusOutput string
+type rawEntry struct {
+	change domain.Change
+	source string
+	target string
+}
 
-func (o nameStatusOutput) Changes() []domain.Change {
-	changes := []domain.Change{}
-	for _, line := range lineOutput(o).Lines() {
-		fields := strings.Split(line, "\t")
-		if len(fields) < 2 || fields[0] == "" {
+func (e rawEntry) revised(target string) domain.Change {
+	change := e.change
+	change.Revision = domain.RevisionOf(e.source, target)
+	return change
+}
+
+type rawOutput string
+
+func (o rawOutput) Entries() []rawEntry {
+	entries := []rawEntry{}
+	tokens := strings.Split(string(o), nul)
+	for index := 0; index < len(tokens); index++ {
+		header, isHeader := strings.CutPrefix(tokens[index], ":")
+		fields := strings.Fields(header)
+		if !isHeader || len(fields) < 5 || index+1 >= len(tokens) {
 			continue
 		}
-		code := fields[0][0]
+		code := fields[4][0]
 		status, known := statusByCode[code]
 		if !known {
 			status = domain.ChangeModified
 		}
-		change := domain.Change{Path: fields[len(fields)-1], Status: status}
-		if code == 'R' {
-			change.PreviousPath = fields[1]
+		index++
+		entry := rawEntry{change: domain.Change{Path: tokens[index], Status: status}, source: fields[2], target: fields[3]}
+		if (code == 'R' || code == 'C') && index+1 < len(tokens) {
+			index++
+			if code == 'R' {
+				entry.change.PreviousPath = entry.change.Path
+			}
+			entry.change.Path = tokens[index]
 		}
-		changes = append(changes, change)
+		entries = append(entries, entry)
 	}
-	return changes
+	return entries
 }
 
 type lineStat struct {
@@ -203,14 +222,14 @@ func (o numstatOutput) Stats() map[string]lineStat {
 	return stats
 }
 
-func (o numstatOutput) ApplyTo(changes []domain.Change) []domain.Change {
+func (o numstatOutput) ApplyTo(entries []rawEntry) []rawEntry {
 	stats := o.Stats()
-	for index, change := range changes {
-		stat := stats[change.Path]
-		changes[index].Additions = stat.additions
-		changes[index].Deletions = stat.deletions
+	for index, entry := range entries {
+		stat := stats[entry.change.Path]
+		entries[index].change.Additions = stat.additions
+		entries[index].change.Deletions = stat.deletions
 	}
-	return changes
+	return entries
 }
 
 func statCount(value string) int {

@@ -10,6 +10,7 @@ import { SidebarEmpty } from '@/src/components/sidebar/sidebar-empty.tsx'
 import { SidebarFailed } from '@/src/components/sidebar/sidebar-failed.tsx'
 import { SidebarLoading } from '@/src/components/sidebar/sidebar-loading.tsx'
 import { TreeFilter } from '@/src/components/sidebar/tree-filter.tsx'
+import { UnmarkAllButton } from '@/src/components/sidebar/unmark-all-button.tsx'
 
 export function Sidebar() {
   const {
@@ -40,6 +41,7 @@ export function Sidebar() {
               {hideReviewed ? <VscEyeClosed /> : <VscEye />}
             </SidebarIconButton>
           </Tooltip>
+          <UnmarkAllButton />
           <Tooltip label={expansionLabel}>
             <SidebarIconButton aria-label={expansionLabel} onClick={toggleAllExpanded}>
               {allExpanded ? <LuChevronsDownUp /> : <LuChevronsUpDown />}

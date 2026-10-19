@@ -18,6 +18,7 @@ type Change struct {
 	Status       string `json:"status"`
 	Additions    int    `json:"additions"`
 	Deletions    int    `json:"deletions"`
+	Revision     string `json:"revision"`
 }
 
 type FileTree struct {
@@ -34,6 +35,7 @@ func FileTreeOf(tree domain.FileTree) FileTree {
 			Status:       string(change.Status),
 			Additions:    change.Additions,
 			Deletions:    change.Deletions,
+			Revision:     change.Revision,
 		})
 	}
 	return FileTree{Paths: tree.Paths, Changes: changes}

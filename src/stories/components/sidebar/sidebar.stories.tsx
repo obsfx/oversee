@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Sidebar } from '@/src/components/sidebar/sidebar.tsx'
 import type { Services } from '@/src/lib/services.ts'
 import { createStoryServices, neverResolves, rejectsWith } from '@/src/stories/support/fixtures.ts'
+import { seedReviewedMarks } from '@/src/stories/support/story-review-state.ts'
 import { StoryFrame } from '@/src/stories/support/story-frame.tsx'
 
 const meta = {
@@ -9,6 +10,9 @@ const meta = {
   component: Sidebar,
   parameters: { layout: 'fullscreen' },
   args: { services: createStoryServices() },
+  beforeEach: () => {
+    seedReviewedMarks()
+  },
   argTypes: { services: { table: { disable: true } } },
   render: ({ services }) => {
     return (
@@ -26,6 +30,17 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Ready: Story = {}
+
+export const WithReviewed: Story = {
+  beforeEach: () => {
+    seedReviewedMarks([
+      '.env.template',
+      '.gitignore',
+      'scripts/alpha_user_subscribe.ts',
+      'scripts/expire_password.ts',
+    ])
+  },
+}
 
 export const Loading: Story = {
   args: { services: createStoryServices({ changeSets: neverResolves }) },

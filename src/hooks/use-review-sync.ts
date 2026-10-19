@@ -16,10 +16,27 @@ export const useReviewSync = () => {
         replace: (replacement) => {
           useComparisonStore.getState().replace(replacement)
         },
+        subscribe: (listener) => {
+          return useComparisonStore.subscribe((state, previous) => {
+            if (state.selected !== previous.selected) {
+              listener()
+            }
+          })
+        },
       },
-      reviewed: {
-        unmark: (paths) => {
-          useReviewStore.getState().unmarkReviewed(paths)
+      marks: {
+        hydrate: (marks) => {
+          useReviewStore.getState().hydrate(marks)
+        },
+        focus: (scope) => {
+          useReviewStore.getState().focus(scope)
+        },
+        subscribe: (listener) => {
+          return useReviewStore.subscribe((state, previous) => {
+            if (state.marks !== previous.marks) {
+              listener(state.marks)
+            }
+          })
         },
       },
     })

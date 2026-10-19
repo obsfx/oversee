@@ -4,15 +4,16 @@ import { FaviconBlinker } from '@/src/lib/favicon-blinker.ts'
 import { DocumentFavicon } from '@/src/lib/favicon-frames.ts'
 import { NotificationBlink } from '@/src/lib/notification-blink.ts'
 import { ReducedMotion } from '@/src/lib/reduced-motion.ts'
+import {
+  ReviewedMarksSync,
+  type FollowedComparison,
+  type ReviewedMarksStore,
+} from '@/src/lib/reviewed-marks-sync.ts'
 import type { Services } from '@/src/lib/services.ts'
 
-export interface ReviewedFiles {
-  unmark(paths: readonly string[]): void
-}
-
 export interface ReviewSyncPorts {
-  selection: ComparisonSelection
-  reviewed: ReviewedFiles
+  selection: ComparisonSelection & FollowedComparison
+  marks: ReviewedMarksStore
 }
 
 export class ReviewSync {
@@ -26,10 +27,18 @@ export class ReviewSync {
 
   start() {
     const disposers = [
-      this.services.serverSync.start((change) => {
-        this.ports.reviewed.unmark(change.paths)
-      }),
+      this.services.serverSync.start(),
       new BranchSelectionGuard(this.services.branches, this.ports.selection).start(),
+      new ReviewedMarksSync(
+        {
+          workspace: this.services.workspace,
+          branches: this.services.branches,
+          changeSets: this.services.changeSets,
+          gateway: this.services.reviewedMarks,
+        },
+        this.ports.marks,
+        this.ports.selection,
+      ).start(),
       new NotificationBlink(
         this.services.notifications.list,
         new FaviconBlinker(DocumentFavicon.show),

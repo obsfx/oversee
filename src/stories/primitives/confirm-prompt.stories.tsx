@@ -32,4 +32,17 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
 
+export const TitleOnly: Story = {
+  args: {
+    title: 'Unmark 12 reviewed files?',
+    description: undefined,
+    children: (
+      <>
+        <Button variant={'ghost'}>Cancel</Button>
+        <Button variant={'accent-subtle'}>Unmark all</Button>
+      </>
+    ),
+  },
+}
+
 export const Failed: Story = { args: { error: 'Could not finish the review. Try again.' } }

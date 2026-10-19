@@ -1,10 +1,8 @@
 import type { Notifications } from '@/src/lib/notifications.ts'
 import type { ReviewComments } from '@/src/lib/review-comments.ts'
 import type { ReviewSessions } from '@/src/lib/review-sessions.ts'
-import type { EventStream, ServerEvent, WorkspaceChange } from '@/src/lib/server-events.ts'
+import type { EventStream, ServerEvent } from '@/src/lib/server-events.ts'
 import { WorkspaceRefresh } from '@/src/lib/workspace-refresh.ts'
-
-export type WorkspaceChangeListener = (change: WorkspaceChange) => void
 
 export class ServerEventSync {
   private readonly events: EventStream
@@ -27,16 +25,15 @@ export class ServerEventSync {
     this.workspace = workspace
   }
 
-  start(onWorkspaceChange: WorkspaceChangeListener) {
+  start() {
     return this.events.subscribe((event) => {
-      this.apply(event, onWorkspaceChange)
+      this.apply(event)
     })
   }
 
-  private apply(event: ServerEvent, onWorkspaceChange: WorkspaceChangeListener) {
+  private apply(event: ServerEvent) {
     if (event.kind === 'workspace.changed') {
       this.workspace.apply(event)
-      onWorkspaceChange(event)
       return
     }
     if (event.kind === 'stream.resumed') {

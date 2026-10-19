@@ -13,7 +13,13 @@ const meta = {
   parameters: { layout: 'fullscreen' },
   args: {
     path: STORY_PATH,
-    diff: fileDiffFor({ path: STORY_PATH, status: 'modified', additions: 30, deletions: 10 }),
+    diff: fileDiffFor({
+      path: STORY_PATH,
+      status: 'modified',
+      additions: 30,
+      deletions: 10,
+      revision: 'fixture',
+    }),
   },
   beforeEach: () => {
     resetReviewState()

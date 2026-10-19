@@ -2,9 +2,13 @@ package domain
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"slices"
 	"strings"
 )
+
+const revisionBytes = 8
 
 type BranchList struct {
 	Local   []string
@@ -28,6 +32,12 @@ type Change struct {
 	Status       ChangeStatus
 	Additions    int
 	Deletions    int
+	Revision     string
+}
+
+func RevisionOf(source, target string) string {
+	sum := sha256.Sum256([]byte(source + "\x00" + target))
+	return hex.EncodeToString(sum[:revisionBytes])
 }
 
 func (c Change) File() FileRef {
@@ -73,6 +83,11 @@ func (b Blob) Lines() ([]string, bool) {
 		return nil, false
 	}
 	return strings.Split(string(b), "\n"), true
+}
+
+func (b Blob) Digest() string {
+	sum := sha256.Sum256(b)
+	return hex.EncodeToString(sum[:])
 }
 
 func (b Blob) LineCount() int {

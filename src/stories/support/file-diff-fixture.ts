@@ -274,9 +274,12 @@ export const fileDiffFor = ({ path, status }: FileChange): FileDiff => {
       oldFile: null,
       newFile: null,
       images: ImageFiles.isImage(path)
-        ? ImageFiles.pair({ path, status, additions: 0, deletions: 0 }, (side) => {
-            return side === 'old' ? SAMPLE_IMAGES.before : SAMPLE_IMAGES.after
-          })
+        ? ImageFiles.pair(
+            { path, status, additions: 0, deletions: 0, revision: 'fixture' },
+            (side) => {
+              return side === 'old' ? SAMPLE_IMAGES.before : SAMPLE_IMAGES.after
+            },
+          )
         : null,
     }
   }

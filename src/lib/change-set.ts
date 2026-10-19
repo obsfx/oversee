@@ -24,6 +24,7 @@ export interface FileChange {
   additions: number
   deletions: number
   previousPath?: string
+  revision: string
 }
 
 export interface ChangeSet {

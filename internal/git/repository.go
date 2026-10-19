@@ -128,17 +128,22 @@ func (r *Repository) uncommittedTree(ctx context.Context) (domain.FileTree, erro
 	if err != nil {
 		return domain.FileTree{}, err
 	}
-	changes, err := r.changes(ctx, "HEAD")
+	entries, err := r.changes(ctx, "HEAD")
 	if err != nil {
 		return domain.FileTree{}, err
 	}
 	untrackedPaths := lineOutput(untracked).Lines()
+	changes := make([]domain.Change, 0, len(entries)+len(untrackedPaths))
+	for _, entry := range entries {
+		changes = append(changes, entry.revised(r.workingIdentity(entry)))
+	}
 	for _, path := range untrackedPaths {
 		content, _ := r.workingFile(path)
 		changes = append(changes, domain.Change{
 			Path:      path,
 			Status:    domain.ChangeUntracked,
 			Additions: content.LineCount(),
+			Revision:  domain.RevisionOf("", content.Digest()),
 		})
 	}
 	return domain.FileTree{Paths: append(lineOutput(tracked).Lines(), untrackedPaths...), Changes: changes}, nil
@@ -153,15 +158,19 @@ func (r *Repository) branchTree(ctx context.Context, comparison domain.Compariso
 	if err != nil {
 		return domain.FileTree{}, err
 	}
-	changes, err := r.changes(ctx, base, comparison.Source)
+	entries, err := r.changes(ctx, base, comparison.Source)
 	if err != nil {
 		return domain.FileTree{}, err
+	}
+	changes := make([]domain.Change, 0, len(entries))
+	for _, entry := range entries {
+		changes = append(changes, entry.revised(entry.target))
 	}
 	return domain.NewFileTree(lineOutput(tree).Lines(), changes), nil
 }
 
-func (r *Repository) changes(ctx context.Context, revisions ...string) ([]domain.Change, error) {
-	nameStatus, err := r.runner.Text(ctx, slices.Concat([]string{"diff", "--name-status", "-M"}, revisions, []string{"--"})...)
+func (r *Repository) changes(ctx context.Context, revisions ...string) ([]rawEntry, error) {
+	raw, err := r.runner.Bytes(ctx, slices.Concat([]string{"diff", "--raw", "--no-abbrev", "-z", "-M"}, revisions, []string{"--"})...)
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +178,18 @@ func (r *Repository) changes(ctx context.Context, revisions ...string) ([]domain
 	if err != nil {
 		return nil, err
 	}
-	return numstatOutput(numstat).ApplyTo(nameStatusOutput(nameStatus).Changes()), nil
+	return numstatOutput(numstat).ApplyTo(rawOutput(raw).Entries()), nil
+}
+
+func (r *Repository) workingIdentity(entry rawEntry) string {
+	if entry.change.Status == domain.ChangeDeleted {
+		return entry.target
+	}
+	content, err := r.workingFile(entry.change.Path)
+	if err != nil {
+		return entry.target
+	}
+	return content.Digest()
 }
 
 func (r *Repository) base(ctx context.Context, comparison domain.Comparison) (string, error) {

@@ -28,3 +28,5 @@ type Story = StoryObj<typeof meta>
 export const AlignStart: Story = {}
 
 export const AlignEnd: Story = { args: { align: 'end' } }
+
+export const Caret: Story = { args: { align: 'end', caret: true } }
