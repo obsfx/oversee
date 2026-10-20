@@ -55,6 +55,7 @@ func (s *Server) Serve(ctx context.Context, listener net.Listener) error {
 		}
 	}()
 	go s.services.Watcher.Follow(ctx, s.hub, s.hub.PublishWorkspaceChange)
+	go s.services.LanguageServers.Follow(ctx, s.hub.PublishLanguageServersChange)
 	go func() {
 		<-ctx.Done()
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
@@ -74,6 +75,7 @@ func (s *Server) routes() http.Handler {
 	sessions := sessionHandler{reviews: s.services.Reviews}
 	notifications := notificationHandler{notifications: s.services.Notifications}
 	settings := settingsHandler{settings: s.services.Settings}
+	languageServers := languageServerHandler{servers: s.services.LanguageServers}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/workspace", s.index.workspace)
 	mux.HandleFunc("GET /api/branches", diffs.branches)
@@ -91,6 +93,9 @@ func (s *Server) routes() http.Handler {
 	mux.HandleFunc("POST /api/notifications/read", notifications.markRead)
 	mux.HandleFunc("GET /api/settings", settings.get)
 	mux.HandleFunc("PATCH /api/settings", settings.update)
+	mux.HandleFunc("GET /api/language-servers", languageServers.list)
+	mux.HandleFunc("POST /api/language-servers/{id}/install", languageServers.install)
+	mux.HandleFunc("DELETE /api/language-servers/{id}", languageServers.uninstall)
 	mux.Handle("GET /ws", s.hub)
 	mux.HandleFunc("GET /{$}", s.index.serve)
 	return mux
@@ -106,6 +111,18 @@ func localOnly(next http.Handler) http.Handler {
 			http.Error(w, "forbidden host", http.StatusForbidden)
 			return
 		}
+		if crossSiteWrite(r) {
+			http.Error(w, "forbidden cross-site request", http.StatusForbidden)
+			return
+		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+func crossSiteWrite(r *http.Request) bool {
+	if r.Method == http.MethodGet || r.Method == http.MethodHead {
+		return false
+	}
+	site := r.Header.Get("Sec-Fetch-Site")
+	return site != "" && site != "same-origin" && site != "none"
 }

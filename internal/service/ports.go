@@ -5,6 +5,7 @@ import (
 	"time"
 	"uuid"
 
+	"github.com/obsfx/oversee/internal/catalog"
 	"github.com/obsfx/oversee/internal/domain"
 	"github.com/obsfx/oversee/internal/repository"
 )
@@ -34,6 +35,19 @@ type Audience interface {
 
 type Reconciler interface {
 	Reconcile(ctx context.Context, change domain.WorkspaceChange) error
+}
+
+type ServerInstaller interface {
+	Install(ctx context.Context, server catalog.Server, platform catalog.Platform) error
+}
+
+type InstallationStore interface {
+	InstalledVersion(id string) (string, error)
+	Remove(id string) error
+}
+
+type RequirementProbe interface {
+	Missing(requirements []catalog.Requirement) []catalog.Requirement
 }
 
 type Runtime struct {

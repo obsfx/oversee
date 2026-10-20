@@ -39,7 +39,9 @@ func statusOf(err error) int {
 		return http.StatusNotFound
 	case errors.Is(err, domain.ErrSessionFinished),
 		errors.Is(err, domain.ErrSessionNotFinished),
-		errors.Is(err, domain.ErrStaleContent):
+		errors.Is(err, domain.ErrStaleContent),
+		errors.Is(err, domain.ErrLanguageServerUnavailable),
+		errors.Is(err, domain.ErrLanguageServerBusy):
 		return http.StatusConflict
 	default:
 		return http.StatusInternalServerError

@@ -14,7 +14,7 @@ This file contains the information and direction for the application we call `ov
 ```text
 oversee serve (cwd = workspace, git root = repo)
   → listen on 127.0.0.1:6999 (or --port), fall back to an available port when it is busy
-    → HTTP mux (localhost hosts only)
+    → HTTP mux (localhost hosts only, cross-site writes rejected)
       → GET /        → embedded index.html.gz + injected window.__overseeGlobal
       → /api/*       → httpapi handler → service → git.Repository | repositories (sqlite)
       → GET /ws      → ws.Hub
@@ -23,6 +23,8 @@ oversee serve (cwd = workspace, git root = repo)
     → service.WorkspaceWatcher (1s tick, see file watcher)
       → git fingerprint changed and settled → CommentService.Reconcile → comments.reconciled row
         → ws.Hub workspace.changed signal (never stored) → UI silently refreshes tree, diff, branches
+    → service.LanguageServerService (see language servers)
+      → install jobs → ws.Hub language-servers.changed signal (never stored)
 
 oversee review start|close|reply (another process, usually an agent)
   → cli command → service.ReviewService
@@ -38,15 +40,17 @@ transport (httpapi, ws, cli)   decode input, map errors, render DTOs or presente
     → repository               one struct per aggregate over sqlc queries, maps rows to domain, TxRunner
       → storage/sqlite         open, migrations, generated sqldb code, change detector
     → git                      Runner executes git, typed outputs parse it, Repository returns domain types
+    → langserver               app home, platform, toolchain, installer and installations of language servers
+    → catalog                  the embedded language server catalog, plain data with validation
 app                            composition root: workspace, db, repositories, services, http server
 ```
 - dependencies point down only. `domain` imports nothing from the project.
-- services declare the small interfaces they consume (`GitReader`, `Transactor`, `ChangeDetector`, `WorkspaceProbe`, `Audience`, `Reconciler`); repositories and the git repository are concrete structs.
+- services declare the small interfaces they consume (`GitReader`, `Transactor`, `ChangeDetector`, `WorkspaceProbe`, `Audience`, `Reconciler`, `ServerInstaller`, `InstallationStore`, `RequirementProbe`); repositories, the git repository and the langserver types are concrete structs.
 - `git.Repository.Contents` returns `nil, nil` for a missing file (path not in the ref, deleted or a directory in the working tree) and an error for a failed read. code that makes one-way decisions (outdating comments) must only act on a missing file, never on an error.
 - a comparison is **gone** when one of its refs no longer exists (`Comparison.Refs`: the source branch and the target, the target also for uncommitted comparisons). `git.Repository.Tree` checks them with `rev-parse --verify` first, `Contents` checks them only after a failed git read, and a missing ref returns `domain.ErrUnknownBranch`.
 - every multi-write runs in `TxRunner.Within`, and its events are appended in the same transaction (outbox).
 - the JSON contract lives only in `internal/transport/dto`: HTTP responses, CLI `--json`, event payloads (`dto.EventCodec`) and the websocket envelope. changing it means changing the UI parsers too.
-- errors: `domain.ValidationError` maps to 400, `domain.ErrNotFound`/`ErrNoOpenSession`/`ErrUnknownBranch` to 404, session state conflicts and `ErrStaleContent` to 409, everything else to 500 and a log line.
+- errors: `domain.ValidationError` maps to 400, `domain.ErrNotFound`/`ErrNoOpenSession`/`ErrUnknownBranch` to 404, session state conflicts, `ErrStaleContent`, `ErrLanguageServerUnavailable` and `ErrLanguageServerBusy` to 409, everything else to 500 and a log line.
 
 - **HTTP** carries queries and commands. the **websocket** only pushes server events to the UI.
 - every write appends a row to the `events` table in the same transaction. this lets CLI processes reach a running server without knowing its port, and lets a reconnecting UI replay missed events with `?after=<lastEventId>`.
@@ -262,6 +266,33 @@ useSettingsStore.update(patch)
 - `SettingsGateway` has http and in-memory versions. stories use the in-memory one and never start the sync.
 - settings no longer use `localStorage`. values saved there before are ignored.
 
+## language servers
+
+- go to definition runs through language servers that oversee installs on demand. the supported servers are a curated catalog built into the binary, installed app wide under `~/.oversee/lsp` (`OVERSEE_HOME` overrides `~/.oversee`).
+- **catalog**: `internal/cataloggen/servers.json` lists the servers (typescript-language-server, pyright, gopls, rust-analyzer, clangd, jdtls, omnisharp, intelephense, kotlin-language-server, lua-language-server, bash-language-server, zls) with their file types keyed by LSP language id, launch args, root markers and extra requirements. every extension and filename belongs to one file type, and every file type to one server.
+    - `go run ./cmd/catalog-gen` resolves them against the latest mason-registry release (verified with its `checksums.txt`) into `internal/catalog/catalog.json`, which is embedded and read with `catalog.Embedded()`. versions, downloads per platform and binaries come from mason, sha256 checksums from GitHub asset digests or by hashing the file.
+    - a server that fails to resolve keeps its previous entry, a platform that fails is dropped with a warning. `skipFiles` drops optional files with mutable urls (jdtls `lombok.jar`).
+    - `.github/workflows/catalog.yml` runs weekly and opens a `catalog/update` pull request when a server changed, so only reviewed versions ship with a release.
+    - `${dataDir}` (`catalog.DataDirArgument`) in run args stands for a per project data directory (jdtls).
+
+```text
+POST /api/language-servers/{id}/install
+  → LanguageServerService.Install
+    → already at the catalog version → no-op
+    → no build for this platform or a requirement missing on PATH → 409
+    → install job (one per server per process, outlives the request, cancelled on shutdown)
+      → langserver.Installer: temp dir under lsp/.tmp
+        → npm install --prefix --ignore-scripts | GOBIN=<dir>/bin go install | download, sha256 check, extract (zip, vsix, tar.gz, tar.xz, gz) through os.Root
+        → entry file exists → oversee-install.json manifest → rename to lsp/<id>/<version> (first rename wins across processes) → older versions removed
+      → language-servers.changed signal (no id, never stored) when a job starts and ends
+```
+
+- `GET /api/language-servers` returns the platform, the file types and every server with its `status` (`not-installed`, `installing`, `installed`, `failed`), installed version, `updateAvailable`, missing requirements and the last install error. `DELETE /api/language-servers/{id}` removes every version (409 while installing).
+- install jobs live in the serve process that started them. another serve process sees the result on its next list.
+- `langserver.Installation.Command` resolves the launch command per bin kind (`exec`, `npm`, `golang`, or `node`, `python`, `java-jar`, `dotnet` through the toolchain).
+- non GET requests with a cross-site `Sec-Fetch-Site` are rejected, because installs run toolchains.
+- `oversee init` and `RequireInitialized` check the database file, not the `.oversee` directory, so `~/.oversee` never looks like an initialized workspace.
+
 ## development
 
 - `pnpm dev:server`: runs the go server on port `4400` (falls back to another port when 4400 is busy, then the vite proxy can not reach it) against the test repository (`OVERSEE_DEV_REPO`, defaults to `/Users/omercanbalandi/oaks-lab/storyvine/now-api`). run `oversee init` there once.
@@ -269,6 +300,7 @@ useSettingsStore.update(patch)
 - `pnpm storybook`: storybook with in-memory gateways.
 - `pnpm build:ui`: builds the UI shell into a single, gzipped `internal/webui/dist/index.html.gz` (vite `embed` mode, `vite-plugin-singlefile`, inlined diff worker).
 - `pnpm build:cli`: `build:ui`, then builds `bin/oversee`.
+- `go run ./cmd/catalog-gen`: regenerates `internal/catalog/catalog.json` from `servers.json` and mason (`GITHUB_TOKEN` raises the API rate limit). the coverage summary goes to stdout or `-summary`.
 - `../oversee-proto-backend` was the node mock backend of the first phase. the go server replaced it.
 
 ## distribution
@@ -341,9 +373,13 @@ useSettingsStore.update(patch)
 
 ##### go
 - `./cmd/oversee`: the binary entry point, calls `transport/cli`.
+- `./cmd/catalog-gen`: generates the embedded language server catalog.
 - `./internal/app`: composition root, wires workspace, database, repositories, services and the http server.
 - `./internal/domain`: entities, value objects, rules, domain events and errors.
-- `./internal/service`: `DiffService`, `CommentService`, `ReviewService`, `NotificationService`, `SettingsService`, `EventFeed`, `WorkspaceWatcher`.
+- `./internal/service`: `DiffService`, `CommentService`, `ReviewService`, `NotificationService`, `SettingsService`, `EventFeed`, `WorkspaceWatcher`, `LanguageServerService`.
+- `./internal/catalog`: the embedded language server catalog (`catalog.json`) and its validation.
+- `./internal/cataloggen`: catalog generation from `servers.json` and mason-registry.
+- `./internal/langserver`: app home, platform detection, toolchain lookup, installer and installations.
 - `./internal/repository`: session, comment, reply, notification, settings and event repositories, `TxRunner`.
 - `./internal/storage/sqlite`: database open, migrations, sqlc config, queries and generated `sqldb` code, change detector.
 - `./internal/git`: git runner, output parsers and repository.

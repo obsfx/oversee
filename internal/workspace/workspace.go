@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"github.com/obsfx/oversee/internal/domain"
 )
@@ -63,8 +64,8 @@ func (w Workspace) DBPath() string {
 }
 
 func (w Workspace) RequireInitialized() error {
-	info, err := os.Stat(w.DataDir())
-	if errors.Is(err, fs.ErrNotExist) || (err == nil && !info.IsDir()) {
+	info, err := os.Stat(w.DBPath())
+	if errors.Is(err, fs.ErrNotExist) || errors.Is(err, syscall.ENOTDIR) || (err == nil && !info.Mode().IsRegular()) {
 		return ErrNotInitialized
 	}
 	return err

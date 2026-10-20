@@ -2,8 +2,12 @@ package app
 
 import (
 	"context"
+	"net/http"
+	"time"
 
+	"github.com/obsfx/oversee/internal/catalog"
 	"github.com/obsfx/oversee/internal/git"
+	"github.com/obsfx/oversee/internal/langserver"
 	"github.com/obsfx/oversee/internal/repository"
 	"github.com/obsfx/oversee/internal/service"
 	"github.com/obsfx/oversee/internal/storage/sqlite"
@@ -11,6 +15,8 @@ import (
 	"github.com/obsfx/oversee/internal/transport/httpapi"
 	"github.com/obsfx/oversee/internal/workspace"
 )
+
+const installTimeout = 15 * time.Minute
 
 type App struct {
 	Workspace workspace.Workspace
@@ -42,11 +48,32 @@ func Open(ctx context.Context, dir string) (*App, error) {
 	if err := ws.RequireInitialized(); err != nil {
 		return nil, err
 	}
+	languageServers, err := newLanguageServerService()
+	if err != nil {
+		return nil, err
+	}
 	db, err := sqlite.Open(ctx, ws.DBPath())
 	if err != nil {
 		return nil, err
 	}
-	return &App{Workspace: ws, Services: newServices(db, git.NewRepository(ws.RepoRoot, ws.GitDir)), db: db}, nil
+	services := newServices(db, git.NewRepository(ws.RepoRoot, ws.GitDir))
+	services.LanguageServers = languageServers
+	return &App{Workspace: ws, Services: services, db: db}, nil
+}
+
+func newLanguageServerService() (*service.LanguageServerService, error) {
+	servers, err := catalog.Embedded()
+	if err != nil {
+		return nil, err
+	}
+	home, err := langserver.ResolveHome()
+	if err != nil {
+		return nil, err
+	}
+	platform, _ := langserver.DetectPlatform()
+	toolchain := langserver.Toolchain{}
+	installer := langserver.NewInstaller(home, toolchain, &http.Client{Timeout: installTimeout})
+	return service.NewLanguageServerService(servers, platform, installer, langserver.NewInstallations(home), toolchain), nil
 }
 
 func newServices(db *sqlite.DB, gitRepository *git.Repository) service.Services {
@@ -73,5 +100,6 @@ func (a *App) Server(dev bool) *httpapi.Server {
 }
 
 func (a *App) Close() error {
+	a.Services.LanguageServers.Close()
 	return a.db.Close()
 }

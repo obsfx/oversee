@@ -56,6 +56,12 @@ func (h *Hub) PublishWorkspaceChange(change domain.WorkspaceChange) {
 	h.broadcast(envelope)
 }
 
+func (h *Hub) PublishLanguageServersChange() {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.broadcast(dto.LanguageServersChangedOf(time.Now()))
+}
+
 func (h *Hub) HasClients() bool {
 	h.mu.Lock()
 	defer h.mu.Unlock()
