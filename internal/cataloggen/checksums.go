@@ -50,25 +50,24 @@ func (c *ChecksumResolver) Resolve(ctx context.Context, urls []string) ChecksumR
 	releases := map[releaseKey][]string{}
 	var downloads []string
 	for _, link := range urls {
-		if sum, ok := c.known[link]; ok {
-			result.Sums[link] = sum
-			continue
-		}
 		if key, _, ok := githubReleaseFile(link); ok {
 			releases[key] = append(releases[key], link)
 			continue
 		}
 		downloads = append(downloads, link)
 	}
-	c.log.Printf("checksums: %d from the previous catalog, %d releases to look up, %d other files", len(result.Sums), len(releases), len(downloads))
+	c.log.Printf("checksums: %d releases to look up, %d other files", len(releases), len(downloads))
 	for link, digest := range c.releaseDigests(ctx, releases) {
+		known, cached := c.known[link]
 		switch {
 		case digest.err != nil:
 			result.Failures[link] = digest.err
-		case digest.value == "":
-			downloads = append(downloads, link)
-		default:
+		case digest.value != "":
 			result.Sums[link] = digest.value
+		case cached:
+			result.Sums[link] = known
+		default:
+			downloads = append(downloads, link)
 		}
 	}
 	c.log.Printf("checksums: hashing %d files without a published digest", len(downloads))
@@ -103,62 +102,55 @@ type digestResult struct {
 	err   error
 }
 
-type digestResults struct {
-	mutex  sync.Mutex
-	values map[string]digestResult
-}
-
-func (d *digestResults) set(link string, result digestResult) {
-	d.mutex.Lock()
-	defer d.mutex.Unlock()
-	d.values[link] = result
-}
-
 func (c *ChecksumResolver) releaseDigests(ctx context.Context, releases map[releaseKey][]string) map[string]digestResult {
-	results := &digestResults{values: map[string]digestResult{}}
-	forEachParallel(slices.Collect(maps.Keys(releases)), func(key releaseKey) {
+	keys := slices.Collect(maps.Keys(releases))
+	perRelease := mapParallel(keys, func(key releaseKey) map[string]digestResult {
 		release, err := c.github.ReleaseByTag(ctx, key.repository, key.tag)
+		digests := make(map[string]digestResult, len(releases[key]))
 		for _, link := range releases[key] {
-			results.set(link, releaseDigest(release, err, key, link))
+			if err != nil {
+				digests[link] = digestResult{err: fmt.Errorf("release %s@%s: %w", key.repository, key.tag, err)}
+				continue
+			}
+			_, name, _ := githubReleaseFile(link)
+			sum, digestErr := release.Digest(name)
+			digests[link] = digestResult{value: sum, err: digestErr}
 		}
+		return digests
 	})
-	return results.values
+	results := map[string]digestResult{}
+	for _, digests := range perRelease {
+		maps.Copy(results, digests)
+	}
+	return results
 }
 
 func (c *ChecksumResolver) hashes(ctx context.Context, links []string) map[string]digestResult {
-	results := &digestResults{values: map[string]digestResult{}}
-	forEachParallel(links, func(link string) {
+	sums := mapParallel(links, func(link string) digestResult {
 		c.log.Printf("hashing %s", link)
 		sum, err := c.github.Hash(ctx, link)
-		results.set(link, digestResult{value: sum, err: err})
+		return digestResult{value: sum, err: err}
 	})
-	return results.values
+	results := make(map[string]digestResult, len(links))
+	for index, link := range links {
+		results[link] = sums[index]
+	}
+	return results
 }
 
-func releaseDigest(release Release, err error, key releaseKey, link string) digestResult {
-	if err != nil {
-		return digestResult{err: fmt.Errorf("release %s@%s: %w", key.repository, key.tag, err)}
-	}
-	_, name, _ := githubReleaseFile(link)
-	asset, found := release.Asset(name)
-	if !found {
-		return digestResult{err: fmt.Errorf("release %s@%s has no asset %s", key.repository, key.tag, name)}
-	}
-	sum, _ := asset.SHA256()
-	return digestResult{value: sum}
-}
-
-func forEachParallel[T any](items []T, run func(T)) {
+func mapParallel[T, R any](items []T, run func(T) R) []R {
+	results := make([]R, len(items))
 	limit := make(chan struct{}, checksumWorkers)
 	var group sync.WaitGroup
-	for _, item := range items {
+	for index, item := range items {
 		group.Go(func() {
 			limit <- struct{}{}
 			defer func() { <-limit }()
-			run(item)
+			results[index] = run(item)
 		})
 	}
 	group.Wait()
+	return results
 }
 
 func githubReleaseFile(link string) (releaseKey, string, bool) {

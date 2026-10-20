@@ -9,20 +9,20 @@ import (
 
 var architectures = map[string]string{"arm64": "arm64", "amd64": "x64"}
 
-func DetectPlatform() (catalog.Platform, bool) {
+func DetectPlatform() catalog.Platform {
 	arch, ok := architectures[runtime.GOARCH]
 	if !ok {
-		return "", false
+		return ""
 	}
 	switch runtime.GOOS {
 	case "darwin":
-		return catalog.Platform("darwin-" + arch), true
+		return catalog.Platform("darwin-" + arch)
 	case "windows":
-		return catalog.Platform("win32-" + arch), true
+		return catalog.Platform("win32-" + arch)
 	case "linux":
-		return catalog.Platform("linux-" + arch + "-" + linuxLibc()), true
+		return catalog.Platform("linux-" + arch + "-" + linuxLibc())
 	default:
-		return "", false
+		return ""
 	}
 }
 

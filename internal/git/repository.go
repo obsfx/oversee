@@ -96,6 +96,14 @@ func (r *Repository) contents(ctx context.Context, comparison domain.Comparison,
 	return r.blobAt(ctx, ref, path)
 }
 
+func (r *Repository) ChangedPaths(ctx context.Context, from, to string) ([]string, error) {
+	output, err := r.runner.Bytes(ctx, "diff", "--name-only", "--no-renames", "-z", from, to, "--")
+	if err != nil {
+		return nil, err
+	}
+	return pathListOutput(output).Paths(), nil
+}
+
 func (r *Repository) Fingerprint(ctx context.Context) (domain.WorkspaceFingerprint, error) {
 	status, err := r.runner.Bytes(ctx, "--no-optional-locks", "status", "--porcelain=v2", "-z", "--branch", "--no-ahead-behind", "--untracked-files=all")
 	if err != nil {

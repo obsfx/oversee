@@ -21,12 +21,16 @@ func (h languageServerHandler) list(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h languageServerHandler) install(w http.ResponseWriter, r *http.Request) {
-	entry, err := h.servers.Install(r.Context(), r.PathValue("id"))
+	entry, started, err := h.servers.Install(r.Context(), r.PathValue("id"))
 	if err != nil {
 		respondError(w, err)
 		return
 	}
-	respond(w, http.StatusAccepted, dto.LanguageServerOf(entry))
+	status := http.StatusOK
+	if started {
+		status = http.StatusAccepted
+	}
+	respond(w, status, dto.LanguageServerOf(entry))
 }
 
 func (h languageServerHandler) uninstall(w http.ResponseWriter, r *http.Request) {

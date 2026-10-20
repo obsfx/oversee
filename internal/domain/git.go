@@ -85,6 +85,18 @@ func (b Blob) Lines() ([]string, bool) {
 	return strings.Split(string(b), "\n"), true
 }
 
+func (b Blob) Snippet(startLine, count int) Snippet {
+	snippet := Snippet{StartLine: startLine + 1}
+	lines, ok := b.Lines()
+	if !ok || startLine < 0 || startLine >= len(lines) {
+		return snippet
+	}
+	for _, line := range lines[startLine:min(startLine+count, len(lines))] {
+		snippet.Lines = append(snippet.Lines, strings.TrimSuffix(line, "\r"))
+	}
+	return snippet
+}
+
 func (b Blob) Digest() string {
 	sum := sha256.Sum256(b)
 	return hex.EncodeToString(sum[:])

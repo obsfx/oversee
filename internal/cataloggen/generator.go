@@ -44,6 +44,10 @@ func (g *Generator) Generate(ctx context.Context) (catalog.Catalog, Report, erro
 	if err != nil {
 		return catalog.Catalog{}, report, err
 	}
+	servers, err = g.validated(servers, curated, &report)
+	if err != nil {
+		return catalog.Catalog{}, report, err
+	}
 	report.Servers = servers
 	result := catalog.Catalog{
 		SchemaVersion: catalog.SchemaVersion,
@@ -73,13 +77,10 @@ func (g *Generator) resolve(id string, curated CuratedServer, registry MasonRegi
 }
 
 func (g *Generator) fallback(id string, curated CuratedServer, cause error, report *Report) (catalog.Server, error) {
-	index := slices.IndexFunc(g.previous.Servers, func(server catalog.Server) bool {
-		return server.ID == id
-	})
-	if index < 0 {
+	previous, ok := g.previous.Server(id)
+	if !ok {
 		return catalog.Server{}, fmt.Errorf("%s: %w", id, cause)
 	}
-	previous := g.previous.Servers[index]
 	report.warn(id, "kept version "+previous.Version+": "+cause.Error())
 	return curated.Apply(previous), nil
 }
@@ -112,16 +113,30 @@ func (g *Generator) withChecksums(ctx context.Context, curated CuratedServers, s
 			download.Files = files
 			platforms[platform] = download
 		}
+		server.Install.Platforms = platforms
 		if len(platforms) == 0 {
 			kept, err := g.fallback(server.ID, curated[server.ID], errors.New("no download with a checksum"), report)
 			if err != nil {
 				return nil, err
 			}
-			signed = append(signed, kept)
-			continue
+			server = kept
 		}
-		server.Install.Platforms = platforms
 		signed = append(signed, server)
 	}
 	return signed, nil
+}
+
+func (g *Generator) validated(servers []catalog.Server, curated CuratedServers, report *Report) ([]catalog.Server, error) {
+	valid := make([]catalog.Server, 0, len(servers))
+	for _, server := range servers {
+		if err := server.Validate(); err != nil {
+			kept, fallbackErr := g.fallback(server.ID, curated[server.ID], err, report)
+			if fallbackErr != nil {
+				return nil, fallbackErr
+			}
+			server = kept
+		}
+		valid = append(valid, server)
+	}
+	return valid, nil
 }

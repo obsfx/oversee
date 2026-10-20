@@ -34,10 +34,15 @@ func (s *watchState) observe(next domain.WorkspaceFingerprint) (domain.Workspace
 type WorkspaceWatcher struct {
 	probe      WorkspaceProbe
 	reconciler Reconciler
+	listeners  []WorkspaceListener
 }
 
 func NewWorkspaceWatcher(probe WorkspaceProbe, reconciler Reconciler) *WorkspaceWatcher {
 	return &WorkspaceWatcher{probe: probe, reconciler: reconciler}
+}
+
+func (w *WorkspaceWatcher) Listen(listener WorkspaceListener) {
+	w.listeners = append(w.listeners, listener)
 }
 
 func (w *WorkspaceWatcher) Follow(ctx context.Context, audience Audience, publish func(change domain.WorkspaceChange)) {
@@ -69,6 +74,9 @@ func (w *WorkspaceWatcher) check(ctx context.Context, state *watchState, publish
 	}
 	if err := w.reconciler.Reconcile(ctx, change); err != nil && ctx.Err() == nil {
 		slog.Warn("comment reconcile failed", "error", err)
+	}
+	for _, listener := range w.listeners {
+		listener.WorkspaceChanged(ctx, change)
 	}
 	publish(change)
 }

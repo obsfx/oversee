@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"strings"
 )
 
@@ -32,16 +33,25 @@ func NewGitHub(client *http.Client, token string) *GitHub {
 }
 
 func (r Release) Asset(name string) (ReleaseAsset, bool) {
-	for _, asset := range r.Assets {
-		if asset.Name == name {
-			return asset, true
-		}
+	index := slices.IndexFunc(r.Assets, func(asset ReleaseAsset) bool {
+		return asset.Name == name
+	})
+	if index < 0 {
+		return ReleaseAsset{}, false
 	}
-	return ReleaseAsset{}, false
+	return r.Assets[index], true
 }
 
-func (a ReleaseAsset) SHA256() (string, bool) {
-	return strings.CutPrefix(a.Digest, "sha256:")
+func (r Release) Digest(name string) (string, error) {
+	asset, found := r.Asset(name)
+	if !found {
+		return "", fmt.Errorf("release %s has no asset %s", r.Tag, name)
+	}
+	sum, isSHA256 := strings.CutPrefix(strings.ToLower(asset.Digest), "sha256:")
+	if _, err := hex.DecodeString(sum); !isSHA256 || err != nil || len(sum) != sha256.Size*2 {
+		return "", nil
+	}
+	return sum, nil
 }
 
 func (g *GitHub) LatestRelease(ctx context.Context, repository string) (Release, error) {

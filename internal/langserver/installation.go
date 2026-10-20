@@ -69,30 +69,45 @@ func (s Installations) InstalledVersion(id string) (string, error) {
 }
 
 func (s Installations) Remove(id string) error {
-	return os.RemoveAll(s.home.ServerDir(id))
+	return errors.Join(os.RemoveAll(s.home.ServerDir(id)), os.RemoveAll(s.home.serverDataDir(id)))
 }
 
-var binRunners = map[catalog.BinKind]catalog.Requirement{
-	catalog.BinNode:   catalog.RequiresNode,
-	catalog.BinPython: catalog.RequiresPython,
-	catalog.BinJava:   catalog.RequiresJava,
-	catalog.BinDotnet: catalog.RequiresDotnet,
+func (s Installations) KeepOnly(id, version string) error {
+	keep := versionDirName(version)
+	entries, err := os.ReadDir(s.home.ServerDir(id))
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	var errs []error
+	for _, entry := range entries {
+		if entry.Name() != keep {
+			errs = append(errs, os.RemoveAll(filepath.Join(s.home.ServerDir(id), entry.Name())))
+		}
+	}
+	return errors.Join(errs...)
 }
 
 func (i Installation) Entry() string {
+	return filepath.Join(i.Dir, i.entryPath())
+}
+
+func (i Installation) entryPath() string {
 	switch i.Bin.Kind {
 	case catalog.BinNpm:
-		return filepath.Join(i.Dir, "node_modules", ".bin", i.Bin.Path+platformSuffix(".cmd"))
+		return filepath.Join("node_modules", ".bin", i.Bin.Path+platformSuffix(".cmd"))
 	case catalog.BinGolang:
-		return filepath.Join(i.Dir, "bin", i.Bin.Path+platformSuffix(".exe"))
+		return filepath.Join("bin", i.Bin.Path+platformSuffix(".exe"))
 	default:
-		return filepath.Join(i.Dir, filepath.FromSlash(i.Bin.Path))
+		return filepath.FromSlash(i.Bin.Path)
 	}
 }
 
 func (i Installation) Command(toolchain Toolchain) (string, []string, error) {
 	entry := i.Entry()
-	requirement, needsRunner := binRunners[i.Bin.Kind]
+	requirement, needsRunner := i.Bin.Kind.Runner()
 	if !needsRunner {
 		return entry, nil, nil
 	}

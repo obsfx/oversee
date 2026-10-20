@@ -169,15 +169,36 @@ func writeEntry(root *os.Root, name string, content io.Reader, perm fs.FileMode)
 }
 
 func symlink(root *os.Root, name, target string) error {
-	if !filepath.IsLocal(filepath.Join(filepath.Dir(name), filepath.FromSlash(target))) {
+	native := filepath.Clean(filepath.FromSlash(target))
+	rooted := strings.HasPrefix(target, "/") || strings.HasPrefix(native, string(filepath.Separator))
+	if rooted || filepath.IsAbs(native) || filepath.VolumeName(native) != "" || !filepath.IsLocal(filepath.Join(filepath.Dir(name), native)) {
 		return fmt.Errorf("link %s points outside the install directory", name)
+	}
+	if err := requireRealParents(root, name); err != nil {
+		return err
 	}
 	if dir := filepath.Dir(name); dir != "." {
 		if err := root.MkdirAll(dir, 0o755); err != nil {
 			return err
 		}
 	}
-	return root.Symlink(filepath.FromSlash(target), name)
+	return root.Symlink(native, name)
+}
+
+func requireRealParents(root *os.Root, name string) error {
+	for dir := filepath.Dir(name); dir != "."; dir = filepath.Dir(dir) {
+		info, err := root.Lstat(dir)
+		if errors.Is(err, fs.ErrNotExist) {
+			continue
+		}
+		if err != nil {
+			return err
+		}
+		if info.Mode()&fs.ModeSymlink != 0 {
+			return fmt.Errorf("link %s is created through the link %s", name, dir)
+		}
+	}
+	return nil
 }
 
 func localName(name string) (string, error) {

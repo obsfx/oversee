@@ -34,27 +34,22 @@ func NewInstaller(home Home, toolchain Toolchain, client *http.Client) *Installe
 }
 
 func (i *Installer) Install(ctx context.Context, server catalog.Server, platform catalog.Platform) error {
-	_, err := i.install(ctx, server, platform)
-	return err
-}
-
-func (i *Installer) install(ctx context.Context, server catalog.Server, platform catalog.Platform) (Installation, error) {
 	target := i.home.InstallDir(server.ID, server.Version)
-	if existing, err := readManifest(target); err == nil {
-		return existing, nil
+	if _, err := readManifest(target); err == nil {
+		return nil
 	}
 	if err := os.MkdirAll(i.home.TempDir(), 0o755); err != nil {
-		return Installation{}, err
+		return err
 	}
 	i.removeStaleTemp()
 	work, err := os.MkdirTemp(i.home.TempDir(), server.ID+"-")
 	if err != nil {
-		return Installation{}, err
+		return err
 	}
 	defer os.RemoveAll(work)
 	bin, err := i.populate(ctx, work, server, platform)
 	if err != nil {
-		return Installation{}, err
+		return err
 	}
 	installation := Installation{
 		ID:          server.ID,
@@ -65,34 +60,30 @@ func (i *Installer) install(ctx context.Context, server catalog.Server, platform
 		Dir:         work,
 	}
 	if err := installation.prepareEntry(); err != nil {
-		return Installation{}, err
+		return err
 	}
 	if err := writeManifest(installation); err != nil {
-		return Installation{}, err
+		return err
 	}
-	installed, err := i.moveIntoPlace(installation, target)
-	if err != nil {
-		return Installation{}, err
-	}
-	i.removeOtherVersions(server.ID, filepath.Base(target))
-	return installed, nil
+	return i.moveIntoPlace(installation, target)
 }
 
 func (i *Installer) populate(ctx context.Context, work string, server catalog.Server, platform catalog.Platform) (catalog.Bin, error) {
-	bins := server.Install.Bins
 	switch server.Install.Type {
 	case catalog.InstallNpm:
 		args := []string{"install", "--prefix", work, "--no-audit", "--no-fund", "--ignore-scripts", "--loglevel=error", server.Install.Package + "@" + server.Install.Version}
 		if err := i.run(ctx, work, catalog.RequiresNpm, append(args, server.Install.ExtraPackages...), nil); err != nil {
 			return catalog.Bin{}, err
 		}
+		return server.Install.Bins[server.Run.Bin], nil
 	case catalog.InstallGolang:
 		args := []string{"install", server.Install.Package + "@" + server.Install.Version}
 		if err := i.run(ctx, work, catalog.RequiresGo, args, []string{"GOBIN=" + filepath.Join(work, "bin")}); err != nil {
 			return catalog.Bin{}, err
 		}
+		return server.Install.Bins[server.Run.Bin], nil
 	case catalog.InstallDownload:
-		download, ok := server.Install.Platforms[platform]
+		download, ok := server.Install.DownloadFor(platform)
 		if !ok {
 			return catalog.Bin{}, fmt.Errorf("%s has no build for %s", server.ID, platform)
 		}
@@ -101,15 +92,10 @@ func (i *Installer) populate(ctx context.Context, work string, server catalog.Se
 				return catalog.Bin{}, err
 			}
 		}
-		bins = download.Bins
+		return download.Bins[server.Run.Bin], nil
 	default:
 		return catalog.Bin{}, fmt.Errorf("unsupported install type %q", server.Install.Type)
 	}
-	bin, ok := bins[server.Run.Bin]
-	if !ok {
-		return catalog.Bin{}, fmt.Errorf("%s has no bin %q", server.ID, server.Run.Bin)
-	}
-	return bin, nil
 }
 
 func (i *Installer) run(ctx context.Context, dir string, tool catalog.Requirement, args []string, env []string) error {
@@ -131,11 +117,10 @@ func (i *Installer) run(ctx context.Context, dir string, tool catalog.Requiremen
 }
 
 func (i *Installer) fetch(ctx context.Context, work string, file catalog.File) error {
-	dest := filepath.FromSlash(file.Dest)
-	if file.Dest != "" && !filepath.IsLocal(dest) || !filepath.IsLocal(file.Name) {
-		return fmt.Errorf("download %s leaves the install directory", file.URL)
+	if err := file.Validate(); err != nil {
+		return err
 	}
-	dir := filepath.Join(work, dest)
+	dir := filepath.Join(work, filepath.FromSlash(file.Dest))
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
@@ -175,37 +160,24 @@ func (i *Installer) download(ctx context.Context, file catalog.File, path string
 	return nil
 }
 
-func (i *Installer) moveIntoPlace(installation Installation, target string) (Installation, error) {
+func (i *Installer) moveIntoPlace(installation Installation, target string) error {
 	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
-		return Installation{}, err
+		return err
 	}
 	err := os.Rename(installation.Dir, target)
-	if err != nil {
-		if winner, readErr := readManifest(target); readErr == nil {
-			return winner, nil
-		}
-		if removeErr := os.RemoveAll(target); removeErr != nil {
-			return Installation{}, errors.Join(err, removeErr)
-		}
-		err = os.Rename(installation.Dir, target)
+	if err == nil {
+		return nil
 	}
-	if err != nil {
-		return Installation{}, fmt.Errorf("move %s into place: %w", installation.ID, err)
+	if _, readErr := readManifest(target); readErr == nil {
+		return nil
 	}
-	installation.Dir = target
-	return installation, nil
-}
-
-func (i *Installer) removeOtherVersions(id, keep string) {
-	entries, err := os.ReadDir(i.home.ServerDir(id))
-	if err != nil {
-		return
+	if removeErr := os.RemoveAll(target); removeErr != nil {
+		return errors.Join(err, removeErr)
 	}
-	for _, entry := range entries {
-		if entry.Name() != keep {
-			os.RemoveAll(filepath.Join(i.home.ServerDir(id), entry.Name()))
-		}
+	if err := os.Rename(installation.Dir, target); err != nil {
+		return fmt.Errorf("move %s into place: %w", installation.ID, err)
 	}
+	return nil
 }
 
 func (i *Installer) removeStaleTemp() {
@@ -222,8 +194,13 @@ func (i *Installer) removeStaleTemp() {
 }
 
 func (i Installation) prepareEntry() error {
-	entry := i.Entry()
-	info, err := os.Stat(entry)
+	root, err := os.OpenRoot(i.Dir)
+	if err != nil {
+		return err
+	}
+	defer root.Close()
+	entry := i.entryPath()
+	info, err := root.Stat(entry)
 	if err != nil {
 		return fmt.Errorf("%s did not install %s: %w", i.ID, i.Bin.Path, err)
 	}
@@ -233,7 +210,7 @@ func (i Installation) prepareEntry() error {
 	if runtime.GOOS == "windows" || i.Bin.Kind != catalog.BinExec || info.Mode()&0o111 != 0 {
 		return nil
 	}
-	return os.Chmod(entry, info.Mode()|0o755)
+	return root.Chmod(entry, info.Mode()|0o755)
 }
 
 type outputTail struct {

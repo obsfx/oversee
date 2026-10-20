@@ -14,7 +14,7 @@ This file contains the information and direction for the application we call `ov
 ```text
 oversee serve (cwd = workspace, git root = repo)
   → listen on 127.0.0.1:6999 (or --port), fall back to an available port when it is busy
-    → HTTP mux (localhost hosts only, cross-site writes rejected)
+    → HTTP mux (localhost hosts only, http.CrossOriginProtection)
       → GET /        → embedded index.html.gz + injected window.__overseeGlobal
       → /api/*       → httpapi handler → service → git.Repository | repositories (sqlite)
       → GET /ws      → ws.Hub
@@ -40,12 +40,13 @@ transport (httpapi, ws, cli)   decode input, map errors, render DTOs or presente
     → repository               one struct per aggregate over sqlc queries, maps rows to domain, TxRunner
       → storage/sqlite         open, migrations, generated sqldb code, change detector
     → git                      Runner executes git, typed outputs parse it, Repository returns domain types
-    → langserver               app home, platform, toolchain, installer and installations of language servers
+    → langserver               app home, platform, toolchain, installer, installations and processes of language servers
+    → lsp                      JSON-RPC over a process transport, LSP client, session pool
     → catalog                  the embedded language server catalog, plain data with validation
 app                            composition root: workspace, db, repositories, services, http server
 ```
 - dependencies point down only. `domain` imports nothing from the project.
-- services declare the small interfaces they consume (`GitReader`, `Transactor`, `ChangeDetector`, `WorkspaceProbe`, `Audience`, `Reconciler`, `ServerInstaller`, `InstallationStore`, `RequirementProbe`); repositories, the git repository and the langserver types are concrete structs.
+- services declare the small interfaces they consume (`GitReader`, `Transactor`, `ChangeDetector`, `WorkspaceProbe`, `Audience`, `Reconciler`, `ServerInstaller`, `InstallationStore`, `RequirementProbe`, `InstallationFinder`, `ServerLauncher`, `ProjectFiles`, `SessionPool`, `SessionStopper`); repositories, the git repository and the langserver and lsp types are concrete structs.
 - `git.Repository.Contents` returns `nil, nil` for a missing file (path not in the ref, deleted or a directory in the working tree) and an error for a failed read. code that makes one-way decisions (outdating comments) must only act on a missing file, never on an error.
 - a comparison is **gone** when one of its refs no longer exists (`Comparison.Refs`: the source branch and the target, the target also for uncommitted comparisons). `git.Repository.Tree` checks them with `rev-parse --verify` first, `Contents` checks them only after a failed git read, and a missing ref returns `domain.ErrUnknownBranch`.
 - every multi-write runs in `TxRunner.Within`, and its events are appended in the same transaction (outbox).
@@ -211,7 +212,7 @@ Check the layout representation: `/Users/omercanbalandi/studio-2/oversee-visual-
     - `ChangesSince(previous)` returns the changed paths and whether any ref moved.
 - **timing**: one tick per second. the first tick runs at startup and reconciles every open session. later ticks run only while a websocket client is connected.
 - **settle rule**: a change is applied only when two ticks in a row agree and `.git/index.lock` does not exist, so a half-done checkout, stash or rebase is never acted on. the UI updates in 1-2s.
-- on a settled change, `CommentService.Reconcile` runs first (see **outdated comments**), then the hub broadcasts `workspace.changed`.
+- on a settled change, `CommentService.Reconcile` runs first (see **outdated comments**), then the listeners added with `WorkspaceWatcher.Listen` (`DefinitionService`, see **go to definition**), then the hub broadcasts `workspace.changed`.
 - `.oversee/` is in `.git/info/exclude`, so database writes never look like a workspace change.
 - several `serve` processes on one workspace are safe: each one reconciles, the writes are compare-and-set, and an event is appended only when rows changed.
 - **UI side**: `ServerEventSync` hands the change to `WorkspaceRefresh`.
@@ -274,24 +275,55 @@ useSettingsStore.update(patch)
     - a server that fails to resolve keeps its previous entry, a platform that fails is dropped with a warning. `skipFiles` drops optional files with mutable urls (jdtls `lombok.jar`).
     - `.github/workflows/catalog.yml` runs weekly and opens a `catalog/update` pull request when a server changed, so only reviewed versions ship with a release.
     - `${dataDir}` (`catalog.DataDirArgument`) in run args stands for a per project data directory (jdtls).
+    - `catalog.Validate` (run by the generator and by `Embedded()`) only accepts https urls, plain file names, relative slash paths without `..`, `\` or `:`, known bin kinds and a run bin present on every platform. `Install.Requirements`, `AvailableOn`, `DownloadFor` and `Catalog.FileTypeOf` own the shared rules.
 
 ```text
 POST /api/language-servers/{id}/install
   → LanguageServerService.Install
-    → already at the catalog version → no-op
+    → already at the catalog version → 200, nothing started
     → no build for this platform or a requirement missing on PATH → 409
-    → install job (one per server per process, outlives the request, cancelled on shutdown)
+    → install job → 202 (one per server per process, outlives the request, 15 minute deadline, cancelled on shutdown), 409 while it is being removed
       → langserver.Installer: temp dir under lsp/.tmp
         → npm install --prefix --ignore-scripts | GOBIN=<dir>/bin go install | download, sha256 check, extract (zip, vsix, tar.gz, tar.xz, gz) through os.Root
-        → entry file exists → oversee-install.json manifest → rename to lsp/<id>/<version> (first rename wins across processes) → older versions removed
+        → entry file checked through os.Root → oversee-install.json manifest → rename to lsp/<id>/<version> (first rename wins across processes)
+      → stop the server's sessions → remove the older versions
       → language-servers.changed signal (no id, never stored) when a job starts and ends
 ```
 
-- `GET /api/language-servers` returns the platform, the file types and every server with its `status` (`not-installed`, `installing`, `installed`, `failed`), installed version, `updateAvailable`, missing requirements and the last install error. `DELETE /api/language-servers/{id}` removes every version (409 while installing).
+- `GET /api/language-servers` returns the platform, the file types and every server with its `status` (`not-installed`, `installing`, `installed`, `failed`), installed version, `updateAvailable`, missing requirements and the last install error. `DELETE /api/language-servers/{id}` claims the server (409 while installing), stops its sessions and removes every version and its data.
 - install jobs live in the serve process that started them. another serve process sees the result on its next list.
-- `langserver.Installation.Command` resolves the launch command per bin kind (`exec`, `npm`, `golang`, or `node`, `python`, `java-jar`, `dotnet` through the toolchain).
-- non GET requests with a cross-site `Sec-Fetch-Site` are rejected, because installs run toolchains.
+- `langserver.Installation.Command` resolves the launch command per bin kind (`exec`, `npm`, `golang`, or `node`, `python`, `java-jar`, `dotnet` through the toolchain). on windows the store alias of python does not count as installed, and killing a server kills its process tree (`taskkill /T`).
+- installs and removals are guarded per server inside one serve process only. several serve processes share `~/.oversee/lsp`, so a removal in one can delete a version another one is running.
+- archives never create absolute or rooted links, links that leave the install directory, or links through another link. link targets are cleaned before they are created.
+- `http.CrossOriginProtection` rejects cross-origin non GET requests (`Sec-Fetch-Site`, or `Origin` against `Host`), because installs run toolchains.
+- the language server stack (catalog, pool, both services) is built by `App.Server` before the port is opened, so `review` commands never resolve the app home. `Server.Serve` waits for the shutdown and the follow goroutines before `App.Close` runs.
+- JSON responses and the LSP connection accept invalid UTF-8 (replaced with U+FFFD), so files in other encodings still diff and resolve.
 - `oversee init` and `RequireInitialized` check the database file, not the `.oversee` directory, so `~/.oversee` never looks like an initialized workspace.
+
+##### go to definition
+
+```text
+GET /api/definitions?source&target&side&path&line&character   (line 1-based, character 0-based utf-16, as the diff renders it)
+  → DefinitionService.Find
+    → file type by filename, then extension → no catalog server → unsupported
+    → server not installed → not-installed
+    → comparison not on disk (a branch other than the checked out one) → needs-checkout
+    → side content from git → root: nearest directory with a root marker, else the repo root
+    → lsp.Pool.Client(server, version, root): one session per key, started on the pool lifetime, not the request
+        → still starting after 10s → starting · start failed or crashed → failed (restarted after 15s)
+      → didOpen with the side content → textDocument/definition → didClose, one request at a time per session (waiting respects the deadline, a cancelled request sends $/cancelRequest)
+      → a timeout, or an empty result while the server reports $/progress or in its first 20s → indexing
+    → locations: repo relative path, or an absolute external path (standard library, module cache), with 12 snippet lines
+```
+
+- each definition carries a `side`. a definition inside the queried file uses that side's line numbers and content, everything else is a working tree position read from disk (`new`).
+- `WorkspaceChanged` forwards the changed paths, plus the files that differ between the old and new HEAD (`git diff --name-only --no-renames`), as `workspace/didChangeWatchedFiles`. sessions keep running across commits and checkouts. they are only stopped when that diff fails.
+- every write to a server is bounded (5s for notifications, the request deadline for calls) and kills the server when it blocks. frames over 64 MiB count as a broken connection.
+- tsserver may answer the very first lookup of a new session with the import binding in the same file. later lookups resolve to the declaration.
+- sessions close after 10 minutes without requests, on uninstall, after an update install and when serve stops (shutdown, exit, then kill through the session context). a framing error or a crash kills the process, and a crashed session is restarted after 15s.
+- `${dataDir}` resolves to `~/.oversee/lsp/.data/<id>/<root hash>`.
+- `langserver.Launcher` resolves `${dataDir}` and starts the process, `langserver.Project` owns root markers, path mapping and disk reads for the service.
+- verified on darwin-arm64: gopls, typescript-language-server, pyright, rust-analyzer, clangd, lua-language-server, bash-language-server, zls, intelephense, kotlin-language-server. jdtls (needs Java 21) and omnisharp (needs dotnet) are not verified yet.
 
 ## development
 
@@ -376,10 +408,11 @@ POST /api/language-servers/{id}/install
 - `./cmd/catalog-gen`: generates the embedded language server catalog.
 - `./internal/app`: composition root, wires workspace, database, repositories, services and the http server.
 - `./internal/domain`: entities, value objects, rules, domain events and errors.
-- `./internal/service`: `DiffService`, `CommentService`, `ReviewService`, `NotificationService`, `SettingsService`, `EventFeed`, `WorkspaceWatcher`, `LanguageServerService`.
+- `./internal/service`: `DiffService`, `CommentService`, `ReviewService`, `NotificationService`, `SettingsService`, `EventFeed`, `WorkspaceWatcher`, `LanguageServerService`, `DefinitionService`.
+- `./internal/lsp`: JSON-RPC connection, LSP client and session pool.
 - `./internal/catalog`: the embedded language server catalog (`catalog.json`) and its validation.
 - `./internal/cataloggen`: catalog generation from `servers.json` and mason-registry.
-- `./internal/langserver`: app home, platform detection, toolchain lookup, installer and installations.
+- `./internal/langserver`: app home, platform detection, toolchain lookup, installer, installations, launcher, process and project files.
 - `./internal/repository`: session, comment, reply, notification, settings and event repositories, `TxRunner`.
 - `./internal/storage/sqlite`: database open, migrations, sqlc config, queries and generated `sqldb` code, change detector.
 - `./internal/git`: git runner, output parsers and repository.

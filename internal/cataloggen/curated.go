@@ -62,7 +62,6 @@ func (c CuratedServer) Resolve(id string, pkg MasonPackage, resolution Resolutio
 		Languages:   pkg.Languages,
 		Version:     resolution.Install.Version,
 		Install:     resolution.Install,
-		Requires:    resolution.Requires,
 	})
 }
 
@@ -70,7 +69,7 @@ func (c CuratedServer) Apply(server catalog.Server) catalog.Server {
 	server.FileTypes = slices.Sorted(maps.Keys(c.FileTypes))
 	server.RootMarkers = c.RootMarkers
 	server.Run = c.Run
-	requires := slices.Concat(server.Requires, c.Requires)
+	requires := slices.Concat(server.Install.Requirements(), c.Requires)
 	slices.Sort(requires)
 	server.Requires = slices.Compact(requires)
 	return server

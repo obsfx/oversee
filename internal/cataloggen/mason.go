@@ -2,7 +2,6 @@ package cataloggen
 
 import (
 	"archive/zip"
-	"bufio"
 	"bytes"
 	"context"
 	"crypto/sha256"
@@ -41,7 +40,6 @@ type MasonSource struct {
 	ID                 string   `json:"id"`
 	Asset              any      `json:"asset"`
 	Download           any      `json:"download"`
-	Build              any      `json:"build"`
 	ExtraPackages      []string `json:"extra_packages"`
 	SupportedPlatforms []string `json:"supported_platforms"`
 }
@@ -103,9 +101,8 @@ func (p MasonPackage) Install() (Resolution, error) {
 
 func parseChecksums(content []byte) checksumList {
 	sums := checksumList{}
-	scanner := bufio.NewScanner(bytes.NewReader(content))
-	for scanner.Scan() {
-		fields := strings.Fields(scanner.Text())
+	for line := range bytes.Lines(content) {
+		fields := strings.Fields(string(line))
 		if len(fields) == 2 {
 			sums[fields[1]] = fields[0]
 		}

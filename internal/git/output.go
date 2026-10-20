@@ -19,6 +19,18 @@ func (o lineOutput) Lines() []string {
 	return lines
 }
 
+type pathListOutput string
+
+func (o pathListOutput) Paths() []string {
+	var paths []string
+	for path := range strings.SplitSeq(string(o), "\x00") {
+		if path != "" {
+			paths = append(paths, path)
+		}
+	}
+	return paths
+}
+
 type remoteRefOutput string
 
 func (o remoteRefOutput) Branches() []string {

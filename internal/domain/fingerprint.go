@@ -44,12 +44,20 @@ func (f WorkspaceFingerprint) ChangesSince(previous WorkspaceFingerprint) Worksp
 	return WorkspaceChange{
 		Paths:       paths,
 		RefsChanged: f.Head != previous.Head || f.Branch != previous.Branch || !maps.Equal(f.Refs, previous.Refs),
+		FromHead:    previous.Head,
+		ToHead:      f.Head,
 	}
 }
 
 type WorkspaceChange struct {
 	Paths       []string
 	RefsChanged bool
+	FromHead    string
+	ToHead      string
+}
+
+func (c WorkspaceChange) HeadMoved() bool {
+	return c.FromHead != "" && c.FromHead != c.ToHead
 }
 
 func (c WorkspaceChange) IsEmpty() bool {

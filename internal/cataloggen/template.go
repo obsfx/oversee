@@ -52,11 +52,15 @@ func (s TemplateScope) RenderValue(value any) (any, error) {
 	case map[string]any:
 		rendered := make(map[string]any, len(typed))
 		for _, key := range slices.Sorted(maps.Keys(typed)) {
+			renderedKey, err := s.Render(key)
+			if err != nil {
+				return nil, err
+			}
 			value, err := s.RenderValue(typed[key])
 			if err != nil {
 				return nil, err
 			}
-			rendered[key] = value
+			rendered[renderedKey] = value
 		}
 		return rendered, nil
 	default:
@@ -94,7 +98,7 @@ func (s TemplateScope) lookup(path string) (string, error) {
 		}
 		current, ok = fields[segment]
 		if !ok {
-			return "", nil
+			return "", fmt.Errorf("%q has no %q", path, segment)
 		}
 	}
 	text, ok := current.(string)

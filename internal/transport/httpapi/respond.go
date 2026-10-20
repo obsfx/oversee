@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"encoding/json/jsontext"
 	"encoding/json/v2"
 	"errors"
 	"log/slog"
@@ -15,7 +16,7 @@ const maxBodyBytes = 1 << 20
 func respond(w http.ResponseWriter, status int, body any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	if err := json.MarshalWrite(w, body); err != nil {
+	if err := json.MarshalWrite(w, body, jsontext.AllowInvalidUTF8(true)); err != nil {
 		slog.Warn("response encode failed", "error", err)
 	}
 }

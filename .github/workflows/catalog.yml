@@ -26,8 +26,10 @@ jobs:
 
       - name: generate catalog
         run: |
-          go run ./cmd/catalog-gen -summary "$RUNNER_TEMP/summary.md"
-          cat "$RUNNER_TEMP/summary.md" >> "$GITHUB_STEP_SUMMARY"
+          status=0
+          go run ./cmd/catalog-gen -summary "$RUNNER_TEMP/summary.md" || status=$?
+          cat "$RUNNER_TEMP/summary.md" >> "$GITHUB_STEP_SUMMARY" || true
+          exit "$status"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

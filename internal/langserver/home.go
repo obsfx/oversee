@@ -1,6 +1,8 @@
 package langserver
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,6 +14,7 @@ const (
 	homeDirName = ".oversee"
 	serversDir  = "lsp"
 	tempDir     = ".tmp"
+	dataDir     = ".data"
 )
 
 type Home struct {
@@ -47,6 +50,16 @@ func (h Home) InstallDir(id, version string) string {
 
 func (h Home) TempDir() string {
 	return filepath.Join(h.ServersDir(), tempDir)
+}
+
+func (h Home) EnsureDataDir(id, root string) (string, error) {
+	sum := sha256.Sum256([]byte(root))
+	dir := filepath.Join(h.serverDataDir(id), hex.EncodeToString(sum[:8]))
+	return dir, os.MkdirAll(dir, 0o755)
+}
+
+func (h Home) serverDataDir(id string) string {
+	return filepath.Join(h.ServersDir(), dataDir, id)
 }
 
 func versionDirName(version string) string {

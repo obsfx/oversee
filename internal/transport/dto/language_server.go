@@ -2,8 +2,6 @@ package dto
 
 import (
 	"encoding/json/jsontext"
-	"maps"
-	"slices"
 	"time"
 
 	"github.com/obsfx/oversee/internal/service"
@@ -41,8 +39,7 @@ type LanguageServer struct {
 
 func LanguageServerListOf(list service.LanguageServerList) LanguageServerList {
 	fileTypes := make(map[string]LanguageServerFileType, len(list.FileTypes))
-	for _, name := range slices.Sorted(maps.Keys(list.FileTypes)) {
-		fileType := list.FileTypes[name]
+	for name, fileType := range list.FileTypes {
 		fileTypes[name] = LanguageServerFileType{Extensions: fileType.Extensions, Filenames: fileType.Filenames, Server: fileType.Server}
 	}
 	servers := make([]LanguageServer, 0, len(list.Servers))

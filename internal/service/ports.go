@@ -7,6 +7,8 @@ import (
 
 	"github.com/obsfx/oversee/internal/catalog"
 	"github.com/obsfx/oversee/internal/domain"
+	"github.com/obsfx/oversee/internal/langserver"
+	"github.com/obsfx/oversee/internal/lsp"
 	"github.com/obsfx/oversee/internal/repository"
 )
 
@@ -44,10 +46,47 @@ type ServerInstaller interface {
 type InstallationStore interface {
 	InstalledVersion(id string) (string, error)
 	Remove(id string) error
+	KeepOnly(id, version string) error
 }
 
 type RequirementProbe interface {
 	Missing(requirements []catalog.Requirement) []catalog.Requirement
+}
+
+type DefinitionGit interface {
+	Branches(ctx context.Context) (domain.BranchList, error)
+	Contents(ctx context.Context, comparison domain.Comparison, path string, side domain.FileSide) (domain.Blob, error)
+	ChangedPaths(ctx context.Context, from, to string) ([]string, error)
+}
+
+type WorkspaceListener interface {
+	WorkspaceChanged(ctx context.Context, change domain.WorkspaceChange)
+}
+
+type InstallationFinder interface {
+	Find(id string) (langserver.Installation, bool, error)
+}
+
+type ServerLauncher interface {
+	Start(ctx context.Context, installation langserver.Installation, run catalog.Run, root string) (*langserver.Process, error)
+}
+
+type ProjectFiles interface {
+	Path(relative string) string
+	RootOf(file string, markers []string) string
+	Relative(file string) (string, bool)
+	Exists(file string) bool
+	Read(file string) domain.Blob
+}
+
+type SessionStopper interface {
+	Stop(prefix string)
+}
+
+type SessionPool interface {
+	Client(ctx context.Context, launch lsp.Launch) (*lsp.Client, error)
+	FilesChanged(events []lsp.FileEvent)
+	SessionStopper
 }
 
 type Runtime struct {

@@ -14,7 +14,7 @@ var (
 	ErrUnknownBranch      = errors.New("branch does not exist")
 
 	ErrLanguageServerUnavailable = errors.New("language server can not be installed here")
-	ErrLanguageServerBusy        = errors.New("language server is being installed")
+	ErrLanguageServerBusy        = errors.New("language server is busy")
 )
 
 type ValidationError struct {

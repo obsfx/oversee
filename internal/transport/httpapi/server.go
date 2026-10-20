@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/obsfx/oversee/internal/domain"
@@ -42,27 +43,35 @@ func New(config Config) *Server {
 }
 
 func (s *Server) Serve(ctx context.Context, listener net.Listener) error {
+	ctx, cancel := context.WithCancel(ctx)
 	httpServer := &http.Server{
-		Handler:           localOnly(s.routes()),
+		Handler:           localOnly(http.NewCrossOriginProtection().Handler(s.routes())),
 		ReadHeaderTimeout: 10 * time.Second,
 		BaseContext: func(net.Listener) context.Context {
 			return ctx
 		},
 	}
-	go func() {
+	var background sync.WaitGroup
+	background.Go(func() {
 		if err := s.services.Events.Follow(ctx, s.hub.Publish); err != nil {
 			slog.Error("event feed stopped", "error", err)
 		}
-	}()
-	go s.services.Watcher.Follow(ctx, s.hub, s.hub.PublishWorkspaceChange)
-	go s.services.LanguageServers.Follow(ctx, s.hub.PublishLanguageServersChange)
-	go func() {
+	})
+	background.Go(func() {
+		s.services.Watcher.Follow(ctx, s.hub, s.hub.PublishWorkspaceChange)
+	})
+	background.Go(func() {
+		s.services.LanguageServers.Follow(ctx, s.hub.PublishLanguageServersChange)
+	})
+	background.Go(func() {
 		<-ctx.Done()
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
-		defer cancel()
+		shutdownCtx, cancelShutdown := context.WithTimeout(context.Background(), shutdownTimeout)
+		defer cancelShutdown()
 		httpServer.Shutdown(shutdownCtx)
-	}()
+	})
 	err := httpServer.Serve(listener)
+	cancel()
+	background.Wait()
 	if errors.Is(err, http.ErrServerClosed) {
 		return nil
 	}
@@ -76,6 +85,7 @@ func (s *Server) routes() http.Handler {
 	notifications := notificationHandler{notifications: s.services.Notifications}
 	settings := settingsHandler{settings: s.services.Settings}
 	languageServers := languageServerHandler{servers: s.services.LanguageServers}
+	definitions := definitionHandler{definitions: s.services.Definitions}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/workspace", s.index.workspace)
 	mux.HandleFunc("GET /api/branches", diffs.branches)
@@ -96,6 +106,7 @@ func (s *Server) routes() http.Handler {
 	mux.HandleFunc("GET /api/language-servers", languageServers.list)
 	mux.HandleFunc("POST /api/language-servers/{id}/install", languageServers.install)
 	mux.HandleFunc("DELETE /api/language-servers/{id}", languageServers.uninstall)
+	mux.HandleFunc("GET /api/definitions", definitions.find)
 	mux.Handle("GET /ws", s.hub)
 	mux.HandleFunc("GET /{$}", s.index.serve)
 	return mux
@@ -111,18 +122,6 @@ func localOnly(next http.Handler) http.Handler {
 			http.Error(w, "forbidden host", http.StatusForbidden)
 			return
 		}
-		if crossSiteWrite(r) {
-			http.Error(w, "forbidden cross-site request", http.StatusForbidden)
-			return
-		}
 		next.ServeHTTP(w, r)
 	})
-}
-
-func crossSiteWrite(r *http.Request) bool {
-	if r.Method == http.MethodGet || r.Method == http.MethodHead {
-		return false
-	}
-	site := r.Header.Get("Sec-Fetch-Site")
-	return site != "" && site != "same-origin" && site != "none"
 }

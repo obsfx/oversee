@@ -63,8 +63,15 @@ func loadPrevious(path string) (catalog.Catalog, error) {
 		return catalog.Catalog{}, fmt.Errorf("previous catalog: %w", err)
 	}
 	var last catalog.Catalog
-	if err := json.Unmarshal(content, &last); err != nil || last.SchemaVersion != catalog.SchemaVersion {
+	if err := json.Unmarshal(content, &last); err != nil {
+		return catalog.Catalog{}, fmt.Errorf("previous catalog %s: %w", path, err)
+	}
+	if last.SchemaVersion != catalog.SchemaVersion {
+		log.Printf("previous catalog has schema version %d, starting without it", last.SchemaVersion)
 		return catalog.Catalog{}, nil
+	}
+	if err := last.Validate(); err != nil {
+		return catalog.Catalog{}, fmt.Errorf("previous catalog %s: %w", path, err)
 	}
 	return last, nil
 }
@@ -87,10 +94,14 @@ func writeCatalog(result catalog.Catalog, path string) error {
 	if err != nil {
 		return err
 	}
-	encodeErr := json.MarshalWrite(file, result, json.Deterministic(true), jsontext.WithIndent("  "))
-	if err := errors.Join(encodeErr, file.Close()); err != nil {
+	encodeErr := json.MarshalEncode(jsontext.NewEncoder(file, jsontext.WithIndent("  ")), result, json.Deterministic(true))
+	if err := errors.Join(encodeErr, file.Chmod(0o644), file.Close()); err != nil {
 		os.Remove(file.Name())
 		return err
 	}
-	return os.Rename(file.Name(), path)
+	if err := os.Rename(file.Name(), path); err != nil {
+		os.Remove(file.Name())
+		return err
+	}
+	return nil
 }

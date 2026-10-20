@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 	"runtime"
+	"strings"
 
 	"github.com/obsfx/oversee/internal/catalog"
 )
@@ -22,11 +23,16 @@ func (t Toolchain) Missing(requirements []catalog.Requirement) []catalog.Require
 
 func (Toolchain) Command(requirement catalog.Requirement) (string, error) {
 	for _, name := range commandNames(requirement) {
-		if path, err := exec.LookPath(name); err == nil {
+		path, err := exec.LookPath(name)
+		if err == nil && !windowsAppAlias(requirement, path) {
 			return path, nil
 		}
 	}
 	return "", fmt.Errorf("%s is not on PATH", requirement)
+}
+
+func windowsAppAlias(requirement catalog.Requirement, path string) bool {
+	return runtime.GOOS == "windows" && requirement == catalog.RequiresPython && strings.Contains(strings.ToLower(path), `\microsoft\windowsapps\`)
 }
 
 func commandNames(requirement catalog.Requirement) []string {

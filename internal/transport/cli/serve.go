@@ -30,6 +30,10 @@ func serveCommand(opts *options) *cobra.Command {
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return opts.withApp(cmd, func(ctx context.Context, application *app.App) error {
+				server, err := application.Server(dev)
+				if err != nil {
+					return err
+				}
 				listener, err := listen(port, cmd.ErrOrStderr())
 				if err != nil {
 					return err
@@ -39,7 +43,7 @@ func serveCommand(opts *options) *cobra.Command {
 				if open {
 					openBrowser(address)
 				}
-				return application.Server(dev).Serve(ctx, listener)
+				return server.Serve(ctx, listener)
 			})
 		},
 	}

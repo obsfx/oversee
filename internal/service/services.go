@@ -9,4 +9,5 @@ type Services struct {
 	Events          *EventFeed
 	Watcher         *WorkspaceWatcher
 	LanguageServers *LanguageServerService
+	Definitions     *DefinitionService
 }
