@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useServices } from '@/src/context/services/use-services.ts'
 import { ReviewSync } from '@/src/lib/review-sync.ts'
 import { useComparisonStore } from '@/src/store/comparison-store.ts'
+import { readyServerPort } from '@/src/store/language-server-store.ts'
 import { useReviewStore } from '@/src/store/review-store.ts'
 
 export const useReviewSync = () => {
@@ -39,6 +40,7 @@ export const useReviewSync = () => {
           })
         },
       },
+      ready: readyServerPort,
     })
     return sync.start()
   }, [services])

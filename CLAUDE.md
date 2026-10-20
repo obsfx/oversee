@@ -98,7 +98,7 @@ Check the layout representation: `/Users/omercanbalandi/studio-2/oversee-visual-
     - the initial selection is `Uncommitted changes` against `main` (falling back to `master`, `develop`, then the current branch).
     - uncommitted changes always diff the working tree against `HEAD`. the target only matters for branch comparisons, where the diff runs from the merge base (or the target itself when the branches share no history).
     - the branch list follows git, see **file watcher**. when a selected source or target branch no longer exists (deleted, renamed, pruned), the selection switches by itself: a missing source becomes `Uncommitted changes`, a missing target becomes the default target. a warning bar between the topbar and the toolbar says what happened until it is dismissed or the next pick.
-    - `ComparisonRules.replaceMissing` decides the switch, `BranchSelectionGuard` (part of `ReviewSync`) applies it on every branch list refresh and stores the notice in the comparison store, and `DeletedBranchNotice` (`WarningBar`) shows it. a selection the user never made just follows the default, without a notice.
+    - `ComparisonRules.replaceMissing` decides the switch, `BranchSelectionGuard` (part of `ReviewSync`) applies it on every branch list refresh and stores the notice in the comparison store, and `DeletedBranchNotice` (`NoticeBar`, warning tone) shows it. a selection the user never made just follows the default, without a notice.
 - a `finish review` button, see **review sessions**.
 - a **comments** button with a popover. it shows the comment count, see **review sessions**.
 - a **notifications** button with a popover, see **notifications**.
@@ -106,6 +106,7 @@ Check the layout representation: `/Users/omercanbalandi/studio-2/oversee-visual-
     - theme selection, light or dark.
     - font selection for the UI and the editor, powered by google fonts.
     - settings are saved in the workspace database, see **settings**.
+    - `Language servers`: install, update and remove the catalog servers, see **language servers**.
 
 ##### toolbar
 - file navigation: `[prevButton] {currentFileNumber} / {totalFileNumber} [nextButton]`, for example `[<] 4 / 72 [>]`.
@@ -199,7 +200,8 @@ Check the layout representation: `/Users/omercanbalandi/studio-2/oversee-visual-
     - `ReviewedMarksSync`: persists reviewed marks and prunes them against the current change set, see **reviewed marks**.
     - `NotificationBlink`: blinks the favicon when the unread count rises, unless reduced motion is preferred.
     - `DocumentTitleSync`: keeps `document.title` on `<folder> - oversee`.
-- reactions subscribe to the zustand stores outside React (`AsyncResource.store`, and the app stores through the `ComparisonSelection`, `FollowedComparison` and `ReviewedMarksStore` ports that the hook builds), so they never re-render the layout and they act before React renders.
+    - `InstallCompletionWatch`: shows the install notice's ready state for 2.5s after a language server goes from installing to installed, see **language servers**.
+- reactions subscribe to the zustand stores outside React (`AsyncResource.store`, and the app stores through the `ComparisonSelection`, `FollowedComparison`, `ReviewedMarksStore` and `ReadyServerPort` ports that the hook builds), so they never re-render the layout and they act before React renders.
 - event kinds: `session.finished`, `session.status`, `comment.replied`, `notification.created`, `notifications.read`, `comments.reconciled`. session events silently refresh the cached session lists, without showing a loader. `comments.reconciled {sessionId, comparison}` silently refreshes that comparison's comments.
 - signals: `workspace.changed {paths, refs}` has no id and is never stored, see **file watcher**. `stream.resumed` is emitted by `SocketEventStream` itself when the socket reconnects.
 
@@ -282,15 +284,16 @@ POST /api/language-servers/{id}/install
   → LanguageServerService.Install
     → already at the catalog version → 200, nothing started
     → no build for this platform or a requirement missing on PATH → 409
-    → install job → 202 (one per server per process, outlives the request, 15 minute deadline, cancelled on shutdown), 409 while it is being removed
+    → install job → 202 (one per server per process, outlives the request, cancelled by DELETE .../install or on shutdown), 409 while it is being removed
+      → fails after 3 minutes without activity: downloaded bytes, or any output of npm (--loglevel=http) and go install (-v). a slow download that keeps moving never times out
       → langserver.Installer: temp dir under lsp/.tmp
-        → npm install --prefix --ignore-scripts | GOBIN=<dir>/bin go install | download, sha256 check, extract (zip, vsix, tar.gz, tar.xz, gz) through os.Root
+        → npm install --prefix --ignore-scripts | GOBIN=<dir>/bin go install -v | download, sha256 check, extract (zip, vsix, tar.gz, tar.xz, gz) through os.Root
         → entry file checked through os.Root → oversee-install.json manifest → rename to lsp/<id>/<version> (first rename wins across processes)
       → stop the server's sessions → remove the older versions
-      → language-servers.changed signal (no id, never stored) when a job starts and ends
+      → language-servers.changed signal (no id, never stored) when a job starts, at most every 250ms while it downloads, and when it ends
 ```
 
-- `GET /api/language-servers` returns the platform, the file types and every server with its `status` (`not-installed`, `installing`, `installed`, `failed`), installed version, `updateAvailable`, missing requirements and the last install error. `DELETE /api/language-servers/{id}` claims the server (409 while installing), stops its sessions and removes every version and its data.
+- `GET /api/language-servers` returns the platform, the file types and every server with its `status` (`not-installed`, `installing`, `installed`, `failed`), installed version, `updateAvailable`, missing requirements and the last install error. `DELETE /api/language-servers/{id}` claims the server (409 while installing), stops its sessions and removes every version and its data. `DELETE /api/language-servers/{id}/install` cancels a running install and returns 204, also when nothing runs. a canceled install records no failure, so the server goes back to its previous state.
 - install jobs live in the serve process that started them. another serve process sees the result on its next list.
 - `langserver.Installation.Command` resolves the launch command per bin kind (`exec`, `npm`, `golang`, or `node`, `python`, `java-jar`, `dotnet` through the toolchain). on windows the store alias of python does not count as installed, and killing a server kills its process tree (`taskkill /T`).
 - installs and removals are guarded per server inside one serve process only. several serve processes share `~/.oversee/lsp`, so a removal in one can delete a version another one is running.
@@ -299,6 +302,16 @@ POST /api/language-servers/{id}/install
 - the language server stack (catalog, pool, both services) is built by `App.Server` before the port is opened, so `review` commands never resolve the app home. `Server.Serve` waits for the shutdown and the follow goroutines before `App.Close` runs.
 - JSON responses and the LSP connection accept invalid UTF-8 (replaced with U+FFFD), so files in other encodings still diff and resolve.
 - `oversee init` and `RequireInitialized` check the database file, not the `.oversee` directory, so `~/.oversee` never looks like an initialized workspace.
+
+##### UI
+- **install notice**: `LanguageServerNotice` is a `NoticeBar` between the toolbar and the diff. it shows when the selected file belongs to a catalog server that is not installed:
+    - offer (`Install`, `Not now`), blocked by a missing requirement or a platform without a build (`Dismiss`), installing (size, a progress line and `Cancel`, `aria-busy` so screen readers skip the ticks), failed (`Details`, `Retry`, `Not now`).
+    - after an install finishes it says `<server> <version> is installed` for 2.5s. `InstallCompletionWatch` (part of `ReviewSync`) compares the list states and writes the ready id into `useLanguageServerStore` through `readyServerPort`.
+    - a download without a known size reports no total, so the UI shows the downloaded size alone instead of a ratio.
+    - `Not now` and `Dismiss` store the server id in the `dismissedLanguageServers` setting, so the notice stays away in that workspace. the settings panel still installs it.
+- **settings panel**: the settings overview row shows the installed count and opens `LanguageServerSettings` (a wider `w-80` view): a filter by name or language, then one `ServerRow` per server with its languages, status line, a `Requires` line that marks tools missing from PATH, a progress line while installing, an expandable error log after a failed install and its actions. `Remove` asks first with a compact `ConfirmPrompt` (`RemoveLanguageServerButton`), because it deletes the files and the project data.
+- `LanguageServerStates` owns the rules (actions `install`, `update`, `retry`, `remove`, `cancel` while installing, blockers, tone, filter match), `LanguageServerNotices.of` picks the notice, `LanguageServerLabels` builds the texts and `LanguageServerFiles` maps a path to its file type, server and label (`.ts files`, or the matched filename).
+- `useLanguageServers`, `useLanguageServerActions` (request failures kept per server, shown next to it), `useLanguageServerNotice`, `useLanguageServerSettings` and `useRemoveLanguageServer` drive the UI. `language-servers.changed` and `stream.resumed` refresh `LanguageServers.list` through `ServerEventSync`, which is how install progress reaches the UI.
 
 ##### go to definition
 

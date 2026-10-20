@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/obsfx/oversee/internal/catalog"
+	"github.com/obsfx/oversee/internal/domain"
 )
 
 const (
@@ -33,7 +34,7 @@ func NewInstaller(home Home, toolchain Toolchain, client *http.Client) *Installe
 	return &Installer{home: home, toolchain: toolchain, client: client}
 }
 
-func (i *Installer) Install(ctx context.Context, server catalog.Server, platform catalog.Platform) error {
+func (i *Installer) Install(ctx context.Context, server catalog.Server, platform catalog.Platform, progress func(domain.InstallProgress)) error {
 	target := i.home.InstallDir(server.ID, server.Version)
 	if _, err := readManifest(target); err == nil {
 		return nil
@@ -47,7 +48,7 @@ func (i *Installer) Install(ctx context.Context, server catalog.Server, platform
 		return err
 	}
 	defer os.RemoveAll(work)
-	bin, err := i.populate(ctx, work, server, platform)
+	bin, err := i.populate(ctx, work, server, platform, &progressTracker{report: progress})
 	if err != nil {
 		return err
 	}
@@ -68,17 +69,17 @@ func (i *Installer) Install(ctx context.Context, server catalog.Server, platform
 	return i.moveIntoPlace(installation, target)
 }
 
-func (i *Installer) populate(ctx context.Context, work string, server catalog.Server, platform catalog.Platform) (catalog.Bin, error) {
+func (i *Installer) populate(ctx context.Context, work string, server catalog.Server, platform catalog.Platform, tracker *progressTracker) (catalog.Bin, error) {
 	switch server.Install.Type {
 	case catalog.InstallNpm:
-		args := []string{"install", "--prefix", work, "--no-audit", "--no-fund", "--ignore-scripts", "--loglevel=error", server.Install.Package + "@" + server.Install.Version}
-		if err := i.run(ctx, work, catalog.RequiresNpm, append(args, server.Install.ExtraPackages...), nil); err != nil {
+		args := []string{"install", "--prefix", work, "--no-audit", "--no-fund", "--ignore-scripts", "--loglevel=http", server.Install.Package + "@" + server.Install.Version}
+		if err := i.run(ctx, work, catalog.RequiresNpm, append(args, server.Install.ExtraPackages...), nil, tracker); err != nil {
 			return catalog.Bin{}, err
 		}
 		return server.Install.Bins[server.Run.Bin], nil
 	case catalog.InstallGolang:
-		args := []string{"install", server.Install.Package + "@" + server.Install.Version}
-		if err := i.run(ctx, work, catalog.RequiresGo, args, []string{"GOBIN=" + filepath.Join(work, "bin")}); err != nil {
+		args := []string{"install", "-v", server.Install.Package + "@" + server.Install.Version}
+		if err := i.run(ctx, work, catalog.RequiresGo, args, []string{"GOBIN=" + filepath.Join(work, "bin")}, tracker); err != nil {
 			return catalog.Bin{}, err
 		}
 		return server.Install.Bins[server.Run.Bin], nil
@@ -88,7 +89,7 @@ func (i *Installer) populate(ctx context.Context, work string, server catalog.Se
 			return catalog.Bin{}, fmt.Errorf("%s has no build for %s", server.ID, platform)
 		}
 		for _, file := range download.Files {
-			if err := i.fetch(ctx, work, file); err != nil {
+			if err := i.fetch(ctx, work, file, tracker); err != nil {
 				return catalog.Bin{}, err
 			}
 		}
@@ -98,7 +99,7 @@ func (i *Installer) populate(ctx context.Context, work string, server catalog.Se
 	}
 }
 
-func (i *Installer) run(ctx context.Context, dir string, tool catalog.Requirement, args []string, env []string) error {
+func (i *Installer) run(ctx context.Context, dir string, tool catalog.Requirement, args []string, env []string, tracker *progressTracker) error {
 	program, err := i.toolchain.Command(tool)
 	if err != nil {
 		return err
@@ -108,15 +109,16 @@ func (i *Installer) run(ctx context.Context, dir string, tool catalog.Requiremen
 	command.Env = append(os.Environ(), env...)
 	command.WaitDelay = commandGrace
 	output := &outputTail{limit: outputLimit}
-	command.Stdout = output
-	command.Stderr = output
+	writer := io.MultiWriter(output, outputActivity{tracker: tracker})
+	command.Stdout = writer
+	command.Stderr = writer
 	if err := command.Run(); err != nil {
 		return fmt.Errorf("%s %s: %w\n%s", tool, args[0], err, output.String())
 	}
 	return nil
 }
 
-func (i *Installer) fetch(ctx context.Context, work string, file catalog.File) error {
+func (i *Installer) fetch(ctx context.Context, work string, file catalog.File, tracker *progressTracker) error {
 	if err := file.Validate(); err != nil {
 		return err
 	}
@@ -125,13 +127,13 @@ func (i *Installer) fetch(ctx context.Context, work string, file catalog.File) e
 		return err
 	}
 	path := filepath.Join(dir, file.Name)
-	if err := i.download(ctx, file, path); err != nil {
+	if err := i.download(ctx, file, path, tracker); err != nil {
 		return err
 	}
 	return extractArchive(path)
 }
 
-func (i *Installer) download(ctx context.Context, file catalog.File, path string) error {
+func (i *Installer) download(ctx context.Context, file catalog.File, path string, tracker *progressTracker) error {
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, file.URL, nil)
 	if err != nil {
 		return err
@@ -150,7 +152,8 @@ func (i *Installer) download(ctx context.Context, file catalog.File, path string
 		return err
 	}
 	hash := sha256.New()
-	_, copyErr := io.Copy(io.MultiWriter(out, hash), response.Body)
+	tracker.expect(response.ContentLength)
+	_, copyErr := io.Copy(io.MultiWriter(out, hash, tracker), response.Body)
 	if err := errors.Join(copyErr, out.Close()); err != nil {
 		return fmt.Errorf("download %s: %w", file.URL, err)
 	}
@@ -211,6 +214,47 @@ func (i Installation) prepareEntry() error {
 		return nil
 	}
 	return root.Chmod(entry, info.Mode()|0o755)
+}
+
+type progressTracker struct {
+	progress domain.InstallProgress
+	unsized  bool
+	report   func(domain.InstallProgress)
+}
+
+func (t *progressTracker) expect(length int64) {
+	if length <= 0 {
+		t.unsized = true
+	} else {
+		t.progress.Total += length
+	}
+	t.report(t.current())
+}
+
+func (t *progressTracker) Write(chunk []byte) (int, error) {
+	t.progress.Received += int64(len(chunk))
+	t.report(t.current())
+	return len(chunk), nil
+}
+
+func (t *progressTracker) touch() {
+	t.report(t.current())
+}
+
+func (t *progressTracker) current() domain.InstallProgress {
+	if t.unsized {
+		return domain.InstallProgress{Received: t.progress.Received}
+	}
+	return t.progress
+}
+
+type outputActivity struct {
+	tracker *progressTracker
+}
+
+func (a outputActivity) Write(chunk []byte) (int, error) {
+	a.tracker.touch()
+	return len(chunk), nil
 }
 
 type outputTail struct {

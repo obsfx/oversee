@@ -54,6 +54,10 @@ export interface StreamResumedEvent {
   kind: 'stream.resumed'
 }
 
+export interface LanguageServersChangedEvent {
+  kind: 'language-servers.changed'
+}
+
 export type ServerEvent =
   | SessionChangedEvent
   | CommentRepliedEvent
@@ -62,6 +66,7 @@ export type ServerEvent =
   | CommentsReconciledEvent
   | WorkspaceChangedEvent
   | StreamResumedEvent
+  | LanguageServersChangedEvent
 
 export type ServerEventListener = (event: ServerEvent) => void
 
@@ -93,6 +98,9 @@ export abstract class ServerEvents {
     v.object({
       kind: v.literal('workspace.changed'),
       payload: v.object({ paths: v.array(v.string()), refs: v.boolean() }),
+    }),
+    v.object({
+      kind: v.literal('language-servers.changed'),
     }),
     v.object({
       kind: v.picklist(SESSION_KINDS),
@@ -144,6 +152,9 @@ export abstract class ServerEvents {
     }
     if (event.kind === 'workspace.changed') {
       return { kind: event.kind, ...event.payload }
+    }
+    if (event.kind === 'language-servers.changed') {
+      return { kind: event.kind }
     }
     if (event.kind === 'session.finished' || event.kind === 'session.status') {
       return { kind: event.kind, ...event.payload }

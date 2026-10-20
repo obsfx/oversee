@@ -33,6 +33,14 @@ func (h languageServerHandler) install(w http.ResponseWriter, r *http.Request) {
 	respond(w, status, dto.LanguageServerOf(entry))
 }
 
+func (h languageServerHandler) cancel(w http.ResponseWriter, r *http.Request) {
+	if err := h.servers.Cancel(r.PathValue("id")); err != nil {
+		respondError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (h languageServerHandler) uninstall(w http.ResponseWriter, r *http.Request) {
 	if err := h.servers.Uninstall(r.Context(), r.PathValue("id")); err != nil {
 		respondError(w, err)

@@ -1,6 +1,7 @@
 import { Popover } from '@base-ui/react/popover'
 import type { ComponentType } from 'react'
 import { VscSettingsGear } from 'react-icons/vsc'
+import { c } from '@/src/c.ts'
 import {
   useSettingsMenu,
   type SettingsView,
@@ -12,6 +13,7 @@ import { Tooltip } from '@/src/primitives/tooltip.tsx'
 import { DiffColorSettings } from '@/src/components/topbar/diff-color-settings.tsx'
 import { EditorSettings } from '@/src/components/topbar/editor-settings.tsx'
 import { InterfaceSettings } from '@/src/components/topbar/interface-settings.tsx'
+import { LanguageServerSettings } from '@/src/components/topbar/language-server-settings.tsx'
 import { SettingsOverview } from '@/src/components/topbar/settings-overview.tsx'
 
 const SETTINGS_VIEWS: Record<SettingsView, ComponentType<SettingsViewProps>> = {
@@ -19,10 +21,11 @@ const SETTINGS_VIEWS: Record<SettingsView, ComponentType<SettingsViewProps>> = {
   interface: InterfaceSettings,
   editor: EditorSettings,
   diffColors: DiffColorSettings,
+  languageServers: LanguageServerSettings,
 }
 
 export function SettingsMenu() {
-  const { view, navigate, handleOpenChange } = useSettingsMenu()
+  const { view, navigate, handleOpenChange, wide } = useSettingsMenu()
   const ActiveView = SETTINGS_VIEWS[view]
 
   return (
@@ -32,7 +35,10 @@ export function SettingsMenu() {
           <VscSettingsGear />
         </Popover.Trigger>
       </Tooltip>
-      <PopoverSurface align={'end'} className={'flex w-72 flex-col gap-2 p-2'}>
+      <PopoverSurface
+        align={'end'}
+        className={c('flex flex-col gap-2 p-2', wide ? 'w-80' : 'w-72')}
+      >
         <ActiveView navigate={navigate} />
       </PopoverSurface>
     </Popover.Root>

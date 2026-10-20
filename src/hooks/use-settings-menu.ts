@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-export type SettingsView = 'overview' | 'interface' | 'editor' | 'diffColors'
+export type SettingsView = 'overview' | 'interface' | 'editor' | 'diffColors' | 'languageServers'
 
 export interface SettingsViewProps {
   navigate: (view: SettingsView) => void
@@ -15,5 +15,5 @@ export const useSettingsMenu = () => {
     }
   }
 
-  return { view, navigate, handleOpenChange }
+  return { view, navigate, handleOpenChange, wide: view === 'languageServers' }
 }

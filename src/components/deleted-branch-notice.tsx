@@ -1,6 +1,7 @@
 import { VscWarning } from 'react-icons/vsc'
 import { useDeletedBranchNotice } from '@/src/hooks/use-deleted-branch-notice.ts'
-import { WarningBar } from '@/src/primitives/warning-bar.tsx'
+import { NoticeBar } from '@/src/primitives/notice-bar.tsx'
+import { TextButton } from '@/src/primitives/text-button.tsx'
 
 export function DeletedBranchNotice() {
   const notice = useDeletedBranchNotice()
@@ -9,12 +10,8 @@ export function DeletedBranchNotice() {
     return null
   }
   return (
-    <WarningBar
-      icon={<VscWarning />}
-      title={notice.title}
-      detail={notice.detail}
-      actionLabel={'Dismiss'}
-      onAction={notice.dismiss}
-    />
+    <NoticeBar tone={'warning'} icon={<VscWarning />} title={notice.title} detail={notice.detail}>
+      <TextButton onClick={notice.dismiss}>Dismiss</TextButton>
+    </NoticeBar>
   )
 }

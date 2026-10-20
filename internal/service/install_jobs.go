@@ -11,9 +11,15 @@ import (
 	"github.com/obsfx/oversee/internal/domain"
 )
 
-const installTimeout = 15 * time.Minute
+const (
+	installIdleTimeout = 3 * time.Minute
+	progressInterval   = 250 * time.Millisecond
+)
 
-var errInstallTimeout = errors.New("install did not finish within 15 minutes")
+var (
+	errInstallStalled  = errors.New("install made no progress for 3 minutes")
+	errInstallCanceled = errors.New("install canceled")
+)
 
 type jobKind int
 
@@ -25,7 +31,10 @@ const (
 type installJobs struct {
 	mu       sync.Mutex
 	running  map[string]jobKind
+	cancels  map[string]context.CancelCauseFunc
 	failures map[string]string
+	progress map[string]domain.InstallProgress
+	reported map[string]time.Time
 	ctx      context.Context
 	cancel   context.CancelFunc
 	group    sync.WaitGroup
@@ -36,14 +45,17 @@ func newInstallJobs(notify func()) *installJobs {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &installJobs{
 		running:  map[string]jobKind{},
+		cancels:  map[string]context.CancelCauseFunc{},
 		failures: map[string]string{},
+		progress: map[string]domain.InstallProgress{},
+		reported: map[string]time.Time{},
 		ctx:      ctx,
 		cancel:   cancel,
 		notify:   notify,
 	}
 }
 
-func (j *installJobs) start(id string, work func(ctx context.Context) error) (bool, error) {
+func (j *installJobs) start(id string, work func(ctx context.Context, report func(domain.InstallProgress)) error) (bool, error) {
 	j.mu.Lock()
 	defer j.mu.Unlock()
 	switch {
@@ -52,14 +64,28 @@ func (j *installJobs) start(id string, work func(ctx context.Context) error) (bo
 	case j.running[id] == jobRemove || j.ctx.Err() != nil:
 		return false, fmt.Errorf("%w: %s", domain.ErrLanguageServerBusy, id)
 	}
+	ctx, cancel := context.WithCancelCause(j.ctx)
 	j.running[id] = jobInstall
+	j.cancels[id] = cancel
 	delete(j.failures, id)
 	j.group.Go(func() {
-		ctx, cancel := context.WithTimeoutCause(j.ctx, installTimeout, errInstallTimeout)
-		defer cancel()
-		err := work(ctx)
-		if err != nil && errors.Is(context.Cause(ctx), errInstallTimeout) {
-			err = errInstallTimeout
+		defer cancel(nil)
+		idle := time.AfterFunc(installIdleTimeout, func() {
+			cancel(errInstallStalled)
+		})
+		defer idle.Stop()
+		err := work(ctx, func(progress domain.InstallProgress) {
+			idle.Reset(installIdleTimeout)
+			j.report(id, progress)
+		})
+		if err != nil {
+			switch cause := context.Cause(ctx); {
+			case errors.Is(cause, errInstallCanceled):
+				slog.Info("language server install canceled", "server", id)
+				err = nil
+			case errors.Is(cause, errInstallStalled):
+				err = errInstallStalled
+			}
 		}
 		j.finish(id, err)
 	})
@@ -84,9 +110,34 @@ func (j *installJobs) exclusive(id string, work func() error) error {
 	return err
 }
 
+func (j *installJobs) cancelInstall(id string) {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	if cancel, ok := j.cancels[id]; ok {
+		cancel(errInstallCanceled)
+	}
+}
+
+func (j *installJobs) report(id string, progress domain.InstallProgress) {
+	j.mu.Lock()
+	changed := j.progress[id] != progress
+	j.progress[id] = progress
+	due := changed && time.Since(j.reported[id]) >= progressInterval
+	if due {
+		j.reported[id] = time.Now()
+	}
+	j.mu.Unlock()
+	if due {
+		j.notify()
+	}
+}
+
 func (j *installJobs) finish(id string, err error) {
 	j.mu.Lock()
 	delete(j.running, id)
+	delete(j.cancels, id)
+	delete(j.progress, id)
+	delete(j.reported, id)
 	if err != nil && j.ctx.Err() == nil {
 		j.failures[id] = err.Error()
 		slog.Warn("language server install failed", "server", id, "error", err)
@@ -95,10 +146,10 @@ func (j *installJobs) finish(id string, err error) {
 	j.notify()
 }
 
-func (j *installJobs) state(id string) (bool, string) {
+func (j *installJobs) state(id string) (bool, string, domain.InstallProgress) {
 	j.mu.Lock()
 	defer j.mu.Unlock()
-	return j.running[id] == jobInstall, j.failures[id]
+	return j.running[id] == jobInstall, j.failures[id], j.progress[id]
 }
 
 func (j *installJobs) close() {

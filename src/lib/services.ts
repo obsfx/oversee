@@ -4,6 +4,8 @@ import type { ChangeSet } from '@/src/lib/change-set.ts'
 import type { ChangeSetGateway } from '@/src/lib/change-set-gateway.ts'
 import type { CommentGateway } from '@/src/lib/comment-gateway.ts'
 import { ComparisonCache } from '@/src/lib/comparison-cache.ts'
+import type { LanguageServerGateway } from '@/src/lib/language-server-gateway.ts'
+import { LanguageServers } from '@/src/lib/language-servers.ts'
 import {
   type FileDiff,
   type FileDiffGateway,
@@ -34,6 +36,7 @@ interface Gateways {
   notifications: NotificationGateway
   settings: SettingsGateway
   reviewedMarks: ReviewedMarksGateway
+  languageServers: LanguageServerGateway
   events: EventStream
 }
 
@@ -48,6 +51,7 @@ export class Services {
   readonly settings: SettingsSync
   readonly serverSync: ServerEventSync
   readonly reviewedMarks: ReviewedMarksGateway
+  readonly languageServers: LanguageServers
 
   constructor(gateways: Gateways) {
     this.workspace = new AsyncResource(() => {
@@ -67,12 +71,14 @@ export class Services {
     this.notifications = new Notifications(gateways.notifications)
     this.settings = new SettingsSync(gateways.settings)
     this.reviewedMarks = gateways.reviewedMarks
+    this.languageServers = new LanguageServers(gateways.languageServers)
     this.serverSync = new ServerEventSync(
       gateways.events,
       this.sessions,
       this.comments,
       this.notifications,
       new WorkspaceRefresh(this.branches, this.changeSets, this.fileDiffs),
+      this.languageServers,
     )
   }
 }

@@ -72,14 +72,22 @@ func (s *LanguageServerService) Install(ctx context.Context, id string) (Languag
 	if err := entry.State.Installable(); err != nil {
 		return LanguageServerEntry{}, false, err
 	}
-	started, err := s.jobs.start(id, func(ctx context.Context) error {
-		return s.install(ctx, server)
+	started, err := s.jobs.start(id, func(ctx context.Context, report func(domain.InstallProgress)) error {
+		return s.install(ctx, server, report)
 	})
 	if err != nil {
 		return LanguageServerEntry{}, false, err
 	}
 	entry, err = s.entry(server)
 	return entry, started, err
+}
+
+func (s *LanguageServerService) Cancel(id string) error {
+	if _, err := s.server(id); err != nil {
+		return err
+	}
+	s.jobs.cancelInstall(id)
+	return nil
 }
 
 func (s *LanguageServerService) Uninstall(ctx context.Context, id string) error {
@@ -109,8 +117,8 @@ func (s *LanguageServerService) Close() {
 	s.jobs.close()
 }
 
-func (s *LanguageServerService) install(ctx context.Context, server catalog.Server) error {
-	if err := s.installer.Install(ctx, server, s.platform); err != nil {
+func (s *LanguageServerService) install(ctx context.Context, server catalog.Server, report func(domain.InstallProgress)) error {
+	if err := s.installer.Install(ctx, server, s.platform, report); err != nil {
 		return err
 	}
 	s.sessions.Stop(sessionKeyPrefix(server.ID))
@@ -134,7 +142,7 @@ func (s *LanguageServerService) entry(server catalog.Server) (LanguageServerEntr
 	if err != nil {
 		return LanguageServerEntry{}, err
 	}
-	installing, failure := s.jobs.state(server.ID)
+	installing, failure, progress := s.jobs.state(server.ID)
 	missing := make([]string, 0, len(server.Requires))
 	for _, requirement := range s.toolchain.Missing(server.Requires) {
 		missing = append(missing, string(requirement))
@@ -146,6 +154,7 @@ func (s *LanguageServerService) entry(server catalog.Server) (LanguageServerEntr
 			CatalogVersion:   server.Version,
 			InstalledVersion: installed,
 			Installing:       installing,
+			Progress:         progress,
 			Failure:          failure,
 			Available:        server.Install.AvailableOn(s.platform),
 			Missing:          missing,

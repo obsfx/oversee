@@ -22,19 +22,25 @@ type LanguageServerFileType struct {
 }
 
 type LanguageServer struct {
-	ID               string   `json:"id"`
-	Description      string   `json:"description"`
-	Homepage         string   `json:"homepage"`
-	Languages        []string `json:"languages"`
-	FileTypes        []string `json:"fileTypes"`
-	Version          string   `json:"version"`
-	Requires         []string `json:"requires"`
-	Missing          []string `json:"missing"`
-	Available        bool     `json:"available"`
-	Status           string   `json:"status"`
-	InstalledVersion string   `json:"installedVersion"`
-	UpdateAvailable  bool     `json:"updateAvailable"`
-	Error            string   `json:"error"`
+	ID               string                  `json:"id"`
+	Description      string                  `json:"description"`
+	Homepage         string                  `json:"homepage"`
+	Languages        []string                `json:"languages"`
+	FileTypes        []string                `json:"fileTypes"`
+	Version          string                  `json:"version"`
+	Requires         []string                `json:"requires"`
+	Missing          []string                `json:"missing"`
+	Available        bool                    `json:"available"`
+	Status           string                  `json:"status"`
+	Progress         *LanguageServerProgress `json:"progress"`
+	InstalledVersion string                  `json:"installedVersion"`
+	UpdateAvailable  bool                    `json:"updateAvailable"`
+	Error            string                  `json:"error"`
+}
+
+type LanguageServerProgress struct {
+	Received int64 `json:"received"`
+	Total    int64 `json:"total"`
 }
 
 func LanguageServerListOf(list service.LanguageServerList) LanguageServerList {
@@ -54,6 +60,10 @@ func LanguageServerOf(entry service.LanguageServerEntry) LanguageServer {
 	for _, requirement := range entry.Server.Requires {
 		requires = append(requires, string(requirement))
 	}
+	var progress *LanguageServerProgress
+	if entry.State.Installing && entry.State.Progress.Known() {
+		progress = &LanguageServerProgress{Received: entry.State.Progress.Received, Total: entry.State.Progress.Total}
+	}
 	return LanguageServer{
 		ID:               entry.Server.ID,
 		Description:      entry.Server.Description,
@@ -65,6 +75,7 @@ func LanguageServerOf(entry service.LanguageServerEntry) LanguageServer {
 		Missing:          entry.State.Missing,
 		Available:        entry.State.Available,
 		Status:           string(entry.State.Status()),
+		Progress:         progress,
 		InstalledVersion: entry.State.InstalledVersion,
 		UpdateAvailable:  entry.State.UpdateAvailable(),
 		Error:            entry.State.Failure,

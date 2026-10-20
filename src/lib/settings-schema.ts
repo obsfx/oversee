@@ -15,6 +15,7 @@ export interface Settings {
   editorFontSize: number
   editorLineHeight: number
   diffTheme: string
+  dismissedLanguageServers: string[]
 }
 
 export abstract class SettingsSchema {
@@ -34,6 +35,7 @@ export abstract class SettingsSchema {
     editorFontSize: 12,
     editorLineHeight: 1.6,
     diffTheme: DiffThemeCatalog.auto,
+    dismissedLanguageServers: [],
   }
 
   static uiScale(uiFontSize: number) {
@@ -64,6 +66,10 @@ export abstract class SettingsSchema {
         diffTheme: v.fallback(
           v.pipe(v.string(), v.check(DiffThemeCatalog.isDiffTheme)),
           SettingsSchema.defaults.diffTheme,
+        ),
+        dismissedLanguageServers: v.fallback(
+          v.array(v.string()),
+          SettingsSchema.defaults.dismissedLanguageServers,
         ),
       }),
       SettingsSchema.defaults,

@@ -105,6 +105,7 @@ func (s *Server) routes() http.Handler {
 	mux.HandleFunc("PATCH /api/settings", settings.update)
 	mux.HandleFunc("GET /api/language-servers", languageServers.list)
 	mux.HandleFunc("POST /api/language-servers/{id}/install", languageServers.install)
+	mux.HandleFunc("DELETE /api/language-servers/{id}/install", languageServers.cancel)
 	mux.HandleFunc("DELETE /api/language-servers/{id}", languageServers.uninstall)
 	mux.HandleFunc("GET /api/definitions", definitions.find)
 	mux.Handle("GET /ws", s.hub)

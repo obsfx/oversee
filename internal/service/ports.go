@@ -40,7 +40,7 @@ type Reconciler interface {
 }
 
 type ServerInstaller interface {
-	Install(ctx context.Context, server catalog.Server, platform catalog.Platform) error
+	Install(ctx context.Context, server catalog.Server, platform catalog.Platform, progress func(domain.InstallProgress)) error
 }
 
 type InstallationStore interface {

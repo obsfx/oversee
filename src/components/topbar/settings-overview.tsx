@@ -1,4 +1,6 @@
+import { useLanguageServers } from '@/src/hooks/use-language-servers.ts'
 import type { SettingsViewProps } from '@/src/hooks/use-settings-menu.ts'
+import { LanguageServerLabels } from '@/src/lib/language-server-labels.ts'
 import { SettingsSummary } from '@/src/lib/settings-summary.ts'
 import { SettingRow } from '@/src/primitives/setting-row.tsx'
 import { SummaryRow } from '@/src/primitives/summary-row.tsx'
@@ -7,6 +9,7 @@ import { ThemeToggle } from '@/src/components/topbar/theme-toggle.tsx'
 
 export function SettingsOverview({ navigate }: SettingsViewProps) {
   const settings = useSettingsStore()
+  const languageServers = useLanguageServers()
 
   return (
     <>
@@ -38,6 +41,13 @@ export function SettingsOverview({ navigate }: SettingsViewProps) {
           summary={SettingsSummary.diffColors(settings)}
           onOpen={() => {
             navigate('diffColors')
+          }}
+        />
+        <SummaryRow
+          label={'Language servers'}
+          summary={LanguageServerLabels.overview(languageServers.state)}
+          onOpen={() => {
+            navigate('languageServers')
           }}
         />
       </div>

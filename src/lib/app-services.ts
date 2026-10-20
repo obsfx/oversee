@@ -4,6 +4,7 @@ import { HttpBranchGateway } from '@/src/lib/http-branch-gateway.ts'
 import { HttpChangeSetGateway } from '@/src/lib/http-change-set-gateway.ts'
 import { HttpCommentGateway } from '@/src/lib/http-comment-gateway.ts'
 import { HttpFileDiffGateway } from '@/src/lib/http-file-diff-gateway.ts'
+import { HttpLanguageServerGateway } from '@/src/lib/http-language-server-gateway.ts'
 import { HttpNotificationGateway } from '@/src/lib/http-notification-gateway.ts'
 import { HttpReviewSessionGateway } from '@/src/lib/http-review-session-gateway.ts'
 import { Services } from '@/src/lib/services.ts'
@@ -28,5 +29,6 @@ export const appServices = new Services({
   reviewedMarks: new LocalReviewedMarksGateway(() => {
     return window.localStorage
   }),
+  languageServers: new HttpLanguageServerGateway(apiClient),
   events: new SocketEventStream(appGlobals.wsUrl),
 })

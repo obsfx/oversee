@@ -1,3 +1,4 @@
+import type { LanguageServers } from '@/src/lib/language-servers.ts'
 import type { Notifications } from '@/src/lib/notifications.ts'
 import type { ReviewComments } from '@/src/lib/review-comments.ts'
 import type { ReviewSessions } from '@/src/lib/review-sessions.ts'
@@ -10,6 +11,7 @@ export class ServerEventSync {
   private readonly comments: ReviewComments
   private readonly notifications: Notifications
   private readonly workspace: WorkspaceRefresh
+  private readonly languageServers: LanguageServers
 
   constructor(
     events: EventStream,
@@ -17,12 +19,14 @@ export class ServerEventSync {
     comments: ReviewComments,
     notifications: Notifications,
     workspace: WorkspaceRefresh,
+    languageServers: LanguageServers,
   ) {
     this.events = events
     this.sessions = sessions
     this.comments = comments
     this.notifications = notifications
     this.workspace = workspace
+    this.languageServers = languageServers
   }
 
   start() {
@@ -38,6 +42,11 @@ export class ServerEventSync {
     }
     if (event.kind === 'stream.resumed') {
       this.workspace.apply(WorkspaceRefresh.everything)
+      this.languageServers.refresh()
+      return
+    }
+    if (event.kind === 'language-servers.changed') {
+      this.languageServers.refresh()
       return
     }
     if (event.kind === 'comments.reconciled') {

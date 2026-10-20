@@ -2,6 +2,7 @@ import { BranchSelectionGuard, type ComparisonSelection } from '@/src/lib/branch
 import { DocumentTitleSync } from '@/src/lib/document-title-sync.ts'
 import { FaviconBlinker } from '@/src/lib/favicon-blinker.ts'
 import { DocumentFavicon } from '@/src/lib/favicon-frames.ts'
+import { InstallCompletionWatch, type ReadyServerPort } from '@/src/lib/install-completion-watch.ts'
 import { NotificationBlink } from '@/src/lib/notification-blink.ts'
 import { ReducedMotion } from '@/src/lib/reduced-motion.ts'
 import {
@@ -14,6 +15,7 @@ import type { Services } from '@/src/lib/services.ts'
 export interface ReviewSyncPorts {
   selection: ComparisonSelection & FollowedComparison
   marks: ReviewedMarksStore
+  ready: ReadyServerPort
 }
 
 export class ReviewSync {
@@ -45,6 +47,7 @@ export class ReviewSync {
         ReducedMotion.preferred,
       ).start(),
       new DocumentTitleSync(this.services.workspace).start(),
+      new InstallCompletionWatch(this.services.languageServers.list, this.ports.ready).start(),
     ]
     return () => {
       for (const dispose of disposers) {

@@ -19,9 +19,19 @@ type LanguageServerState struct {
 	CatalogVersion   string
 	InstalledVersion string
 	Installing       bool
+	Progress         InstallProgress
 	Failure          string
 	Available        bool
 	Missing          []string
+}
+
+type InstallProgress struct {
+	Received int64
+	Total    int64
+}
+
+func (p InstallProgress) Known() bool {
+	return p.Received > 0 || p.Total > 0
 }
 
 func (s LanguageServerState) Status() LanguageServerStatus {
