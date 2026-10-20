@@ -1,0 +1,1299 @@
+{
+  "schemaVersion": 1,
+  "masonRelease": "2026-10-20-stark-key",
+  "fileTypes": {
+    "c": {
+      "extensions": [
+        "c",
+        "h"
+      ],
+      "server": "clangd"
+    },
+    "cpp": {
+      "extensions": [
+        "cpp",
+        "cc",
+        "cxx",
+        "c++",
+        "hpp",
+        "hh",
+        "hxx",
+        "h++",
+        "ipp",
+        "tpp"
+      ],
+      "server": "clangd"
+    },
+    "csharp": {
+      "extensions": [
+        "cs",
+        "csx"
+      ],
+      "server": "omnisharp"
+    },
+    "go": {
+      "extensions": [
+        "go"
+      ],
+      "server": "gopls"
+    },
+    "go.mod": {
+      "filenames": [
+        "go.mod"
+      ],
+      "server": "gopls"
+    },
+    "go.work": {
+      "filenames": [
+        "go.work"
+      ],
+      "server": "gopls"
+    },
+    "java": {
+      "extensions": [
+        "java"
+      ],
+      "server": "jdtls"
+    },
+    "javascript": {
+      "extensions": [
+        "js",
+        "mjs",
+        "cjs"
+      ],
+      "server": "typescript-language-server"
+    },
+    "javascriptreact": {
+      "extensions": [
+        "jsx"
+      ],
+      "server": "typescript-language-server"
+    },
+    "kotlin": {
+      "extensions": [
+        "kt",
+        "kts"
+      ],
+      "server": "kotlin-language-server"
+    },
+    "lua": {
+      "extensions": [
+        "lua"
+      ],
+      "server": "lua-language-server"
+    },
+    "php": {
+      "extensions": [
+        "php",
+        "phtml"
+      ],
+      "server": "intelephense"
+    },
+    "python": {
+      "extensions": [
+        "py",
+        "pyi"
+      ],
+      "server": "pyright"
+    },
+    "rust": {
+      "extensions": [
+        "rs"
+      ],
+      "server": "rust-analyzer"
+    },
+    "shellscript": {
+      "extensions": [
+        "sh",
+        "bash"
+      ],
+      "filenames": [
+        ".bashrc",
+        ".bash_profile",
+        ".bash_aliases",
+        ".profile"
+      ],
+      "server": "bash-language-server"
+    },
+    "typescript": {
+      "extensions": [
+        "ts",
+        "mts",
+        "cts"
+      ],
+      "server": "typescript-language-server"
+    },
+    "typescriptreact": {
+      "extensions": [
+        "tsx"
+      ],
+      "server": "typescript-language-server"
+    },
+    "zig": {
+      "extensions": [
+        "zig",
+        "zon"
+      ],
+      "server": "zls"
+    }
+  },
+  "servers": [
+    {
+      "id": "bash-language-server",
+      "description": "A language server for Bash.",
+      "homepage": "https://github.com/bash-lsp/bash-language-server",
+      "licenses": [
+        "MIT"
+      ],
+      "languages": [
+        "Bash",
+        "Csh",
+        "Ksh",
+        "Sh",
+        "Zsh"
+      ],
+      "version": "5.8.1",
+      "fileTypes": [
+        "shellscript"
+      ],
+      "run": {
+        "bin": "bash-language-server",
+        "args": [
+          "start"
+        ]
+      },
+      "install": {
+        "type": "npm",
+        "package": "bash-language-server",
+        "version": "5.8.1",
+        "bins": {
+          "bash-language-server": {
+            "kind": "npm",
+            "path": "bash-language-server"
+          }
+        }
+      },
+      "requires": [
+        "node",
+        "npm"
+      ]
+    },
+    {
+      "id": "clangd",
+      "description": "clangd understands your C++ code and adds smart features to your editor: code completion, compile errors, go-to-definition and more.",
+      "homepage": "https://clangd.llvm.org",
+      "licenses": [
+        "Apache-2.0"
+      ],
+      "languages": [
+        "C",
+        "C++"
+      ],
+      "version": "23.1.0",
+      "fileTypes": [
+        "c",
+        "cpp"
+      ],
+      "rootMarkers": [
+        ".clangd",
+        ".clang-tidy",
+        ".clang-format",
+        "compile_commands.json",
+        "compile_flags.txt"
+      ],
+      "run": {
+        "bin": "clangd"
+      },
+      "install": {
+        "type": "download",
+        "package": "clangd/clangd",
+        "version": "23.1.0",
+        "platforms": {
+          "darwin-arm64": {
+            "files": [
+              {
+                "url": "https://github.com/clangd/clangd/releases/download/23.1.0/clangd-mac-23.1.0.zip",
+                "sha256": "1082e6638223b785ca2daf0939f13afcd0bb95c84ee9a4bbaff4745365159253",
+                "name": "clangd-mac-23.1.0.zip"
+              }
+            ],
+            "bins": {
+              "clangd": {
+                "kind": "exec",
+                "path": "clangd_23.1.0/bin/clangd"
+              }
+            }
+          },
+          "darwin-x64": {
+            "files": [
+              {
+                "url": "https://github.com/clangd/clangd/releases/download/23.1.0/clangd-mac-23.1.0.zip",
+                "sha256": "1082e6638223b785ca2daf0939f13afcd0bb95c84ee9a4bbaff4745365159253",
+                "name": "clangd-mac-23.1.0.zip"
+              }
+            ],
+            "bins": {
+              "clangd": {
+                "kind": "exec",
+                "path": "clangd_23.1.0/bin/clangd"
+              }
+            }
+          },
+          "linux-x64-gnu": {
+            "files": [
+              {
+                "url": "https://github.com/clangd/clangd/releases/download/23.1.0/clangd-linux-23.1.0.zip",
+                "sha256": "e53b1a96196095faedb7642cf64964f7fb9ad4a0c1f00dd2c172a3d9dcbafdfd",
+                "name": "clangd-linux-23.1.0.zip"
+              }
+            ],
+            "bins": {
+              "clangd": {
+                "kind": "exec",
+                "path": "clangd_23.1.0/bin/clangd"
+              }
+            }
+          },
+          "win32-x64": {
+            "files": [
+              {
+                "url": "https://github.com/clangd/clangd/releases/download/23.1.0/clangd-windows-23.1.0.zip",
+                "sha256": "23412a240756a162e7b98a282f36aa2a23a88db5ce16a0cbc4fef7253768c810",
+                "name": "clangd-windows-23.1.0.zip"
+              }
+            ],
+            "bins": {
+              "clangd": {
+                "kind": "exec",
+                "path": "clangd_23.1.0/bin/clangd.exe"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "gopls",
+      "description": "gopls (pronounced \"Go please\") is the official Go language server developed by the Go team. It provides IDE features to any LSP-compatible editor.",
+      "homepage": "https://pkg.go.dev/golang.org/x/tools/gopls",
+      "licenses": [
+        "BSD-3-Clause"
+      ],
+      "languages": [
+        "Go"
+      ],
+      "version": "v0.23.0",
+      "fileTypes": [
+        "go",
+        "go.mod",
+        "go.work"
+      ],
+      "rootMarkers": [
+        "go.work",
+        "go.mod"
+      ],
+      "run": {
+        "bin": "gopls"
+      },
+      "install": {
+        "type": "golang",
+        "package": "golang.org/x/tools/gopls",
+        "version": "v0.23.0",
+        "bins": {
+          "gopls": {
+            "kind": "golang",
+            "path": "gopls"
+          }
+        }
+      },
+      "requires": [
+        "go"
+      ]
+    },
+    {
+      "id": "intelephense",
+      "description": "Professional PHP tooling for any Language Server Protocol capable editor.",
+      "homepage": "https://intelephense.com",
+      "licenses": [
+        "MIT"
+      ],
+      "languages": [
+        "PHP"
+      ],
+      "version": "1.18.5",
+      "fileTypes": [
+        "php"
+      ],
+      "rootMarkers": [
+        "composer.json"
+      ],
+      "run": {
+        "bin": "intelephense",
+        "args": [
+          "--stdio"
+        ]
+      },
+      "install": {
+        "type": "npm",
+        "package": "intelephense",
+        "version": "1.18.5",
+        "bins": {
+          "intelephense": {
+            "kind": "npm",
+            "path": "intelephense"
+          }
+        }
+      },
+      "requires": [
+        "node",
+        "npm"
+      ]
+    },
+    {
+      "id": "jdtls",
+      "description": "Java language server.",
+      "homepage": "https://github.com/eclipse/eclipse.jdt.ls",
+      "licenses": [
+        "EPL-2.0"
+      ],
+      "languages": [
+        "Java"
+      ],
+      "version": "v1.62.0",
+      "fileTypes": [
+        "java"
+      ],
+      "rootMarkers": [
+        "mvnw",
+        "gradlew",
+        "settings.gradle",
+        "settings.gradle.kts"
+      ],
+      "run": {
+        "bin": "jdtls",
+        "args": [
+          "-data",
+          "${dataDir}"
+        ]
+      },
+      "install": {
+        "type": "download",
+        "package": "eclipse/eclipse.jdt.ls",
+        "version": "v1.62.0",
+        "platforms": {
+          "darwin-arm64": {
+            "files": [
+              {
+                "url": "https://download.eclipse.org/jdtls/snapshots/jdt-language-server-1.62.0-202610131109.tar.gz",
+                "sha256": "f587dafd8410633c2c2bf005e853a2bbb03cddee88933d49bfe6d9cb1cf09342",
+                "name": "jdtls.tar.gz"
+              }
+            ],
+            "bins": {
+              "jdtls": {
+                "kind": "python",
+                "path": "bin/jdtls"
+              }
+            }
+          },
+          "darwin-x64": {
+            "files": [
+              {
+                "url": "https://download.eclipse.org/jdtls/snapshots/jdt-language-server-1.62.0-202610131109.tar.gz",
+                "sha256": "f587dafd8410633c2c2bf005e853a2bbb03cddee88933d49bfe6d9cb1cf09342",
+                "name": "jdtls.tar.gz"
+              }
+            ],
+            "bins": {
+              "jdtls": {
+                "kind": "python",
+                "path": "bin/jdtls"
+              }
+            }
+          },
+          "linux-arm64-gnu": {
+            "files": [
+              {
+                "url": "https://download.eclipse.org/jdtls/snapshots/jdt-language-server-1.62.0-202610131109.tar.gz",
+                "sha256": "f587dafd8410633c2c2bf005e853a2bbb03cddee88933d49bfe6d9cb1cf09342",
+                "name": "jdtls.tar.gz"
+              }
+            ],
+            "bins": {
+              "jdtls": {
+                "kind": "python",
+                "path": "bin/jdtls"
+              }
+            }
+          },
+          "linux-arm64-musl": {
+            "files": [
+              {
+                "url": "https://download.eclipse.org/jdtls/snapshots/jdt-language-server-1.62.0-202610131109.tar.gz",
+                "sha256": "f587dafd8410633c2c2bf005e853a2bbb03cddee88933d49bfe6d9cb1cf09342",
+                "name": "jdtls.tar.gz"
+              }
+            ],
+            "bins": {
+              "jdtls": {
+                "kind": "python",
+                "path": "bin/jdtls"
+              }
+            }
+          },
+          "linux-x64-gnu": {
+            "files": [
+              {
+                "url": "https://download.eclipse.org/jdtls/snapshots/jdt-language-server-1.62.0-202610131109.tar.gz",
+                "sha256": "f587dafd8410633c2c2bf005e853a2bbb03cddee88933d49bfe6d9cb1cf09342",
+                "name": "jdtls.tar.gz"
+              }
+            ],
+            "bins": {
+              "jdtls": {
+                "kind": "python",
+                "path": "bin/jdtls"
+              }
+            }
+          },
+          "linux-x64-musl": {
+            "files": [
+              {
+                "url": "https://download.eclipse.org/jdtls/snapshots/jdt-language-server-1.62.0-202610131109.tar.gz",
+                "sha256": "f587dafd8410633c2c2bf005e853a2bbb03cddee88933d49bfe6d9cb1cf09342",
+                "name": "jdtls.tar.gz"
+              }
+            ],
+            "bins": {
+              "jdtls": {
+                "kind": "python",
+                "path": "bin/jdtls"
+              }
+            }
+          },
+          "win32-arm64": {
+            "files": [
+              {
+                "url": "https://download.eclipse.org/jdtls/snapshots/jdt-language-server-1.62.0-202610131109.tar.gz",
+                "sha256": "f587dafd8410633c2c2bf005e853a2bbb03cddee88933d49bfe6d9cb1cf09342",
+                "name": "jdtls.tar.gz"
+              }
+            ],
+            "bins": {
+              "jdtls": {
+                "kind": "python",
+                "path": "bin/jdtls"
+              }
+            }
+          },
+          "win32-x64": {
+            "files": [
+              {
+                "url": "https://download.eclipse.org/jdtls/snapshots/jdt-language-server-1.62.0-202610131109.tar.gz",
+                "sha256": "f587dafd8410633c2c2bf005e853a2bbb03cddee88933d49bfe6d9cb1cf09342",
+                "name": "jdtls.tar.gz"
+              }
+            ],
+            "bins": {
+              "jdtls": {
+                "kind": "python",
+                "path": "bin/jdtls"
+              }
+            }
+          }
+        }
+      },
+      "requires": [
+        "java",
+        "python3"
+      ]
+    },
+    {
+      "id": "kotlin-language-server",
+      "description": "Kotlin code completion, linting and more for any editor/IDE using the Language Server Protocol.",
+      "homepage": "https://github.com/fwcd/kotlin-language-server",
+      "licenses": [
+        "MIT"
+      ],
+      "languages": [
+        "Kotlin"
+      ],
+      "version": "1.3.13",
+      "fileTypes": [
+        "kotlin"
+      ],
+      "rootMarkers": [
+        "settings.gradle",
+        "settings.gradle.kts"
+      ],
+      "run": {
+        "bin": "kotlin-language-server"
+      },
+      "install": {
+        "type": "download",
+        "package": "fwcd/kotlin-language-server",
+        "version": "1.3.13",
+        "platforms": {
+          "darwin-arm64": {
+            "files": [
+              {
+                "url": "https://github.com/fwcd/kotlin-language-server/releases/download/1.3.13/server.zip",
+                "sha256": "4fe7d71d087b307c7869036171bd9d8c6a4284cd7c25b89098b0a24eb2d9b6d2",
+                "name": "server.zip"
+              }
+            ],
+            "bins": {
+              "kotlin-language-server": {
+                "kind": "exec",
+                "path": "server/bin/kotlin-language-server"
+              }
+            }
+          },
+          "darwin-x64": {
+            "files": [
+              {
+                "url": "https://github.com/fwcd/kotlin-language-server/releases/download/1.3.13/server.zip",
+                "sha256": "4fe7d71d087b307c7869036171bd9d8c6a4284cd7c25b89098b0a24eb2d9b6d2",
+                "name": "server.zip"
+              }
+            ],
+            "bins": {
+              "kotlin-language-server": {
+                "kind": "exec",
+                "path": "server/bin/kotlin-language-server"
+              }
+            }
+          },
+          "linux-arm64-gnu": {
+            "files": [
+              {
+                "url": "https://github.com/fwcd/kotlin-language-server/releases/download/1.3.13/server.zip",
+                "sha256": "4fe7d71d087b307c7869036171bd9d8c6a4284cd7c25b89098b0a24eb2d9b6d2",
+                "name": "server.zip"
+              }
+            ],
+            "bins": {
+              "kotlin-language-server": {
+                "kind": "exec",
+                "path": "server/bin/kotlin-language-server"
+              }
+            }
+          },
+          "linux-arm64-musl": {
+            "files": [
+              {
+                "url": "https://github.com/fwcd/kotlin-language-server/releases/download/1.3.13/server.zip",
+                "sha256": "4fe7d71d087b307c7869036171bd9d8c6a4284cd7c25b89098b0a24eb2d9b6d2",
+                "name": "server.zip"
+              }
+            ],
+            "bins": {
+              "kotlin-language-server": {
+                "kind": "exec",
+                "path": "server/bin/kotlin-language-server"
+              }
+            }
+          },
+          "linux-x64-gnu": {
+            "files": [
+              {
+                "url": "https://github.com/fwcd/kotlin-language-server/releases/download/1.3.13/server.zip",
+                "sha256": "4fe7d71d087b307c7869036171bd9d8c6a4284cd7c25b89098b0a24eb2d9b6d2",
+                "name": "server.zip"
+              }
+            ],
+            "bins": {
+              "kotlin-language-server": {
+                "kind": "exec",
+                "path": "server/bin/kotlin-language-server"
+              }
+            }
+          },
+          "linux-x64-musl": {
+            "files": [
+              {
+                "url": "https://github.com/fwcd/kotlin-language-server/releases/download/1.3.13/server.zip",
+                "sha256": "4fe7d71d087b307c7869036171bd9d8c6a4284cd7c25b89098b0a24eb2d9b6d2",
+                "name": "server.zip"
+              }
+            ],
+            "bins": {
+              "kotlin-language-server": {
+                "kind": "exec",
+                "path": "server/bin/kotlin-language-server"
+              }
+            }
+          },
+          "win32-arm64": {
+            "files": [
+              {
+                "url": "https://github.com/fwcd/kotlin-language-server/releases/download/1.3.13/server.zip",
+                "sha256": "4fe7d71d087b307c7869036171bd9d8c6a4284cd7c25b89098b0a24eb2d9b6d2",
+                "name": "server.zip"
+              }
+            ],
+            "bins": {
+              "kotlin-language-server": {
+                "kind": "exec",
+                "path": "server/bin/kotlin-language-server.bat"
+              }
+            }
+          },
+          "win32-x64": {
+            "files": [
+              {
+                "url": "https://github.com/fwcd/kotlin-language-server/releases/download/1.3.13/server.zip",
+                "sha256": "4fe7d71d087b307c7869036171bd9d8c6a4284cd7c25b89098b0a24eb2d9b6d2",
+                "name": "server.zip"
+              }
+            ],
+            "bins": {
+              "kotlin-language-server": {
+                "kind": "exec",
+                "path": "server/bin/kotlin-language-server.bat"
+              }
+            }
+          }
+        }
+      },
+      "requires": [
+        "java"
+      ]
+    },
+    {
+      "id": "lua-language-server",
+      "description": "A language server that offers Lua language support - programmed in Lua.",
+      "homepage": "https://github.com/LuaLS/lua-language-server",
+      "licenses": [
+        "MIT"
+      ],
+      "languages": [
+        "Lua"
+      ],
+      "version": "3.19.2",
+      "fileTypes": [
+        "lua"
+      ],
+      "rootMarkers": [
+        ".luarc.json",
+        ".luarc.jsonc"
+      ],
+      "run": {
+        "bin": "lua-language-server"
+      },
+      "install": {
+        "type": "download",
+        "package": "LuaLS/lua-language-server",
+        "version": "3.19.2",
+        "platforms": {
+          "darwin-arm64": {
+            "files": [
+              {
+                "url": "https://github.com/LuaLS/lua-language-server/releases/download/3.19.2/lua-language-server-3.19.2-darwin-arm64.tar.gz",
+                "sha256": "79149584320a23bd5fcd5bc31f47a1975acd8a4560a0e89036bb1016fa61687f",
+                "name": "lua-language-server-3.19.2-darwin-arm64.tar.gz",
+                "dest": "libexec"
+              }
+            ],
+            "bins": {
+              "lua-language-server": {
+                "kind": "exec",
+                "path": "libexec/bin/lua-language-server"
+              }
+            }
+          },
+          "darwin-x64": {
+            "files": [
+              {
+                "url": "https://github.com/LuaLS/lua-language-server/releases/download/3.19.2/lua-language-server-3.19.2-darwin-x64.tar.gz",
+                "sha256": "6f2174ece5ec63bcd9d5b22b2c902445c1cd9045fafe48c62602448ebf4c09cc",
+                "name": "lua-language-server-3.19.2-darwin-x64.tar.gz",
+                "dest": "libexec"
+              }
+            ],
+            "bins": {
+              "lua-language-server": {
+                "kind": "exec",
+                "path": "libexec/bin/lua-language-server"
+              }
+            }
+          },
+          "linux-arm64-gnu": {
+            "files": [
+              {
+                "url": "https://github.com/LuaLS/lua-language-server/releases/download/3.19.2/lua-language-server-3.19.2-linux-arm64.tar.gz",
+                "sha256": "17b8e401a874440adeb649e5024c364f2bb9d15156c74a40e56d1ae9a1b2e4f2",
+                "name": "lua-language-server-3.19.2-linux-arm64.tar.gz",
+                "dest": "libexec"
+              }
+            ],
+            "bins": {
+              "lua-language-server": {
+                "kind": "exec",
+                "path": "libexec/bin/lua-language-server"
+              }
+            }
+          },
+          "linux-x64-gnu": {
+            "files": [
+              {
+                "url": "https://github.com/LuaLS/lua-language-server/releases/download/3.19.2/lua-language-server-3.19.2-linux-x64.tar.gz",
+                "sha256": "93ad326b10f6c00911dd8c450fa098332dbd8f9f45d1052f5636a2d54479b947",
+                "name": "lua-language-server-3.19.2-linux-x64.tar.gz",
+                "dest": "libexec"
+              }
+            ],
+            "bins": {
+              "lua-language-server": {
+                "kind": "exec",
+                "path": "libexec/bin/lua-language-server"
+              }
+            }
+          },
+          "win32-x64": {
+            "files": [
+              {
+                "url": "https://github.com/LuaLS/lua-language-server/releases/download/3.19.2/lua-language-server-3.19.2-win32-x64.zip",
+                "sha256": "4a3dc851b3b31e7b75a23f645d1ba4a2137579a55f5fa4edbb17a3e2a6254044",
+                "name": "lua-language-server-3.19.2-win32-x64.zip"
+              }
+            ],
+            "bins": {
+              "lua-language-server": {
+                "kind": "exec",
+                "path": "bin/lua-language-server.exe"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "omnisharp",
+      "description": "OmniSharp language server based on Roslyn workspaces. This version of Omnisharp requires dotnet (.NET 6.0) to be installed.",
+      "homepage": "https://github.com/OmniSharp/omnisharp-roslyn",
+      "licenses": [
+        "MIT"
+      ],
+      "languages": [
+        "C#"
+      ],
+      "version": "v1.39.15",
+      "fileTypes": [
+        "csharp"
+      ],
+      "run": {
+        "bin": "OmniSharp",
+        "args": [
+          "-z",
+          "DotNet:enablePackageRestore=false",
+          "--encoding",
+          "utf-8",
+          "--languageserver"
+        ]
+      },
+      "install": {
+        "type": "download",
+        "package": "OmniSharp/omnisharp-roslyn",
+        "version": "v1.39.15",
+        "platforms": {
+          "darwin-arm64": {
+            "files": [
+              {
+                "url": "https://github.com/OmniSharp/omnisharp-roslyn/releases/download/v1.39.15/omnisharp-osx-arm64-net6.0.zip",
+                "sha256": "678be5bb972d04bbf5e1426e5e7562261e176fa781784d0f13877d8c4391ec3e",
+                "name": "omnisharp-osx-arm64-net6.0.zip",
+                "dest": "libexec"
+              }
+            ],
+            "bins": {
+              "OmniSharp": {
+                "kind": "dotnet",
+                "path": "libexec/OmniSharp.dll"
+              }
+            }
+          },
+          "darwin-x64": {
+            "files": [
+              {
+                "url": "https://github.com/OmniSharp/omnisharp-roslyn/releases/download/v1.39.15/omnisharp-osx-x64-net6.0.zip",
+                "sha256": "6ac1f8b1dfb1e4515f61d120f2cb5ab8404134ec62c441e4ab70ef30e0ac6d07",
+                "name": "omnisharp-osx-x64-net6.0.zip",
+                "dest": "libexec"
+              }
+            ],
+            "bins": {
+              "OmniSharp": {
+                "kind": "dotnet",
+                "path": "libexec/OmniSharp.dll"
+              }
+            }
+          },
+          "linux-arm64-gnu": {
+            "files": [
+              {
+                "url": "https://github.com/OmniSharp/omnisharp-roslyn/releases/download/v1.39.15/omnisharp-linux-arm64-net6.0.zip",
+                "sha256": "376e2007b9a828e7ef58aac1c3397723e0060c8251f29a86b0d8d6747c000e85",
+                "name": "omnisharp-linux-arm64-net6.0.zip",
+                "dest": "libexec"
+              }
+            ],
+            "bins": {
+              "OmniSharp": {
+                "kind": "dotnet",
+                "path": "libexec/OmniSharp.dll"
+              }
+            }
+          },
+          "linux-arm64-musl": {
+            "files": [
+              {
+                "url": "https://github.com/OmniSharp/omnisharp-roslyn/releases/download/v1.39.15/omnisharp-linux-arm64-net6.0.zip",
+                "sha256": "376e2007b9a828e7ef58aac1c3397723e0060c8251f29a86b0d8d6747c000e85",
+                "name": "omnisharp-linux-arm64-net6.0.zip",
+                "dest": "libexec"
+              }
+            ],
+            "bins": {
+              "OmniSharp": {
+                "kind": "dotnet",
+                "path": "libexec/OmniSharp.dll"
+              }
+            }
+          },
+          "linux-x64-gnu": {
+            "files": [
+              {
+                "url": "https://github.com/OmniSharp/omnisharp-roslyn/releases/download/v1.39.15/omnisharp-linux-x64-net6.0.zip",
+                "sha256": "41838cd21abbf01d7ab41fd53d19297a6f3ec5a07bb75ec139b0ead4195d1239",
+                "name": "omnisharp-linux-x64-net6.0.zip",
+                "dest": "libexec"
+              }
+            ],
+            "bins": {
+              "OmniSharp": {
+                "kind": "dotnet",
+                "path": "libexec/OmniSharp.dll"
+              }
+            }
+          },
+          "linux-x64-musl": {
+            "files": [
+              {
+                "url": "https://github.com/OmniSharp/omnisharp-roslyn/releases/download/v1.39.15/omnisharp-linux-x64-net6.0.zip",
+                "sha256": "41838cd21abbf01d7ab41fd53d19297a6f3ec5a07bb75ec139b0ead4195d1239",
+                "name": "omnisharp-linux-x64-net6.0.zip",
+                "dest": "libexec"
+              }
+            ],
+            "bins": {
+              "OmniSharp": {
+                "kind": "dotnet",
+                "path": "libexec/OmniSharp.dll"
+              }
+            }
+          },
+          "win32-arm64": {
+            "files": [
+              {
+                "url": "https://github.com/OmniSharp/omnisharp-roslyn/releases/download/v1.39.15/omnisharp-win-arm64-net6.0.zip",
+                "sha256": "b8294f77e368a85875767f8e3a82cd4f9c8de2ecc727d71d0dd378a9107c4588",
+                "name": "omnisharp-win-arm64-net6.0.zip",
+                "dest": "libexec"
+              }
+            ],
+            "bins": {
+              "OmniSharp": {
+                "kind": "dotnet",
+                "path": "libexec/OmniSharp.dll"
+              }
+            }
+          },
+          "win32-x64": {
+            "files": [
+              {
+                "url": "https://github.com/OmniSharp/omnisharp-roslyn/releases/download/v1.39.15/omnisharp-win-x64-net6.0.zip",
+                "sha256": "b03eb6b9ac6446fce803b87c0965e94cef5570cc86f47bfefe2f60933d8658e8",
+                "name": "omnisharp-win-x64-net6.0.zip",
+                "dest": "libexec"
+              }
+            ],
+            "bins": {
+              "OmniSharp": {
+                "kind": "dotnet",
+                "path": "libexec/OmniSharp.dll"
+              }
+            }
+          }
+        }
+      },
+      "requires": [
+        "dotnet"
+      ]
+    },
+    {
+      "id": "pyright",
+      "description": "Static type checker for Python.",
+      "homepage": "https://github.com/microsoft/pyright",
+      "licenses": [
+        "MIT"
+      ],
+      "languages": [
+        "Python"
+      ],
+      "version": "1.1.414",
+      "fileTypes": [
+        "python"
+      ],
+      "rootMarkers": [
+        "pyproject.toml",
+        "setup.py",
+        "setup.cfg",
+        "requirements.txt",
+        "Pipfile",
+        "pyrightconfig.json"
+      ],
+      "run": {
+        "bin": "pyright-langserver",
+        "args": [
+          "--stdio"
+        ]
+      },
+      "install": {
+        "type": "npm",
+        "package": "pyright",
+        "version": "1.1.414",
+        "bins": {
+          "pyright": {
+            "kind": "npm",
+            "path": "pyright"
+          },
+          "pyright-langserver": {
+            "kind": "npm",
+            "path": "pyright-langserver"
+          }
+        }
+      },
+      "requires": [
+        "node",
+        "npm"
+      ]
+    },
+    {
+      "id": "rust-analyzer",
+      "description": "rust-analyzer is an implementation of the Language Server Protocol for the Rust programming language. It provides features like completion and goto definition for many code editors, including VS Code, Emacs and Vim.",
+      "homepage": "https://github.com/rust-lang/rust-analyzer",
+      "licenses": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "languages": [
+        "Rust"
+      ],
+      "version": "2026-10-19",
+      "fileTypes": [
+        "rust"
+      ],
+      "rootMarkers": [
+        "Cargo.toml"
+      ],
+      "run": {
+        "bin": "rust-analyzer"
+      },
+      "install": {
+        "type": "download",
+        "package": "rust-lang/rust-analyzer",
+        "version": "2026-10-19",
+        "platforms": {
+          "darwin-arm64": {
+            "files": [
+              {
+                "url": "https://github.com/rust-lang/rust-analyzer/releases/download/2026-10-19/rust-analyzer-aarch64-apple-darwin.gz",
+                "sha256": "eedad08a96f7bf92afd0890463787337d17591ea2e3df216033c6bc3ccc9d802",
+                "name": "rust-analyzer-aarch64-apple-darwin.gz"
+              }
+            ],
+            "bins": {
+              "rust-analyzer": {
+                "kind": "exec",
+                "path": "rust-analyzer-aarch64-apple-darwin"
+              }
+            }
+          },
+          "darwin-x64": {
+            "files": [
+              {
+                "url": "https://github.com/rust-lang/rust-analyzer/releases/download/2026-10-19/rust-analyzer-x86_64-apple-darwin.gz",
+                "sha256": "bdfd46e82731a8d3502d852d28b6462c1f1c13eed0b3e76bbcf1ba839028249c",
+                "name": "rust-analyzer-x86_64-apple-darwin.gz"
+              }
+            ],
+            "bins": {
+              "rust-analyzer": {
+                "kind": "exec",
+                "path": "rust-analyzer-x86_64-apple-darwin"
+              }
+            }
+          },
+          "linux-arm64-gnu": {
+            "files": [
+              {
+                "url": "https://github.com/rust-lang/rust-analyzer/releases/download/2026-10-19/rust-analyzer-aarch64-unknown-linux-gnu.gz",
+                "sha256": "d31ee384ab788b9abd8e7aa8e1322f23e6cd4310471d373e9a79ce4656e21896",
+                "name": "rust-analyzer-aarch64-unknown-linux-gnu.gz"
+              }
+            ],
+            "bins": {
+              "rust-analyzer": {
+                "kind": "exec",
+                "path": "rust-analyzer-aarch64-unknown-linux-gnu"
+              }
+            }
+          },
+          "linux-x64-gnu": {
+            "files": [
+              {
+                "url": "https://github.com/rust-lang/rust-analyzer/releases/download/2026-10-19/rust-analyzer-x86_64-unknown-linux-gnu.gz",
+                "sha256": "8fde1c9dae81459f98e99eedae3654846a9166abea686306c26e57773be558da",
+                "name": "rust-analyzer-x86_64-unknown-linux-gnu.gz"
+              }
+            ],
+            "bins": {
+              "rust-analyzer": {
+                "kind": "exec",
+                "path": "rust-analyzer-x86_64-unknown-linux-gnu"
+              }
+            }
+          },
+          "linux-x64-musl": {
+            "files": [
+              {
+                "url": "https://github.com/rust-lang/rust-analyzer/releases/download/2026-10-19/rust-analyzer-x86_64-unknown-linux-musl.gz",
+                "sha256": "674350753d0529adac118fa487bbcd82557e3fc65c14e57b5267ef1b62c2b6c6",
+                "name": "rust-analyzer-x86_64-unknown-linux-musl.gz"
+              }
+            ],
+            "bins": {
+              "rust-analyzer": {
+                "kind": "exec",
+                "path": "rust-analyzer-x86_64-unknown-linux-musl"
+              }
+            }
+          },
+          "win32-arm64": {
+            "files": [
+              {
+                "url": "https://github.com/rust-lang/rust-analyzer/releases/download/2026-10-19/rust-analyzer-aarch64-pc-windows-msvc.zip",
+                "sha256": "dc2b6c35e2be0bf13f4ae2a6c69adca5730c91d011bfac31371279a4e55bcb2b",
+                "name": "rust-analyzer-aarch64-pc-windows-msvc.zip"
+              }
+            ],
+            "bins": {
+              "rust-analyzer": {
+                "kind": "exec",
+                "path": "rust-analyzer.exe"
+              }
+            }
+          },
+          "win32-x64": {
+            "files": [
+              {
+                "url": "https://github.com/rust-lang/rust-analyzer/releases/download/2026-10-19/rust-analyzer-x86_64-pc-windows-msvc.zip",
+                "sha256": "7df6e1a2595d1906e8441cb83fd58170b47d32eb09bc52c1b2184538cfd49a71",
+                "name": "rust-analyzer-x86_64-pc-windows-msvc.zip"
+              }
+            ],
+            "bins": {
+              "rust-analyzer": {
+                "kind": "exec",
+                "path": "rust-analyzer.exe"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "typescript-language-server",
+      "description": "TypeScript & JavaScript Language Server.",
+      "homepage": "https://github.com/typescript-language-server/typescript-language-server",
+      "licenses": [
+        "MIT"
+      ],
+      "languages": [
+        "TypeScript",
+        "JavaScript"
+      ],
+      "version": "6.0.2",
+      "fileTypes": [
+        "javascript",
+        "javascriptreact",
+        "typescript",
+        "typescriptreact"
+      ],
+      "rootMarkers": [
+        "tsconfig.json",
+        "jsconfig.json",
+        "package.json"
+      ],
+      "run": {
+        "bin": "typescript-language-server",
+        "args": [
+          "--stdio"
+        ]
+      },
+      "install": {
+        "type": "npm",
+        "package": "typescript-language-server",
+        "version": "6.0.2",
+        "extraPackages": [
+          "typescript@6.0.3"
+        ],
+        "bins": {
+          "typescript-language-server": {
+            "kind": "npm",
+            "path": "typescript-language-server"
+          }
+        }
+      },
+      "requires": [
+        "node",
+        "npm"
+      ]
+    },
+    {
+      "id": "zls",
+      "description": "Zig LSP implementation + Zig Language Server.",
+      "homepage": "https://github.com/zigtools/zls",
+      "licenses": [
+        "MIT"
+      ],
+      "languages": [
+        "Zig"
+      ],
+      "version": "0.16.1",
+      "fileTypes": [
+        "zig"
+      ],
+      "rootMarkers": [
+        "build.zig",
+        "zls.json"
+      ],
+      "run": {
+        "bin": "zls"
+      },
+      "install": {
+        "type": "download",
+        "package": "zigtools/zls",
+        "version": "0.16.1",
+        "platforms": {
+          "darwin-arm64": {
+            "files": [
+              {
+                "url": "https://github.com/zigtools/zls/releases/download/0.16.1/zls-aarch64-macos.tar.xz",
+                "sha256": "777df2d16f5ca9d9d77ee2f10db47e90b474039f008bf735c0066cc70c498d91",
+                "name": "zls-aarch64-macos.tar.xz"
+              }
+            ],
+            "bins": {
+              "zls": {
+                "kind": "exec",
+                "path": "zls"
+              }
+            }
+          },
+          "darwin-x64": {
+            "files": [
+              {
+                "url": "https://github.com/zigtools/zls/releases/download/0.16.1/zls-x86_64-macos.tar.xz",
+                "sha256": "996bd864095208728096ec5b879fffb7ec5c125df70793cfb151e2838cac8abb",
+                "name": "zls-x86_64-macos.tar.xz"
+              }
+            ],
+            "bins": {
+              "zls": {
+                "kind": "exec",
+                "path": "zls"
+              }
+            }
+          },
+          "linux-arm64-gnu": {
+            "files": [
+              {
+                "url": "https://github.com/zigtools/zls/releases/download/0.16.1/zls-aarch64-linux.tar.xz",
+                "sha256": "6d2f2de1dd4c62b6f8ab2272aebdf701032a4789204a050f099543cfd152057a",
+                "name": "zls-aarch64-linux.tar.xz"
+              }
+            ],
+            "bins": {
+              "zls": {
+                "kind": "exec",
+                "path": "zls"
+              }
+            }
+          },
+          "linux-arm64-musl": {
+            "files": [
+              {
+                "url": "https://github.com/zigtools/zls/releases/download/0.16.1/zls-aarch64-linux.tar.xz",
+                "sha256": "6d2f2de1dd4c62b6f8ab2272aebdf701032a4789204a050f099543cfd152057a",
+                "name": "zls-aarch64-linux.tar.xz"
+              }
+            ],
+            "bins": {
+              "zls": {
+                "kind": "exec",
+                "path": "zls"
+              }
+            }
+          },
+          "linux-x64-gnu": {
+            "files": [
+              {
+                "url": "https://github.com/zigtools/zls/releases/download/0.16.1/zls-x86_64-linux.tar.xz",
+                "sha256": "7f3f993d61134b7db0d2f26f5e4a9e20d20c96521bae11d667ff78bbca97e357",
+                "name": "zls-x86_64-linux.tar.xz"
+              }
+            ],
+            "bins": {
+              "zls": {
+                "kind": "exec",
+                "path": "zls"
+              }
+            }
+          },
+          "linux-x64-musl": {
+            "files": [
+              {
+                "url": "https://github.com/zigtools/zls/releases/download/0.16.1/zls-x86_64-linux.tar.xz",
+                "sha256": "7f3f993d61134b7db0d2f26f5e4a9e20d20c96521bae11d667ff78bbca97e357",
+                "name": "zls-x86_64-linux.tar.xz"
+              }
+            ],
+            "bins": {
+              "zls": {
+                "kind": "exec",
+                "path": "zls"
+              }
+            }
+          },
+          "win32-x64": {
+            "files": [
+              {
+                "url": "https://github.com/zigtools/zls/releases/download/0.16.1/zls-x86_64-windows.zip",
+                "sha256": "97fdd44fee0b63cece4e966795617a46f0b7a0ee41df69656a9d1204fabba6b9",
+                "name": "zls-x86_64-windows.zip"
+              }
+            ],
+            "bins": {
+              "zls": {
+                "kind": "exec",
+                "path": "zls.exe"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

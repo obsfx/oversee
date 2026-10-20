@@ -1,0 +1,99 @@
+{
+  "bash-language-server": {
+    "fileTypes": {
+      "shellscript": {
+        "extensions": ["sh", "bash"],
+        "filenames": [".bashrc", ".bash_profile", ".bash_aliases", ".profile"]
+      }
+    },
+    "run": { "bin": "bash-language-server", "args": ["start"] }
+  },
+  "clangd": {
+    "fileTypes": {
+      "c": { "extensions": ["c", "h"] },
+      "cpp": { "extensions": ["cpp", "cc", "cxx", "c++", "hpp", "hh", "hxx", "h++", "ipp", "tpp"] }
+    },
+    "rootMarkers": [".clangd", ".clang-tidy", ".clang-format", "compile_commands.json", "compile_flags.txt"],
+    "run": { "bin": "clangd" }
+  },
+  "gopls": {
+    "fileTypes": {
+      "go": { "extensions": ["go"] },
+      "go.mod": { "filenames": ["go.mod"] },
+      "go.work": { "filenames": ["go.work"] }
+    },
+    "rootMarkers": ["go.work", "go.mod"],
+    "run": { "bin": "gopls" }
+  },
+  "intelephense": {
+    "fileTypes": {
+      "php": { "extensions": ["php", "phtml"] }
+    },
+    "rootMarkers": ["composer.json"],
+    "run": { "bin": "intelephense", "args": ["--stdio"] }
+  },
+  "jdtls": {
+    "fileTypes": {
+      "java": { "extensions": ["java"] }
+    },
+    "rootMarkers": ["mvnw", "gradlew", "settings.gradle", "settings.gradle.kts"],
+    "run": { "bin": "jdtls", "args": ["-data", "${dataDir}"] },
+    "requires": ["java"],
+    "skipFiles": ["lombok.jar"]
+  },
+  "kotlin-language-server": {
+    "fileTypes": {
+      "kotlin": { "extensions": ["kt", "kts"] }
+    },
+    "rootMarkers": ["settings.gradle", "settings.gradle.kts"],
+    "run": { "bin": "kotlin-language-server" },
+    "requires": ["java"]
+  },
+  "lua-language-server": {
+    "fileTypes": {
+      "lua": { "extensions": ["lua"] }
+    },
+    "rootMarkers": [".luarc.json", ".luarc.jsonc"],
+    "run": { "bin": "lua-language-server" }
+  },
+  "omnisharp": {
+    "fileTypes": {
+      "csharp": { "extensions": ["cs", "csx"] }
+    },
+    "run": {
+      "bin": "OmniSharp",
+      "args": ["-z", "DotNet:enablePackageRestore=false", "--encoding", "utf-8", "--languageserver"]
+    }
+  },
+  "pyright": {
+    "fileTypes": {
+      "python": { "extensions": ["py", "pyi"] }
+    },
+    "rootMarkers": ["pyproject.toml", "setup.py", "setup.cfg", "requirements.txt", "Pipfile", "pyrightconfig.json"],
+    "run": { "bin": "pyright-langserver", "args": ["--stdio"] }
+  },
+  "rust-analyzer": {
+    "fileTypes": {
+      "rust": { "extensions": ["rs"] }
+    },
+    "rootMarkers": ["Cargo.toml"],
+    "run": { "bin": "rust-analyzer" }
+  },
+  "typescript-language-server": {
+    "fileTypes": {
+      "javascript": { "extensions": ["js", "mjs", "cjs"] },
+      "javascriptreact": { "extensions": ["jsx"] },
+      "typescript": { "extensions": ["ts", "mts", "cts"] },
+      "typescriptreact": { "extensions": ["tsx"] }
+    },
+    "rootMarkers": ["tsconfig.json", "jsconfig.json", "package.json"],
+    "run": { "bin": "typescript-language-server", "args": ["--stdio"] }
+  },
+  "zls": {
+    "fileTypes": {
+      "zig": { "extensions": ["zig", "zon"] }
+    },
+    "rootMarkers": ["build.zig", "zls.json"],
+    "run": { "bin": "zls" }
+  }
+}

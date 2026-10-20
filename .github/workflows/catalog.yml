@@ -1,0 +1,55 @@
+name: catalog
+
+on:
+  schedule:
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: catalog
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: generate catalog
+        run: |
+          go run ./cmd/catalog-gen -summary "$RUNNER_TEMP/summary.md"
+          cat "$RUNNER_TEMP/summary.md" >> "$GITHUB_STEP_SUMMARY"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: open pull request
+        run: |
+          file=internal/catalog/catalog.json
+          if diff -q \
+            <(git show "HEAD:$file" | jq -S 'del(.masonRelease)') \
+            <(jq -S 'del(.masonRelease)' "$file") > /dev/null; then
+            echo "no server changes" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          branch=catalog/update
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch --create "$branch"
+          git commit --quiet --message "update language server catalog to mason $(jq -r .masonRelease "$file")" -- "$file"
+          git push --quiet --force origin "$branch"
+          if [ -z "$(gh pr list --head "$branch" --state open --json number --jq '.[].number')" ]; then
+            gh pr create --head "$branch" --title "Update language server catalog" --body-file "$RUNNER_TEMP/summary.md"
+          else
+            gh pr edit "$branch" --body-file "$RUNNER_TEMP/summary.md"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
