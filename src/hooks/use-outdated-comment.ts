@@ -1,4 +1,3 @@
-import { ResourceStates } from '@/src/lib/async-resource.ts'
 import { ChangeSets } from '@/src/lib/change-set.ts'
 import type { ReviewComment } from '@/src/lib/comment-gateway.ts'
 import { CommentLabels } from '@/src/lib/comment-labels.ts'
@@ -10,7 +9,7 @@ import { useNow } from '@/src/hooks/use-now.ts'
 
 export const useOutdatedComment = (comment: ReviewComment, onNavigate: () => void) => {
   const { state: changeSetState } = useChangeSet()
-  const changes = ResourceStates.dataOr(changeSetState, ChangeSets.empty).changes
+  const changes = ChangeSets.changesOf(changeSetState)
   const selectFile = useNavigationStore((navigation) => {
     return navigation.selectFile
   })

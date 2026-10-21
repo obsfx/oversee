@@ -30,14 +30,11 @@ type DefinitionLookup struct {
 }
 
 type Definition struct {
-	Path           string
-	External       bool
-	Side           FileSide
-	StartLine      int
-	StartCharacter int
-	EndLine        int
-	EndCharacter   int
-	Snippet        Snippet
+	Path     string
+	External bool
+	Side     FileSide
+	Line     int
+	Snippet  Snippet
 }
 
 type Snippet struct {

@@ -81,7 +81,7 @@ Check the layout representation: `/Users/omercanbalandi/studio-2/oversee-visual-
 - **working principle**
     - on initial start, a non blocking API request is made to the backend.
     - the backend runs the necessary git commands to gather the file tree.
-    - file items properly display the `MODIFIED`, `REMOVED` and `ADDED` markers.
+    - file items properly display the `MODIFIED`, `REMOVED` and `ADDED` markers. folders show no git marker: pierre's "contains git status items" dot is hidden in `FileTreeAppearance.css`.
     - file items can display additional custom icons on their left side. for example, a file marked as reviewed shows a green checkmark.
 - the sidebar has a **resizable width**, with a handle on its right edge.
 - the sidebar is **expandable/collapsible** with a toggle button in the **topbar**.
@@ -124,6 +124,22 @@ Check the layout representation: `/Users/omercanbalandi/studio-2/oversee-visual-
     - `No changes` when the comparison has no changed files, with `The working tree matches HEAD` or `<source> has no changes against <target>`.
     - `No content changes` when the selected file's diff has no hunks: `Renamed from <path>`, `Empty file added`, `Empty file deleted` or `Only file metadata changed` (mode changes).
     - `DiffPlaceholders.of` decides it, `useDiffPlaceholder` drives it. failed loads and binary files keep their own states.
+- holding Cmd (Ctrl elsewhere) over a symbol shows its definition and Cmd+click opens it in a tab, see **go to definition**.
+
+##### tabs
+- definitions open in tabs. `DefinitionTabStrip` (`TabStrip`, `TabItem`) shows under the topbar only while a definition tab is open: `Review` first (never closed), then one tab per target file.
+- `Review` is pinned at the left and never scrolls. the file tabs scroll inside the strip without a scrollbar: a vertical wheel scrolls them sideways, and the edges fade where more tabs are hidden. while the tabs overflow, a group at the right end holds page left and page right (`ScrollButtons`, disabled at the ends, smooth unless reduced motion is preferred) and `OpenFilesPopover`, a list of every open file that becomes filterable past 10 files. `useTabStripOverflow` and `TabStripOverflow` own the scroller (edges, fade mask, wheel, paging) and keep the active tab in view when it changes, when the same tab is re-targeted (`DefinitionTabs.revealKey`), or when the strip resizes. the fade mask is only set while an edge is hidden.
+- a tab is one file (`DefinitionTabs.idOf`: repo or external, and the path). its view follows the current change set (`DefinitionTabs.viewOf`, `useTabView`): a file in the change set shows a **diff tab** (`DiffTabView`, the same `FileDiffView` with unchanged regions expanded, comments work there), anything else a **read-only tab** (`FileTabView`, pierre `File`) with a `NoticeBar` (`ReadOnlyFileNotice`): `Not changed in this comparison`, or `Outside the repository` for files outside the repo. a file that enters or leaves the change set switches its tab's view. external files are always read-only, and repo tabs show the diff tab's loading state until the change set is ready. read-only tab titles are italic.
+- tab titles keep their last 10 characters visible and truncate before them, so `x.controller.ts` and `x.controller.spec.ts` stay apart. tabs that share a file name get the shortest distinguishing parent folder as a muted hint (`index.ts billing`), and their `aria-label` carries the full name and hint (`DefinitionLabels.tabTitles`). the active tab is kept in view (see the overflow line above).
+- file names and folders split on `/` and `\` (`PathParts`, shared with the tree and language server labels), so windows paths of external files show their file name.
+- both views share `TabResourceView` (loading bar, `LoadFailure` with retry, the virtualized scroller) and `useCodeSurface` (editor metrics, the base pierre options, definition interactions and the line reveal). a diff tab shows a failed change set as its failure. `useFileDiffResource` finds the change and its diff resource for both the review diff and diff tabs.
+- opening a target that already has a tab focuses it and moves its line. closing a tab returns to the tab it was opened from.
+- `TabPanel` renders the active tab: Review keeps the toolbar, the install notice and the diff viewer. definition tabs replace them.
+- the tab reveals its line with `useLineReveal`: it jumps through `getLinePosition` until the line is rendered (positions of unrendered lines are estimates), then centers it and flashes it (`data-reveal-line`). a jump that would not move the scroll position is skipped, so pierre is not interrupted while it renders. the target carries its side, so old side lines reveal in the deletions column. scrolling, clicking or typing stops the reveal. a `LoadingBar` shows until the line lands. it runs once per reveal request, so a silent refresh of the file never scrolls back to the line. a target past the end of the file (it got shorter since the lookup) reveals the last line (`DiffLineReveal.lastLine`). the flash attribute, its duration and its css live in `DiffLineReveal`.
+- editor rows use a whole pixel line height (`DiffSurface.lineHeight`, written to `--editor-line-height-px` and pierre's `--diffs-line-height`), so rendered rows match the virtualizer metrics. a fractional height (19.2px) is laid out as 19.203125px and drifts from pierre's estimates in long files.
+- far lines of large files still land late: pierre tokenizes progressively in the worker, and a window renders only after its lines are tokenized.
+- the strip is a `tablist`: arrow keys, Home and End move between tabs, Delete or Backspace closes the focused tab, and the active content is the `tabpanel` (`TabContent`).
+- `DefinitionTabs` owns the rules, `useTabStore` holds them. `DefinitionTabsSync` (part of `ReviewSync`) resets the tabs when the comparison changes and shows Review when a file is picked in the sidebar, the toolbar, a comment or an outdated comment (`NavigationStore.selectedAt`; the automatic selection after a file leaves the change set uses `followFile` and keeps the tab).
 
 ## review sessions
 
@@ -201,7 +217,8 @@ Check the layout representation: `/Users/omercanbalandi/studio-2/oversee-visual-
     - `NotificationBlink`: blinks the favicon when the unread count rises, unless reduced motion is preferred.
     - `DocumentTitleSync`: keeps `document.title` on `<folder> - oversee`.
     - `InstallCompletionWatch`: shows the install notice's ready state for 2.5s after a language server goes from installing to installed, see **language servers**.
-- reactions subscribe to the zustand stores outside React (`AsyncResource.store`, and the app stores through the `ComparisonSelection`, `FollowedComparison`, `ReviewedMarksStore` and `ReadyServerPort` ports that the hook builds), so they never re-render the layout and they act before React renders.
+    - `DefinitionTabsSync`: resets and focuses definition tabs, see **tabs**.
+- reactions subscribe to the zustand stores outside React (`AsyncResource.store`, and the app stores through the `ComparisonSelection`, `FollowedComparison`, `ReviewedMarksStore`, `ReadyServerPort`, `ReviewNavigation` and `DefinitionTabsPort` ports that the hook builds), so they never re-render the layout and they act before React renders.
 - event kinds: `session.finished`, `session.status`, `comment.replied`, `notification.created`, `notifications.read`, `comments.reconciled`. session events silently refresh the cached session lists, without showing a loader. `comments.reconciled {sessionId, comparison}` silently refreshes that comparison's comments.
 - signals: `workspace.changed {paths, refs}` has no id and is never stored, see **file watcher**. `stream.resumed` is emitted by `SocketEventStream` itself when the socket reconnects.
 
@@ -223,7 +240,7 @@ Check the layout representation: `/Users/omercanbalandi/studio-2/oversee-visual-
     - `AsyncResource.invalidate()` refreshes resources on screen (`useResource` registers them through `watch()`) without a loader, and marks the others stale so they refetch on their next view.
     - reviewed marks whose file got a new revision drop when the change set refreshes, see **reviewed marks**. when the selected file leaves the change set, the selection moves to the file now at its position.
     - an open comment composer keeps its draft across refreshes.
-    - `HttpFileDiffGateway` puts a per-load revision into the `@pierre/diffs` `cacheKey`. with a fixed key, pierre keeps rendering the cached old contents after a refetch.
+    - `HttpFileDiffGateway` and `HttpFileContentGateway` put a per-load revision into the `@pierre/diffs` `cacheKey` (`HttpGateway.revisionKey`). with a fixed key, pierre keeps rendering the cached old contents after a refetch.
     - `stream.resumed` refreshes everything, because missed signals are not replayed.
 
 ## reviewed marks
@@ -277,6 +294,7 @@ useSettingsStore.update(patch)
     - a server that fails to resolve keeps its previous entry, a platform that fails is dropped with a warning. `skipFiles` drops optional files with mutable urls (jdtls `lombok.jar`).
     - `.github/workflows/catalog.yml` runs weekly and opens a `catalog/update` pull request when a server changed, so only reviewed versions ship with a release.
     - `${dataDir}` (`catalog.DataDirArgument`) in run args stands for a per project data directory (jdtls).
+    - `run.initializationOptions` is sent as the `initialize` request's `initializationOptions`. typescript-language-server sets `tsserver.useSyntaxServer: never`, because its syntax server answers definitions while the project loads and only knows the import binding in the same file.
     - `catalog.Validate` (run by the generator and by `Embedded()`) only accepts https urls, plain file names, relative slash paths without `..`, `\` or `:`, known bin kinds and a run bin present on every platform. `Install.Requirements`, `AvailableOn`, `DownloadFor` and `Catalog.FileTypeOf` own the shared rules.
 
 ```text
@@ -306,7 +324,7 @@ POST /api/language-servers/{id}/install
 ##### UI
 - **install notice**: `LanguageServerNotice` is a `NoticeBar` between the toolbar and the diff. it shows when the selected file belongs to a catalog server that is not installed:
     - offer (`Install`, `Not now`), blocked by a missing requirement or a platform without a build (`Dismiss`), installing (size, a progress line and `Cancel`, `aria-busy` so screen readers skip the ticks), failed (`Details`, `Retry`, `Not now`).
-    - after an install finishes it says `<server> <version> is installed` for 2.5s. `InstallCompletionWatch` (part of `ReviewSync`) compares the list states and writes the ready id into `useLanguageServerStore` through `readyServerPort`.
+    - after an install finishes it says `Go to definition is ready for <files>` with `Hold <modifier> and hover or click a symbol` for 2.5s. `InstallCompletionWatch` (part of `ReviewSync`) compares the list states and writes the ready id into `useLanguageServerStore` through `readyServerPort`.
     - a download without a known size reports no total, so the UI shows the downloaded size alone instead of a ratio.
     - `Not now` and `Dismiss` store the server id in the `dismissedLanguageServers` setting, so the notice stays away in that workspace. the settings panel still installs it.
 - **settings panel**: the settings overview row shows the installed count and opens `LanguageServerSettings` (a wider `w-80` view): a filter by name or language, then one `ServerRow` per server with its languages, status line, a `Requires` line that marks tools missing from PATH, a progress line while installing, an expandable error log after a failed install and its actions. `Remove` asks first with a compact `ConfirmPrompt` (`RemoveLanguageServerButton`), because it deletes the files and the project data.
@@ -326,16 +344,33 @@ GET /api/definitions?source&target&side&path&line&character   (line 1-based, cha
         → still starting after 10s → starting · start failed or crashed → failed (restarted after 15s)
       → didOpen with the side content → textDocument/definition → didClose, one request at a time per session (waiting respects the deadline, a cancelled request sends $/cancelRequest)
       → a timeout, or an empty result while the server reports $/progress or in its first 20s → indexing
-    → locations: repo relative path, or an absolute external path (standard library, module cache), with 12 snippet lines
+    → locations: repo relative path, or an absolute external path (standard library, module cache), its 1-based line and 12 snippet lines
 ```
 
 - each definition carries a `side`. a definition inside the queried file uses that side's line numbers and content, everything else is a working tree position read from disk (`new`).
 - `WorkspaceChanged` forwards the changed paths, plus the files that differ between the old and new HEAD (`git diff --name-only --no-renames`), as `workspace/didChangeWatchedFiles`. sessions keep running across commits and checkouts. they are only stopped when that diff fails.
 - every write to a server is bounded (5s for notifications, the request deadline for calls) and kills the server when it blocks. frames over 64 MiB count as a broken connection.
-- tsserver may answer the very first lookup of a new session with the import binding in the same file. later lookups resolve to the declaration.
+- without the syntax server, the first lookup of a new tsserver session waits for the project to load (about 4s on now-api, including the start). a project that loads slower than the deadline answers `indexing`.
 - sessions close after 10 minutes without requests, on uninstall, after an update install and when serve stops (shutdown, exit, then kill through the session context). a framing error or a crash kills the process, and a crashed session is restarted after 15s.
 - `${dataDir}` resolves to `~/.oversee/lsp/.data/<id>/<root hash>`.
 - `langserver.Launcher` resolves `${dataDir}` and starts the process, `langserver.Project` owns root markers, path mapping and disk reads for the service.
+- `GET /api/file-content?path=<repo path>` reads a working tree file through `os.Root` (no links out of the repo). `?external=<absolute path>` reads a file outside the repo, but only a path that a definition lookup of this serve process returned (`externalPaths`, the last 512). directories and missing files are 404, binary files and files over 8 MiB (`langserver.FileTooLargeError`) are 400.
+
+```text
+diff token (pierre onTokenEnter/Leave/Click, useTokenTransformer in the worker pool too)
+  → DefinitionHover: modifier held (pointer flags, keydown/keyup/blur) + hovered token → open after 180ms, or 80ms when moving to another symbol while a popover is open (a pointer sweep sends no lookups)
+    → useDefinitionLookup → Definitions.find (cached ready lookups, dropped on workspace and language server changes)
+      → DefinitionPopover: the definition line highlighted, its location and a 1 / N pager, or the status
+      → the token is underlined only while the popover shows at least one definition
+  → Cmd+click, or a click on the popover line → useDefinitionNavigation → useTabStore.open (diff or read-only tab)
+```
+
+- the popover stays open while the pointer is over the token or the popover, Escape closes it. after Escape, press the modifier again or move to another symbol.
+- a Cmd+click that opens no definition (a failed request, `starting`, `indexing`, no result) shows the popover with its status for the token that is still hovered. a lookup that resolves after the tabs were reset (comparison change) opens nothing: `useTabStore.reset` bumps `generation`, and `open` ignores a stale one.
+- read-only tabs of repo files look up definitions too. tabs of files outside the repo do not, the server only resolves repo paths.
+- the popover location truncates the folder from the start before it truncates the file name, the pager count never wraps, and a failed request shows its status instead of the request url. snippet gutters grow with the widest line number (`SnippetHighlighter.gutterWidth`). the read-only notice truncates its path from the start (`NoticeBar detailTruncation`). paths that keep their end visible use the `StartTruncate` primitive (`dir=rtl` with a `bdi`), also behind `FilePathLabel` and `LocationLabel`.
+- `Components/Definitions/StressTest` (Tabs and Popovers) renders the definitions UI with worst-case data behind a Demo / Worst case / Empty / One / Many toggle (`data` arg, kept in the url). its fixture (`definition-stress-fixture.ts`) is the regression set for these components.
+- `DefinitionLabels` builds the popover, tab and status texts, `DefinitionSnippets` turns a snippet into highlighted lines, `DefinitionTargets` maps a definition to a tab.
 - verified on darwin-arm64: gopls, typescript-language-server, pyright, rust-analyzer, clangd, lua-language-server, bash-language-server, zls, intelephense, kotlin-language-server. jdtls (needs Java 21) and omnisharp (needs dotnet) are not verified yet.
 
 ## development
@@ -421,7 +456,7 @@ GET /api/definitions?source&target&side&path&line&character   (line 1-based, cha
 - `./cmd/catalog-gen`: generates the embedded language server catalog.
 - `./internal/app`: composition root, wires workspace, database, repositories, services and the http server.
 - `./internal/domain`: entities, value objects, rules, domain events and errors.
-- `./internal/service`: `DiffService`, `CommentService`, `ReviewService`, `NotificationService`, `SettingsService`, `EventFeed`, `WorkspaceWatcher`, `LanguageServerService`, `DefinitionService`.
+- `./internal/service`: `DiffService`, `CommentService`, `ReviewService`, `NotificationService`, `SettingsService`, `EventFeed`, `WorkspaceWatcher`, `LanguageServerService`, `DefinitionService` (definitions and the file content of read-only tabs).
 - `./internal/lsp`: JSON-RPC connection, LSP client and session pool.
 - `./internal/catalog`: the embedded language server catalog (`catalog.json`) and its validation.
 - `./internal/cataloggen`: catalog generation from `servers.json` and mason-registry.

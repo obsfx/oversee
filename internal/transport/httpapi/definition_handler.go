@@ -27,6 +27,20 @@ func (h definitionHandler) find(w http.ResponseWriter, r *http.Request) {
 	respond(w, http.StatusOK, dto.DefinitionLookupOf(lookup))
 }
 
+func (h definitionHandler) fileContent(w http.ResponseWriter, r *http.Request) {
+	values := r.URL.Query()
+	request := domain.FileContentRequest{Path: values.Get("path")}
+	if external := values.Get("external"); external != "" {
+		request = domain.FileContentRequest{Path: external, External: true}
+	}
+	content, err := h.definitions.FileContent(request)
+	if err != nil {
+		respondError(w, err)
+		return
+	}
+	respond(w, http.StatusOK, dto.FileContentOf(content))
+}
+
 func definitionQueryOf(r *http.Request) (domain.DefinitionQuery, error) {
 	values := r.URL.Query()
 	line, err := strconv.Atoi(values.Get("line"))

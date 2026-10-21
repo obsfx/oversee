@@ -1,8 +1,9 @@
+import { PathParts } from '@/src/lib/path-parts.ts'
 import type { LanguageServer, LanguageServerList } from '@/src/lib/language-server-gateway.ts'
 
 export abstract class LanguageServerFiles {
   static fileTypeOf(list: LanguageServerList, path: string) {
-    const name = LanguageServerFiles.nameOf(path)
+    const name = PathParts.name(path)
     const extension = LanguageServerFiles.extensionOf(name)
     const entries = Object.entries(list.fileTypes)
     const byFilename = entries.find(([, mapping]) => {
@@ -31,7 +32,7 @@ export abstract class LanguageServerFiles {
   }
 
   static fileLabel(list: LanguageServerList, path: string) {
-    const name = LanguageServerFiles.nameOf(path)
+    const name = PathParts.name(path)
     const byFilename = Object.values(list.fileTypes).some((mapping) => {
       return mapping.filenames.includes(name)
     })
@@ -40,10 +41,6 @@ export abstract class LanguageServerFiles {
       return name
     }
     return `.${extension} files`
-  }
-
-  private static nameOf(path: string) {
-    return path.slice(path.lastIndexOf('/') + 1)
   }
 
   private static extensionOf(name: string) {

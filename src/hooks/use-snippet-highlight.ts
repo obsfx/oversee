@@ -33,5 +33,6 @@ export const useSnippetHighlight = (lines: SnapshotLine[], filePath: string) => 
     lines: SnippetHighlighter.viewLines(lines, current),
     background: current?.background,
     foreground: current?.foreground,
+    gutterWidth: SnippetHighlighter.gutterWidth(lines),
   }
 }

@@ -1,36 +1,44 @@
-import { useVirtualizer } from '@pierre/diffs/react'
-import { useRef } from 'react'
-import type { RenderedDiff } from '@/src/lib/diff-line-reveal.ts'
+import type { TabReveal } from '@/src/lib/definition-tabs.ts'
+import { DiffLineReveal } from '@/src/lib/diff-line-reveal.ts'
 import type { FileDiff } from '@/src/lib/file-diff-gateway.ts'
-import { DiffSurface } from '@/src/lib/diff-surface.ts'
 import { ParsedDiffs } from '@/src/lib/parsed-diffs.ts'
-import { useSettingsStore } from '@/src/store/settings-store.ts'
+import { useCodeSurface } from '@/src/hooks/use-code-surface.ts'
 import { useCommentFocus } from '@/src/hooks/use-comment-focus.ts'
 import { useDiffAnnotations } from '@/src/hooks/use-diff-annotations.ts'
 import { useDiffOptions } from '@/src/hooks/use-diff-options.ts'
 import { useSelectionEscape } from '@/src/hooks/use-selection-escape.ts'
 
-export const useFileDiffView = (path: string, diff: FileDiff) => {
-  const rendered = useRef<RenderedDiff | null>(null)
-  const virtualizer = useVirtualizer()
-  const editorFontSize = useSettingsStore((state) => {
-    return state.editorFontSize
+interface FileDiffViewOptions {
+  reveal: TabReveal | null
+  expandUnchanged: boolean
+}
+
+export const useFileDiffView = (
+  path: string,
+  diff: FileDiff,
+  { reveal, expandUnchanged }: FileDiffViewOptions,
+) => {
+  const surface = useCodeSurface(path, reveal, {
+    old: DiffLineReveal.lastLine(diff.oldFile?.contents),
+    new: DiffLineReveal.lastLine(diff.newFile?.contents),
   })
-  const editorLineHeight = useSettingsStore((state) => {
-    return state.editorLineHeight
-  })
-  const options = useDiffOptions(path, (current) => {
-    rendered.current = current
+  const options = useDiffOptions(path, {
+    base: surface.base,
+    onPostRender: surface.onPostRender,
+    tokenHandlers: surface.tokenHandlers,
+    expandUnchanged,
   })
   const { annotations, selectedLines } = useDiffAnnotations(path)
   useSelectionEscape()
-  useCommentFocus(path, rendered, virtualizer)
+  useCommentFocus(path, surface.rendered, surface.virtualizer)
 
   return {
     fileDiff: ParsedDiffs.of(path, diff),
     options,
-    metrics: DiffSurface.metrics(editorFontSize, editorLineHeight),
+    metrics: surface.metrics,
     annotations,
     selectedLines,
+    revealing: surface.revealing,
+    definition: surface.definition,
   }
 }

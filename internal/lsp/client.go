@@ -28,16 +28,17 @@ type Document struct {
 	Text       string
 }
 
-func Start(ctx context.Context, transport Transport, root string) (*Client, error) {
+func Start(ctx context.Context, transport Transport, root string, initializationOptions map[string]any) (*Client, error) {
 	client := &Client{transport: transport, root: root, startedAt: time.Now(), slot: make(chan struct{}, 1)}
 	client.conn = NewConn(transport, client.handle, client.notified)
 	params := initializeParams{
-		ProcessID:        os.Getpid(),
-		ClientInfo:       clientInfo{Name: "oversee"},
-		RootURI:          FileURI(root),
-		RootPath:         root,
-		WorkspaceFolders: []workspaceFolder{client.folder()},
-		Capabilities:     clientCapabilities,
+		ProcessID:             os.Getpid(),
+		ClientInfo:            clientInfo{Name: "oversee"},
+		RootURI:               FileURI(root),
+		RootPath:              root,
+		WorkspaceFolders:      []workspaceFolder{client.folder()},
+		Capabilities:          clientCapabilities,
+		InitializationOptions: initializationOptions,
 	}
 	if err := client.conn.Call(ctx, "initialize", params, nil); err != nil {
 		transport.Kill()

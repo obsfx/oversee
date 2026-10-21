@@ -87,7 +87,11 @@
       "typescriptreact": { "extensions": ["tsx"] }
     },
     "rootMarkers": ["tsconfig.json", "jsconfig.json", "package.json"],
-    "run": { "bin": "typescript-language-server", "args": ["--stdio"] }
+    "run": {
+      "bin": "typescript-language-server",
+      "args": ["--stdio"],
+      "initializationOptions": { "tsserver": { "useSyntaxServer": "never" } }
+    }
   },
   "zls": {
     "fileTypes": {

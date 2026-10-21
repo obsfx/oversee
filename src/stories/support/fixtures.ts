@@ -2,7 +2,10 @@ import type { BranchList } from '@/src/lib/branch-gateway.ts'
 import type { ChangeSet } from '@/src/lib/change-set.ts'
 import type { ReviewComment } from '@/src/lib/comment-gateway.ts'
 import type { FileDiff, FileDiffRequest } from '@/src/lib/file-diff-gateway.ts'
+import type { FileContentGateway } from '@/src/lib/file-content-gateway.ts'
+import { InMemoryDefinitionGateway } from '@/src/lib/in-memory-definition-gateway.ts'
 import { InMemoryEventStream } from '@/src/lib/in-memory-event-stream.ts'
+import { InMemoryFileContentGateway } from '@/src/lib/in-memory-file-content-gateway.ts'
 import { InstallCompletionWatch } from '@/src/lib/install-completion-watch.ts'
 import { InMemoryLanguageServerGateway } from '@/src/lib/in-memory-language-server-gateway.ts'
 import type {
@@ -19,6 +22,7 @@ import type { ReviewSession } from '@/src/lib/review-session-gateway.ts'
 import { Services } from '@/src/lib/services.ts'
 import type { WorkspaceInfo } from '@/src/lib/workspace-gateway.ts'
 import { changeSet } from '@/src/stories/support/change-set-fixture.ts'
+import { definitionFiles, resolveDefinition } from '@/src/stories/support/definition-fixture.ts'
 import { fileDiffFor } from '@/src/stories/support/file-diff-fixture.ts'
 import { languageServerList } from '@/src/stories/support/language-server-fixture.ts'
 import { reviewNotifications } from '@/src/stories/support/notification-fixture.ts'
@@ -134,6 +138,7 @@ interface StoryServicesOptions {
   fileDiffs?: (request: FileDiffRequest) => Promise<FileDiff>
   serverList?: LanguageServerList
   languageServers?: LanguageServerGateway
+  fileContents?: FileContentGateway
 }
 
 export const workspaceInfo: WorkspaceInfo = {
@@ -164,6 +169,7 @@ export const createStoryServices = ({
     events,
     failing: ['intelephense'],
   }),
+  fileContents = new InMemoryFileContentGateway(definitionFiles),
 }: StoryServicesOptions = {}) => {
   return new Services({
     workspace: { load: workspace },
@@ -176,6 +182,10 @@ export const createStoryServices = ({
     settings: new InMemorySettingsGateway(),
     reviewedMarks: new InMemoryReviewedMarksGateway(),
     languageServers,
+    definitions: new InMemoryDefinitionGateway((query) => {
+      return resolveDefinition(query)
+    }),
+    fileContents,
     events,
   })
 }

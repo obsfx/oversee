@@ -15,7 +15,6 @@ import { ImageFiles, type ImagePair } from '@/src/lib/image-files.ts'
 export class HttpFileDiffGateway extends HttpGateway implements FileDiffGateway {
   private static readonly path = '/api/file-diff'
   private static readonly blobPath = '/api/file-blob'
-  private revision = 0
 
   private static readonly file = v.nullable(v.object({ name: v.string(), contents: v.string() }))
 
@@ -50,8 +49,7 @@ export class HttpFileDiffGateway extends HttpGateway implements FileDiffGateway 
       HttpFileDiffGateway.queryFor(request),
     )
     const { binary, oldFile, newFile } = await this.api.get(path, HttpFileDiffGateway.body)
-    this.revision += 1
-    const key = `${FileDiffRequests.key(request)}::${this.revision}`
+    const key = this.revisionKey(FileDiffRequests.key(request))
     let images: ImagePair | null = null
     if (binary && ImageFiles.isImage(request.change.path)) {
       images = ImageFiles.pair(request.change, (side) => {

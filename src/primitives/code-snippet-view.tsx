@@ -4,9 +4,15 @@ interface CodeSnippetViewProps {
   lines: SnippetViewLine[]
   background?: string
   foreground?: string
+  gutterWidth?: string
 }
 
-export function CodeSnippetView({ lines, background, foreground }: CodeSnippetViewProps) {
+export function CodeSnippetView({
+  lines,
+  background,
+  foreground,
+  gutterWidth,
+}: CodeSnippetViewProps) {
   return (
     <div
       style={{ background, color: foreground }}
@@ -17,7 +23,10 @@ export function CodeSnippetView({ lines, background, foreground }: CodeSnippetVi
       {lines.map((line) => {
         return (
           <div key={line.number} className={'flex w-max min-w-full'}>
-            <span className={'w-8 shrink-0 pr-2 text-right opacity-45 select-none'}>
+            <span
+              className={'w-8 shrink-0 pr-2 text-right opacity-45 select-none'}
+              style={{ width: gutterWidth }}
+            >
               {line.number}
             </span>
             <span className={'pr-2 whitespace-pre'}>

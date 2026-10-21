@@ -1,6 +1,6 @@
 import type { Virtualizer } from '@pierre/diffs'
 import { type RefObject, useEffect } from 'react'
-import { DiffLineReveal, type RenderedDiff } from '@/src/lib/diff-line-reveal.ts'
+import { DiffLineReveal, type RenderedLines } from '@/src/lib/diff-line-reveal.ts'
 import { DiffSurface } from '@/src/lib/diff-surface.ts'
 import { useNavigationStore } from '@/src/store/navigation-store.ts'
 
@@ -8,7 +8,7 @@ const REVEAL_TIMEOUT_MS = 2000
 
 export const useCommentFocus = (
   path: string,
-  rendered: RefObject<RenderedDiff | null>,
+  rendered: RefObject<RenderedLines | null>,
   virtualizer: Virtualizer | undefined,
 ) => {
   const focus = useNavigationStore((navigation) => {

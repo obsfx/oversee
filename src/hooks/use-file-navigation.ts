@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { ResourceStates } from '@/src/lib/async-resource.ts'
 import { ChangeSets } from '@/src/lib/change-set.ts'
 import { ComparisonRules } from '@/src/lib/comparison-rules.ts'
 import { type FileAnchor, FileNavigationRules } from '@/src/lib/file-navigation.ts'
@@ -17,8 +16,11 @@ export const useFileNavigation = () => {
   const selectFile = useNavigationStore((navigation) => {
     return navigation.selectFile
   })
+  const followFile = useNavigationStore((navigation) => {
+    return navigation.followFile
+  })
   const [anchor, setAnchor] = useState<FileAnchor | null>(null)
-  const files = FileOrder.ofTree(ResourceStates.dataOr(state, ChangeSets.empty).changes)
+  const files = FileOrder.ofTree(ChangeSets.changesOf(state))
   const position = FileNavigationRules.of(files, selectedPath)
   const comparisonKey = comparison ? ComparisonRules.key(comparison) : null
   const currentAnchor = FileNavigationRules.anchor(position, comparisonKey)
@@ -31,9 +33,9 @@ export const useFileNavigation = () => {
 
   useEffect(() => {
     if (fallbackPath) {
-      selectFile(fallbackPath)
+      followFile(fallbackPath)
     }
-  }, [fallbackPath, selectFile])
+  }, [fallbackPath, followFile])
 
   const goTo = (path: string | null) => {
     if (path) {

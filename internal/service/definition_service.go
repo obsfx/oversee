@@ -20,12 +20,13 @@ const (
 )
 
 type DefinitionService struct {
-	catalog  catalog.Catalog
-	git      DefinitionGit
-	installs InstallationFinder
-	launcher ServerLauncher
-	project  ProjectFiles
-	sessions SessionPool
+	catalog   catalog.Catalog
+	git       DefinitionGit
+	installs  InstallationFinder
+	launcher  ServerLauncher
+	project   ProjectFiles
+	sessions  SessionPool
+	externals externalPaths
 }
 
 func NewDefinitionService(servers catalog.Catalog, git DefinitionGit, installs InstallationFinder, launcher ServerLauncher, project ProjectFiles, sessions SessionPool) *DefinitionService {
@@ -65,7 +66,42 @@ func (s *DefinitionService) Find(ctx context.Context, query domain.DefinitionQue
 	if !content.Exists() {
 		return domain.DefinitionLookup{}, fmt.Errorf("file %s on the %s side: %w", query.Path, query.Side, domain.ErrNotFound)
 	}
-	return s.lookup(ctx, query, server, installation, languageID, content), nil
+	lookup := s.lookup(ctx, query, server, installation, languageID, content)
+	for _, definition := range lookup.Definitions {
+		if definition.External {
+			s.externals.add(definition.Path)
+		}
+	}
+	return lookup, nil
+}
+
+func (s *DefinitionService) FileContent(request domain.FileContentRequest) (domain.FileContent, error) {
+	if err := request.Validate(); err != nil {
+		return domain.FileContent{}, err
+	}
+	var content domain.Blob
+	var err error
+	if request.External {
+		if !s.externals.has(request.Path) {
+			return domain.FileContent{}, fmt.Errorf("external file %s: %w", request.Path, domain.ErrNotFound)
+		}
+		content, err = s.project.ReadAbsolute(request.Path)
+	} else {
+		content, err = s.project.ReadRelative(request.Path)
+	}
+	if tooLarge, ok := errors.AsType[langserver.FileTooLargeError](err); ok {
+		return domain.FileContent{}, request.Reject(fmt.Sprintf("is larger than %d MiB", tooLarge.LimitMiB))
+	}
+	if err != nil {
+		return domain.FileContent{}, err
+	}
+	if content == nil {
+		return domain.FileContent{}, fmt.Errorf("file %s: %w", request.Path, domain.ErrNotFound)
+	}
+	if content.IsBinary() {
+		return domain.FileContent{}, request.Reject("is a binary file")
+	}
+	return domain.FileContent{Path: request.Path, Contents: content}, nil
 }
 
 func (s *DefinitionService) WorkspaceChanged(ctx context.Context, change domain.WorkspaceChange) {
@@ -113,8 +149,9 @@ func (s *DefinitionService) lookup(ctx context.Context, query domain.DefinitionQ
 
 func (s *DefinitionService) launch(server catalog.Server, installation langserver.Installation, root string) lsp.Launch {
 	return lsp.Launch{
-		Key:  sessionKeyPrefix(server.ID) + installation.Version + "\x00" + root,
-		Root: root,
+		Key:                   sessionKeyPrefix(server.ID) + installation.Version + "\x00" + root,
+		Root:                  root,
+		InitializationOptions: server.Run.InitializationOptions,
 		Start: func(ctx context.Context) (lsp.Transport, error) {
 			process, err := s.launcher.Start(ctx, installation, server.Run, root)
 			if err != nil {
@@ -136,13 +173,10 @@ func (s *DefinitionService) definitions(query domain.DefinitionQuery, content do
 		seen[location] = true
 		start := location.Range.Start
 		definition := domain.Definition{
-			Path:           file,
-			External:       true,
-			Side:           domain.FileSideNew,
-			StartLine:      start.Line + 1,
-			StartCharacter: start.Character,
-			EndLine:        location.Range.End.Line + 1,
-			EndCharacter:   location.Range.End.Character,
+			Path:     file,
+			External: true,
+			Side:     domain.FileSideNew,
+			Line:     start.Line + 1,
 		}
 		relative, inRepo := s.project.Relative(file)
 		if inRepo {

@@ -45,6 +45,13 @@ export abstract class SnippetHighlighter {
     return pending
   }
 
+  static gutterWidth(lines: SnapshotLine[]) {
+    const digits = lines.reduce((widest, line) => {
+      return Math.max(widest, String(line.number).length)
+    }, 0)
+    return `max(2rem, calc(${digits}ch + 0.5rem))`
+  }
+
   static viewLines(
     lines: SnapshotLine[],
     highlighted: HighlightedSnippet | null,

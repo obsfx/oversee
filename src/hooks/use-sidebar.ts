@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { ResourceStates } from '@/src/lib/async-resource.ts'
 import { ChangeSets } from '@/src/lib/change-set.ts'
 import { useReviewStore } from '@/src/store/review-store.ts'
 import { useChangeSet } from '@/src/hooks/use-change-set.ts'
@@ -12,17 +11,18 @@ export const useSidebar = () => {
   })
   const [hideReviewed, setHideReviewed] = useState(false)
   const [allExpanded, setAllExpanded] = useState(true)
-  const changes = ResourceStates.dataOr(state, ChangeSets.empty).changes
+  const changes = ChangeSets.changesOf(state)
   const changedPaths = changes
     .map((change) => {
       return change.path
     })
     .sort()
-  const visiblePaths = hideReviewed
-    ? changedPaths.filter((path) => {
-        return !reviewed.has(path)
-      })
-    : changedPaths
+  let visiblePaths = changedPaths
+  if (hideReviewed) {
+    visiblePaths = changedPaths.filter((path) => {
+      return !reviewed.has(path)
+    })
+  }
   const tree = useFileTreeController(visiblePaths, changes)
 
   const toggleHideReviewed = () => {

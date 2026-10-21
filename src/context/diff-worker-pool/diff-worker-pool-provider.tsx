@@ -18,7 +18,10 @@ interface DiffWorkerPoolProviderProps {
 
 export function DiffWorkerPoolProvider({ children }: DiffWorkerPoolProviderProps) {
   const [highlighterOptions] = useState(() => {
-    return { theme: DiffThemeCatalog.themes(useSettingsStore.getState().diffTheme) }
+    return {
+      theme: DiffThemeCatalog.themes(useSettingsStore.getState().diffTheme),
+      useTokenTransformer: true,
+    }
   })
 
   return (

@@ -1,4 +1,5 @@
 import * as v from 'valibot'
+import { type ResourceState, ResourceStates } from '@/src/lib/async-resource.ts'
 
 const CHANGE_STATUSES = ['added', 'modified', 'deleted', 'renamed', 'untracked'] as const
 
@@ -33,6 +34,10 @@ export interface ChangeSet {
 
 export abstract class ChangeSets {
   static readonly empty: ChangeSet = { changes: [] }
+
+  static changesOf(state: ResourceState<ChangeSet>) {
+    return ResourceStates.dataOr(state, ChangeSets.empty).changes
+  }
 
   static find(changes: readonly FileChange[], path: string | null) {
     return (

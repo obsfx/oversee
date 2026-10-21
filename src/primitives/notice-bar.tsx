@@ -1,13 +1,15 @@
 import type { ReactNode } from 'react'
 import { c } from '@/src/c.ts'
+import { StartTruncate } from '@/src/primitives/start-truncate.tsx'
 
-export type NoticeTone = 'accent' | 'warning' | 'danger' | 'success'
+export type NoticeTone = 'accent' | 'warning' | 'danger' | 'success' | 'neutral'
 
 interface NoticeBarProps {
   tone: NoticeTone
   icon: ReactNode
   title: string
   detail: string
+  detailTruncation?: 'end' | 'start'
   busy?: boolean
   progress?: ReactNode
   children?: ReactNode
@@ -18,6 +20,7 @@ const TONES: Record<NoticeTone, string> = {
   warning: 'border-status-modified/25 bg-status-modified/8',
   danger: 'border-danger/25 bg-danger/8',
   success: 'border-reviewed/25 bg-reviewed/8',
+  neutral: 'border-line bg-surface-subtle',
 }
 
 const ICONS: Record<NoticeTone, string> = {
@@ -25,6 +28,7 @@ const ICONS: Record<NoticeTone, string> = {
   warning: 'text-status-modified',
   danger: 'text-danger',
   success: 'text-reviewed',
+  neutral: 'text-fg-faint',
 }
 
 export function NoticeBar({
@@ -32,6 +36,7 @@ export function NoticeBar({
   icon,
   title,
   detail,
+  detailTruncation = 'end',
   busy = false,
   progress,
   children,
@@ -48,7 +53,12 @@ export function NoticeBar({
     >
       <span className={c('flex shrink-0', ICONS[tone])}>{icon}</span>
       <span className={'shrink-0 font-medium'}>{title}</span>
-      <span className={'min-w-0 truncate text-fg-muted tabular-nums'}>{detail}</span>
+      {detailTruncation === 'start' && (
+        <StartTruncate className={'text-fg-muted tabular-nums'}>{detail}</StartTruncate>
+      )}
+      {detailTruncation === 'end' && (
+        <span className={'min-w-0 truncate text-fg-muted tabular-nums'}>{detail}</span>
+      )}
       {children && <span className={'ml-auto flex shrink-0 items-center gap-3'}>{children}</span>}
       {progress && <span className={'absolute inset-x-0 bottom-0'}>{progress}</span>}
     </div>

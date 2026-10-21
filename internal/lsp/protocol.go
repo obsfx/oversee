@@ -79,12 +79,13 @@ type workspaceFolder struct {
 }
 
 type initializeParams struct {
-	ProcessID        int               `json:"processId"`
-	ClientInfo       clientInfo        `json:"clientInfo"`
-	RootURI          string            `json:"rootUri"`
-	RootPath         string            `json:"rootPath"`
-	WorkspaceFolders []workspaceFolder `json:"workspaceFolders"`
-	Capabilities     jsontext.Value    `json:"capabilities"`
+	ProcessID             int               `json:"processId"`
+	ClientInfo            clientInfo        `json:"clientInfo"`
+	RootURI               string            `json:"rootUri"`
+	RootPath              string            `json:"rootPath"`
+	WorkspaceFolders      []workspaceFolder `json:"workspaceFolders"`
+	Capabilities          jsontext.Value    `json:"capabilities"`
+	InitializationOptions map[string]any    `json:"initializationOptions,omitempty"`
 }
 
 type clientInfo struct {

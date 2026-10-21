@@ -1,15 +1,21 @@
+import type { BaseCodeOptions, PostRenderPhase } from '@pierre/diffs'
 import type { FileDiffOptions, SelectedLineRange } from '@pierre/diffs/react'
-import { useDiffTheme } from '@/src/hooks/use-diff-theme.ts'
 import type { DiffAnnotationMeta } from '@/src/lib/comment-annotations.ts'
-import type { RenderedDiff } from '@/src/lib/diff-line-reveal.ts'
-import { DiffSurface } from '@/src/lib/diff-surface.ts'
+import type { TokenHandlers } from '@/src/lib/definition-hover.ts'
 import { LineRanges } from '@/src/lib/line-range.ts'
 import { useAnnotationStore } from '@/src/store/annotation-store.ts'
 import { useDiffViewStore } from '@/src/store/diff-view-store.ts'
 
+interface DiffOptionInputs {
+  base: BaseCodeOptions
+  onPostRender: (node: HTMLElement, instance: object, phase: PostRenderPhase) => void
+  tokenHandlers: TokenHandlers
+  expandUnchanged: boolean
+}
+
 export const useDiffOptions = (
   path: string,
-  onRendered: (rendered: RenderedDiff | null) => void,
+  { base, onPostRender, tokenHandlers, expandUnchanged }: DiffOptionInputs,
 ) => {
   const viewMode = useDiffViewStore((state) => {
     return state.viewMode
@@ -17,7 +23,6 @@ export const useDiffOptions = (
   const unchangedExpanded = useDiffViewStore((state) => {
     return state.unchangedExpanded
   })
-  const { themes, themeType } = useDiffTheme()
   const select = useAnnotationStore((state) => {
     return state.select
   })
@@ -27,15 +32,11 @@ export const useDiffOptions = (
   }
 
   const options: FileDiffOptions<DiffAnnotationMeta, undefined> = {
-    theme: themes,
-    themeType,
+    ...base,
     diffStyle: viewMode,
-    expandUnchanged: unchangedExpanded,
-    disableFileHeader: true,
-    overflow: 'scroll',
+    expandUnchanged: expandUnchanged || unchangedExpanded,
     lineHoverHighlight: 'both',
     enableLineSelection: true,
-    unsafeCSS: DiffSurface.css,
     onLineSelectionStart: (range) => {
       track(range, true)
     },
@@ -45,9 +46,10 @@ export const useDiffOptions = (
     onLineSelectionEnd: (range) => {
       track(range, false)
     },
-    onPostRender: (node, instance, phase) => {
-      onRendered(phase === 'unmount' ? null : { node, instance })
-    },
+    onPostRender,
+    onTokenEnter: tokenHandlers.onTokenEnter,
+    onTokenLeave: tokenHandlers.onTokenLeave,
+    onTokenClick: tokenHandlers.onTokenClick,
   }
 
   return options

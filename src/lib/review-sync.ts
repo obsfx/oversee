@@ -1,4 +1,9 @@
 import { BranchSelectionGuard, type ComparisonSelection } from '@/src/lib/branch-selection-guard.ts'
+import {
+  DefinitionTabsSync,
+  type DefinitionTabsPort,
+  type ReviewNavigation,
+} from '@/src/lib/definition-tabs-sync.ts'
 import { DocumentTitleSync } from '@/src/lib/document-title-sync.ts'
 import { FaviconBlinker } from '@/src/lib/favicon-blinker.ts'
 import { DocumentFavicon } from '@/src/lib/favicon-frames.ts'
@@ -16,6 +21,8 @@ export interface ReviewSyncPorts {
   selection: ComparisonSelection & FollowedComparison
   marks: ReviewedMarksStore
   ready: ReadyServerPort
+  navigation: ReviewNavigation
+  tabs: DefinitionTabsPort
 }
 
 export class ReviewSync {
@@ -48,6 +55,7 @@ export class ReviewSync {
       ).start(),
       new DocumentTitleSync(this.services.workspace).start(),
       new InstallCompletionWatch(this.services.languageServers.list, this.ports.ready).start(),
+      new DefinitionTabsSync(this.ports.selection, this.ports.navigation, this.ports.tabs).start(),
     ]
     return () => {
       for (const dispose of disposers) {

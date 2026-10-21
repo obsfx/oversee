@@ -78,6 +78,7 @@ export abstract class FileTreeAppearance {
   [data-item-type="folder"][aria-expanded="true"] > [data-item-section="icon"]::before {
     mask-image: ${openFront};
   }
+  [data-item-type="folder"] > [data-item-section="git"] { visibility: hidden; }
   [data-item-section="decoration"] {
     order: -1;
     flex: none;

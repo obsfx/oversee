@@ -1,4 +1,5 @@
 import { ApiError } from '@/src/lib/api-client.ts'
+import { KeyboardKeys } from '@/src/lib/keyboard-keys.ts'
 import type { ResourceState } from '@/src/lib/async-resource.ts'
 import type {
   InstallProgress,
@@ -115,7 +116,7 @@ export abstract class LanguageServerLabels {
         return `${notice.server.id} did not install`
       }
       case 'ready': {
-        return `${notice.server.id} ${notice.server.version} is installed`
+        return `Go to definition is ready for ${notice.fileLabel}`
       }
     }
   }
@@ -143,7 +144,7 @@ export abstract class LanguageServerLabels {
         return LanguageServerLabels.firstLine(notice.error)
       }
       case 'ready': {
-        return `Ready for ${notice.fileLabel}`
+        return `Hold ${KeyboardKeys.display('mod').title} and hover or click a symbol`
       }
     }
   }
@@ -157,11 +158,7 @@ export abstract class LanguageServerLabels {
   }
 
   static requestFailed(action: LanguageServerRequest, error: unknown) {
-    const verb = REQUESTS[action]
-    if (error instanceof ApiError && error.status !== null) {
-      return `${verb} request failed with status ${error.status}`
-    }
-    return `${verb} request failed`
+    return ApiError.describe(error, `${REQUESTS[action]} request`)
   }
 
   private static megabytes(bytes: number) {

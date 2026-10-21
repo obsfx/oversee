@@ -18,6 +18,7 @@ export function SessionSnippet({ lines, filePath }: SessionSnippetProps) {
       lines={highlighted.lines}
       background={highlighted.background}
       foreground={highlighted.foreground}
+      gutterWidth={highlighted.gutterWidth}
     />
   )
 }

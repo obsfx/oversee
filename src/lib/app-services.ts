@@ -3,6 +3,8 @@ import { AppGlobals } from '@/src/lib/app-globals.ts'
 import { HttpBranchGateway } from '@/src/lib/http-branch-gateway.ts'
 import { HttpChangeSetGateway } from '@/src/lib/http-change-set-gateway.ts'
 import { HttpCommentGateway } from '@/src/lib/http-comment-gateway.ts'
+import { HttpDefinitionGateway } from '@/src/lib/http-definition-gateway.ts'
+import { HttpFileContentGateway } from '@/src/lib/http-file-content-gateway.ts'
 import { HttpFileDiffGateway } from '@/src/lib/http-file-diff-gateway.ts'
 import { HttpLanguageServerGateway } from '@/src/lib/http-language-server-gateway.ts'
 import { HttpNotificationGateway } from '@/src/lib/http-notification-gateway.ts'
@@ -30,5 +32,7 @@ export const appServices = new Services({
     return window.localStorage
   }),
   languageServers: new HttpLanguageServerGateway(apiClient),
+  definitions: new HttpDefinitionGateway(apiClient),
+  fileContents: new HttpFileContentGateway(apiClient),
   events: new SocketEventStream(appGlobals.wsUrl),
 })

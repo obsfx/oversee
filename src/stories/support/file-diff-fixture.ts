@@ -1,4 +1,4 @@
-import { ChangeStatuses, type FileChange } from '@/src/lib/change-set.ts'
+import { ChangeStatuses, type FileChange, type FileSide } from '@/src/lib/change-set.ts'
 import type { FileDiff } from '@/src/lib/file-diff-gateway.ts'
 import { ImageFiles } from '@/src/lib/image-files.ts'
 
@@ -265,6 +265,11 @@ const pairFor = (path: string) => {
     return { oldContents: WORKFLOW_OLD, newContents: WORKFLOW_NEW }
   }
   return { oldContents: TEXT_OLD, newContents: TEXT_NEW }
+}
+
+export const fixtureContents = (path: string, side: FileSide) => {
+  const { oldContents, newContents } = pairFor(path)
+  return side === 'old' ? oldContents : newContents
 }
 
 export const fileDiffFor = ({ path, status }: FileChange): FileDiff => {

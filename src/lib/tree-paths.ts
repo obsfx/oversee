@@ -1,3 +1,5 @@
+import { PathParts } from '@/src/lib/path-parts.ts'
+
 export abstract class TreePaths {
   static isDirectory(path: string) {
     return path.endsWith('/')
@@ -22,7 +24,7 @@ export abstract class TreePaths {
   }
 
   static split(path: string) {
-    const slash = path.lastIndexOf('/')
-    return { directory: path.slice(0, slash + 1), name: path.slice(slash + 1) }
+    const name = PathParts.name(path)
+    return { directory: path.slice(0, path.length - name.length), name }
   }
 }

@@ -41,3 +41,13 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {}
 
 export const ThemedBackground: Story = { args: { background: '#0d1117', foreground: '#e6edf3' } }
+
+export const FiveDigitLines: Story = {
+  args: {
+    lines: [
+      plain(28431, '    addEventListener<K extends keyof HTMLElementEventMap>(type: K): void;'),
+      plain(28432, '    removeEventListener<K extends keyof HTMLElementEventMap>(type: K): void;'),
+    ],
+    gutterWidth: 'max(2rem, calc(5ch + 0.5rem))',
+  },
+}

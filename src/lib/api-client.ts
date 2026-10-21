@@ -14,6 +14,13 @@ export class ApiError extends Error {
   static unexpectedShape(path: string) {
     return new ApiError(path, 'unexpected response shape')
   }
+
+  static describe(error: unknown, subject: string) {
+    if (error instanceof ApiError && error.status !== null) {
+      return `${subject} failed with status ${error.status}`
+    }
+    return `${subject} failed`
+  }
 }
 
 type WriteMethod = 'POST' | 'PATCH'

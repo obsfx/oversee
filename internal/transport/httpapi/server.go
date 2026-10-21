@@ -108,6 +108,7 @@ func (s *Server) routes() http.Handler {
 	mux.HandleFunc("DELETE /api/language-servers/{id}/install", languageServers.cancel)
 	mux.HandleFunc("DELETE /api/language-servers/{id}", languageServers.uninstall)
 	mux.HandleFunc("GET /api/definitions", definitions.find)
+	mux.HandleFunc("GET /api/file-content", definitions.fileContent)
 	mux.Handle("GET /ws", s.hub)
 	mux.HandleFunc("GET /{$}", s.index.serve)
 	return mux

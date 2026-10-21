@@ -4,6 +4,14 @@ import type { ChangeSet } from '@/src/lib/change-set.ts'
 import type { ChangeSetGateway } from '@/src/lib/change-set-gateway.ts'
 import type { CommentGateway } from '@/src/lib/comment-gateway.ts'
 import { ComparisonCache } from '@/src/lib/comparison-cache.ts'
+import type { DefinitionGateway } from '@/src/lib/definition-gateway.ts'
+import { Definitions } from '@/src/lib/definitions.ts'
+import {
+  type FileContent,
+  type FileContentGateway,
+  type FileContentRequest,
+  FileContentRequests,
+} from '@/src/lib/file-content-gateway.ts'
 import type { LanguageServerGateway } from '@/src/lib/language-server-gateway.ts'
 import { LanguageServers } from '@/src/lib/language-servers.ts'
 import {
@@ -37,6 +45,8 @@ interface Gateways {
   settings: SettingsGateway
   reviewedMarks: ReviewedMarksGateway
   languageServers: LanguageServerGateway
+  definitions: DefinitionGateway
+  fileContents: FileContentGateway
   events: EventStream
 }
 
@@ -52,6 +62,8 @@ export class Services {
   readonly serverSync: ServerEventSync
   readonly reviewedMarks: ReviewedMarksGateway
   readonly languageServers: LanguageServers
+  readonly definitions: Definitions
+  readonly fileContents: ResourceCache<FileContentRequest, FileContent>
 
   constructor(gateways: Gateways) {
     this.workspace = new AsyncResource(() => {
@@ -72,13 +84,24 @@ export class Services {
     this.settings = new SettingsSync(gateways.settings)
     this.reviewedMarks = gateways.reviewedMarks
     this.languageServers = new LanguageServers(gateways.languageServers)
+    this.definitions = new Definitions(gateways.definitions)
+    this.fileContents = new ResourceCache(FileContentRequests.key, (request) => {
+      return gateways.fileContents.load(request)
+    })
     this.serverSync = new ServerEventSync(
       gateways.events,
       this.sessions,
       this.comments,
       this.notifications,
-      new WorkspaceRefresh(this.branches, this.changeSets, this.fileDiffs),
+      new WorkspaceRefresh(
+        this.branches,
+        this.changeSets,
+        this.fileDiffs,
+        this.fileContents,
+        this.definitions,
+      ),
       this.languageServers,
+      this.definitions,
     )
   }
 }

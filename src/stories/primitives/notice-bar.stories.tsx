@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { VscCheck, VscError, VscGoToFile, VscWarning } from 'react-icons/vsc'
+import { VscCheck, VscError, VscGoToFile, VscLock, VscWarning } from 'react-icons/vsc'
 import { fn } from 'storybook/test'
 import { NoticeBar } from '@/src/primitives/notice-bar.tsx'
 import { ProgressBar } from '@/src/primitives/progress-bar.tsx'
@@ -67,6 +67,16 @@ export const Success: Story = {
   },
 }
 
+export const Neutral: Story = {
+  args: {
+    tone: 'neutral',
+    icon: <VscLock />,
+    title: 'Not changed in this comparison',
+    detail: 'src/stories/support/session.repository.ts',
+    children: undefined,
+  },
+}
+
 export const WithProgress: Story = {
   args: {
     title: 'Installing rust-analyzer',
@@ -78,6 +88,27 @@ export const WithProgress: Story = {
 }
 
 export const LongDetail: Story = {
+  decorators: [
+    (Story) => {
+      return (
+        <div className={'w-96'}>
+          <Story />
+        </div>
+      )
+    },
+  ],
+}
+
+export const PathTruncatedAtStart: Story = {
+  args: {
+    tone: 'neutral',
+    icon: <VscLock />,
+    title: 'Outside the repository',
+    detail:
+      '/Users/aleksandra.wisniewska-kowalczyk/Library/pnpm/store/v3/node_modules/.pnpm/@nestjs+common@10.4.15/node_modules/@nestjs/common/decorators/core/injectable.decorator.d.ts',
+    detailTruncation: 'start',
+    children: undefined,
+  },
   decorators: [
     (Story) => {
       return (

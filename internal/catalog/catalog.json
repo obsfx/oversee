@@ -1140,7 +1140,12 @@
         "bin": "typescript-language-server",
         "args": [
           "--stdio"
-        ]
+        ],
+        "initializationOptions": {
+          "tsserver": {
+            "useSyntaxServer": "never"
+          }
+        }
       },
       "install": {
         "type": "npm",

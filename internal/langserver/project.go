@@ -1,6 +1,9 @@
 package langserver
 
 import (
+	"errors"
+	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -8,6 +11,14 @@ import (
 )
 
 const readLimit = 8 << 20
+
+type FileTooLargeError struct {
+	LimitMiB int
+}
+
+func (e FileTooLargeError) Error() string {
+	return fmt.Sprintf("file is larger than %d MiB", e.LimitMiB)
+}
 
 type Project struct {
 	roots []string
@@ -62,13 +73,39 @@ func (p Project) Exists(file string) bool {
 }
 
 func (p Project) Read(file string) domain.Blob {
-	info, err := os.Stat(file)
-	if err != nil || !info.Mode().IsRegular() || info.Size() > readLimit {
-		return nil
-	}
-	content, err := os.ReadFile(file)
+	content, err := p.ReadAbsolute(file)
 	if err != nil {
 		return nil
 	}
 	return content
+}
+
+func (p Project) ReadAbsolute(file string) (domain.Blob, error) {
+	return readRegular(os.Stat, os.ReadFile, file)
+}
+
+func (p Project) ReadRelative(relative string) (domain.Blob, error) {
+	root, err := os.OpenRoot(p.roots[0])
+	if err != nil {
+		return nil, err
+	}
+	defer root.Close()
+	return readRegular(root.Stat, root.ReadFile, filepath.FromSlash(relative))
+}
+
+func readRegular(stat func(string) (fs.FileInfo, error), read func(string) ([]byte, error), name string) (domain.Blob, error) {
+	info, err := stat(name)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	if !info.Mode().IsRegular() {
+		return nil, nil
+	}
+	if info.Size() > readLimit {
+		return nil, FileTooLargeError{LimitMiB: readLimit >> 20}
+	}
+	return read(name)
 }

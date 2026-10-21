@@ -1,5 +1,4 @@
 import { ComparisonLabels } from '@/src/lib/comparison-labels.ts'
-import { CountLabels } from '@/src/lib/count-labels.ts'
 import type { ReviewNotification } from '@/src/lib/notification-gateway.ts'
 import { RelativeTime } from '@/src/lib/relative-time.ts'
 import { SessionStatuses } from '@/src/lib/session-statuses.ts'
@@ -29,9 +28,5 @@ export abstract class NotificationLabels {
       return 'All caught up'
     }
     return `${count} unread`
-  }
-
-  static count(count: number) {
-    return CountLabels.of(count, 'notification')
   }
 }

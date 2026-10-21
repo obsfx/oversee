@@ -1,6 +1,8 @@
 import type { FileContents, VirtualFileMetrics } from '@pierre/diffs/react'
 import type { CSSProperties } from 'react'
 import type { FileSide } from '@/src/lib/change-set.ts'
+import { DefinitionSurface } from '@/src/lib/definition-surface.ts'
+import { DiffLineReveal } from '@/src/lib/diff-line-reveal.ts'
 
 const VIRTUAL_METRICS: VirtualFileMetrics = {
   hunkLineCount: 50,
@@ -29,7 +31,7 @@ export abstract class DiffSurface {
     '--diffs-bg-selection-number-override': 'var(--color-accent)',
     '--diffs-font-family': 'var(--font-editor)',
     '--diffs-font-size': 'var(--editor-font-size)',
-    '--diffs-line-height': 'calc(var(--editor-font-size) * var(--editor-line-height))',
+    '--diffs-line-height': 'var(--editor-line-height-px)',
   } as CSSProperties
 
   static readonly css =
@@ -38,10 +40,16 @@ export abstract class DiffSurface {
     `${CODE_BLOCKS}{padding-top:0}` +
     `${DELETION_BARS}{background-image:none;background-color:var(--diffs-deletion-base)}` +
     `${ANNOTATION_ROWS}{--diffs-annotation-bg:var(--diffs-bg)}` +
-    `@media (pointer:fine){${HOVERED_ROWS}{${HOVER_TINT}}}`
+    `@media (pointer:fine){${HOVERED_ROWS}{${HOVER_TINT}}}` +
+    DefinitionSurface.css +
+    DiffLineReveal.css
+
+  static lineHeight(fontSize: number, lineHeight: number) {
+    return Math.round(fontSize * lineHeight)
+  }
 
   static metrics(fontSize: number, lineHeight: number): VirtualFileMetrics {
-    return { ...VIRTUAL_METRICS, lineHeight: fontSize * lineHeight }
+    return { ...VIRTUAL_METRICS, lineHeight: DiffSurface.lineHeight(fontSize, lineHeight) }
   }
 
   static emptyFile(path: string, side: FileSide): FileContents {

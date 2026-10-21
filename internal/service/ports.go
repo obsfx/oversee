@@ -77,6 +77,8 @@ type ProjectFiles interface {
 	Relative(file string) (string, bool)
 	Exists(file string) bool
 	Read(file string) domain.Blob
+	ReadAbsolute(file string) (domain.Blob, error)
+	ReadRelative(relative string) (domain.Blob, error)
 }
 
 type SessionStopper interface {

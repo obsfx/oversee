@@ -126,8 +126,9 @@ type Server struct {
 }
 
 type Run struct {
-	Bin  string   `json:"bin"`
-	Args []string `json:"args,omitempty"`
+	Bin                   string         `json:"bin"`
+	Args                  []string       `json:"args,omitempty"`
+	InitializationOptions map[string]any `json:"initializationOptions,omitempty"`
 }
 
 type Install struct {

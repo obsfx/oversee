@@ -21,9 +21,10 @@ var (
 )
 
 type Launch struct {
-	Key   string
-	Root  string
-	Start func(ctx context.Context) (Transport, error)
+	Key                   string
+	Root                  string
+	InitializationOptions map[string]any
+	Start                 func(ctx context.Context) (Transport, error)
 }
 
 type Pool struct {
@@ -141,7 +142,7 @@ func (p *Pool) start(launch Launch) *session {
 		transport, err := launch.Start(ctx)
 		if err == nil {
 			startCtx, stop := context.WithTimeoutCause(ctx, startTimeout, errStartTimeout)
-			started.client, err = Start(startCtx, transport, launch.Root)
+			started.client, err = Start(startCtx, transport, launch.Root, launch.InitializationOptions)
 			stop()
 		}
 		if err != nil {
