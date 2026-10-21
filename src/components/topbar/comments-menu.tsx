@@ -15,7 +15,7 @@ export function CommentsMenu() {
   const menu = useCommentsMenu()
 
   return (
-    <Popover.Root open={menu.open} onOpenChange={menu.setOpen}>
+    <Popover.Root open={menu.open} onOpenChange={menu.setOpen} onOpenChangeComplete={menu.settle}>
       <Tooltip label={menu.countLabel}>
         <Popover.Trigger render={<IconButton />} aria-label={menu.countLabel}>
           <VscComment />
@@ -38,9 +38,10 @@ export function CommentsMenu() {
           </Tabs.Panel>
           <Tabs.Panel value={'sessions'} className={'outline-none'}>
             <ReviewSessionsPanel
-              openedSession={menu.openedSession}
+              openedSessionId={menu.openedSessionId}
               onOpen={menu.openSession}
               onBack={menu.closeSession}
+              onNavigate={menu.close}
             />
           </Tabs.Panel>
         </Tabs.Root>

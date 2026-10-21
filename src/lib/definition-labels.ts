@@ -48,6 +48,13 @@ export abstract class DefinitionLabels {
     return `Close ${DefinitionLabels.tabTitle(tab)}`
   }
 
+  static missing(tab: Pick<DefinitionTab, 'path'>): DefinitionStatusLabel {
+    return {
+      title: 'This file no longer exists',
+      detail: `${tab.path} is not in the working tree anymore`,
+    }
+  }
+
   static readOnly(tab: Pick<DefinitionTab, 'external'>) {
     return tab.external ? 'Outside the repository' : 'Not changed in this comparison'
   }

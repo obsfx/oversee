@@ -37,3 +37,13 @@ export const LargeFile: Story = { args: { tab: definitionTabs.large } }
 export const Missing: Story = {
   args: { tab: { ...definitionTabs.file, id: 'repo::missing.ts', path: 'missing.ts' } },
 }
+
+export const ExternalNotFound: Story = {
+  args: {
+    tab: {
+      ...definitionTabs.external,
+      id: 'external::/usr/lib/node_modules/gone/index.d.ts',
+      path: '/usr/lib/node_modules/gone/index.d.ts',
+    },
+  },
+}

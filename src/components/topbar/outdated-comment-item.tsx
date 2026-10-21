@@ -12,7 +12,7 @@ interface OutdatedCommentItemProps {
 }
 
 export function OutdatedCommentItem({ comment, onNavigate }: OutdatedCommentItemProps) {
-  const { location, age, remove, removing, failed, canOpenFile, openFile } = useOutdatedComment(
+  const { location, age, remove, removing, failed, openFile } = useOutdatedComment(
     comment,
     onNavigate,
   )
@@ -25,14 +25,13 @@ export function OutdatedCommentItem({ comment, onNavigate }: OutdatedCommentItem
       snippet={<SessionSnippet lines={comment.lines} filePath={comment.filePath} />}
       body={<MarkdownView body={comment.body} />}
       error={failed ? 'Could not delete the comment.' : undefined}
+      onOpenFile={openFile}
       actions={
         <>
-          {canOpenFile && (
-            <Button variant={'ghost'} onClick={openFile}>
-              <VscGoToFile />
-              Open file
-            </Button>
-          )}
+          <Button variant={'ghost'} onClick={openFile}>
+            <VscGoToFile />
+            Open file
+          </Button>
           <Button variant={'ghost'} disabled={removing} onClick={remove}>
             <VscTrash />
             Delete

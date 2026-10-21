@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { VscGoToFile, VscTrash } from 'react-icons/vsc'
+import { fn } from 'storybook/test'
 import { Button } from '@/src/primitives/button.tsx'
 import { CodeSnippetView } from '@/src/primitives/code-snippet-view.tsx'
 import { OutdatedCommentCard } from '@/src/primitives/outdated-comment-card.tsx'
@@ -11,6 +12,7 @@ const meta = {
     filePath: 'src/graphql/resolvers/User/mutations/auth.ts',
     location: 'L30-32',
     age: 'outdated 6m ago',
+    onOpenFile: fn(),
     snippet: (
       <CodeSnippetView
         lines={[

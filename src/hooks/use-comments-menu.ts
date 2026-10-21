@@ -1,48 +1,61 @@
-import { useState } from 'react'
 import { useComments } from '@/src/hooks/use-comments.ts'
 import { useReviewSessions } from '@/src/hooks/use-review-sessions.ts'
-
-export type CommentsMenuTab = 'current' | 'sessions'
+import { useCommentsMenuStore } from '@/src/store/comments-menu-store.ts'
 
 export const useCommentsMenu = () => {
   const { list, outdated, countLabel } = useComments()
   const { list: sessions } = useReviewSessions()
-  const [open, setOpen] = useState(false)
-  const [tab, setTab] = useState<CommentsMenuTab>('current')
-  const [openedSessionId, setOpenedSessionId] = useState<string | null>(null)
-  const [outdatedOpen, setOutdatedOpen] = useState(false)
-  const openedSession =
-    sessions.find((session) => {
-      return session.id === openedSessionId
-    }) ?? null
-
-  if (outdatedOpen && outdated.length === 0) {
-    setOutdatedOpen(false)
-  }
-
-  const selectTab = (value: CommentsMenuTab) => {
-    setTab(value)
-  }
-
-  const close = () => {
-    setOpen(false)
-  }
+  const open = useCommentsMenuStore((menu) => {
+    return menu.open
+  })
+  const tab = useCommentsMenuStore((menu) => {
+    return menu.tab
+  })
+  const openedSessionId = useCommentsMenuStore((menu) => {
+    return menu.openedSessionId
+  })
+  const outdatedOpen = useCommentsMenuStore((menu) => {
+    return menu.outdatedOpen
+  })
+  const setOpen = useCommentsMenuStore((menu) => {
+    return menu.setOpen
+  })
+  const selectTab = useCommentsMenuStore((menu) => {
+    return menu.selectTab
+  })
+  const openSession = useCommentsMenuStore((menu) => {
+    return menu.openSession
+  })
+  const closeSession = useCommentsMenuStore((menu) => {
+    return menu.closeSession
+  })
+  const setOutdatedOpen = useCommentsMenuStore((menu) => {
+    return menu.setOutdatedOpen
+  })
+  const resetAfterClose = useCommentsMenuStore((menu) => {
+    return menu.resetAfterClose
+  })
 
   return {
     open,
     setOpen,
-    close,
+    close: () => {
+      setOpen(false)
+    },
+    settle: (open: boolean) => {
+      if (!open) {
+        resetAfterClose()
+      }
+    },
     tab,
     selectTab,
     commentCount: list.length,
     countLabel,
     sessionCount: sessions.length,
-    openedSession,
-    openSession: setOpenedSessionId,
-    closeSession: () => {
-      setOpenedSessionId(null)
-    },
-    outdatedOpen,
+    openedSessionId,
+    openSession,
+    closeSession,
+    outdatedOpen: outdatedOpen && outdated.length > 0,
     openOutdated: () => {
       setOutdatedOpen(true)
     },

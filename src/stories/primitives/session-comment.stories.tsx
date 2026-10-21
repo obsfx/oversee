@@ -4,6 +4,7 @@ import { OutdatedLabel } from '@/src/primitives/outdated-label.tsx'
 import { ReplyEntry } from '@/src/primitives/reply-entry.tsx'
 import { ReplyThread } from '@/src/primitives/reply-thread.tsx'
 import { SessionComment } from '@/src/primitives/session-comment.tsx'
+import { fn } from 'storybook/test'
 
 const meta = {
   title: 'Primitives/SessionComment',
@@ -23,6 +24,7 @@ const meta = {
       />
     ),
     body: 'Pin the node version in .nvmrc instead so local and CI match.',
+    onOpenFile: fn(),
   },
   decorators: [
     (Story) => {
@@ -54,3 +56,5 @@ export const WithReplies: Story = {
 export const Outdated: Story = {
   args: { marker: <OutdatedLabel />, dimmed: true },
 }
+
+export const Highlighted: Story = { args: { highlighted: true } }

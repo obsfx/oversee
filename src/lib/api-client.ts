@@ -15,6 +15,10 @@ export class ApiError extends Error {
     return new ApiError(path, 'unexpected response shape')
   }
 
+  static isNotFound(error: unknown) {
+    return error instanceof ApiError && error.status === 404
+  }
+
   static describe(error: unknown, subject: string) {
     if (error instanceof ApiError && error.status !== null) {
       return `${subject} failed with status ${error.status}`

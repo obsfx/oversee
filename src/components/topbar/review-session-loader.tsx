@@ -2,15 +2,29 @@ import { ReviewSessionDetail } from '@/src/components/topbar/review-session-deta
 import { useReviewSession } from '@/src/hooks/use-review-session.ts'
 import { MutedHint } from '@/src/primitives/muted-hint.tsx'
 
-interface NotificationSessionProps {
+interface ReviewSessionLoaderProps {
   sessionId: string
+  backLabel: string
   onBack: () => void
+  onNavigate: () => void
 }
 
-export function NotificationSession({ sessionId, onBack }: NotificationSessionProps) {
+export function ReviewSessionLoader({
+  sessionId,
+  backLabel,
+  onBack,
+  onNavigate,
+}: ReviewSessionLoaderProps) {
   const state = useReviewSession(sessionId)
   if (state.status === 'ready') {
-    return <ReviewSessionDetail session={state.data} onBack={onBack} />
+    return (
+      <ReviewSessionDetail
+        session={state.data}
+        backLabel={backLabel}
+        onBack={onBack}
+        onNavigate={onNavigate}
+      />
+    )
   }
   if (state.status === 'failed') {
     return <MutedHint>Could not load this review</MutedHint>

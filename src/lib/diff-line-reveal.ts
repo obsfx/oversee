@@ -1,4 +1,5 @@
 import type { SelectionSide, Virtualizer } from '@pierre/diffs'
+import type { FileDiffMetadata } from '@pierre/diffs/react'
 import type { FileSide } from '@/src/lib/change-set.ts'
 import type { LineAnchor } from '@/src/lib/line-range.ts'
 
@@ -41,6 +42,15 @@ export abstract class DiffLineReveal {
       count -= 1
     }
     return count
+  }
+
+  static isInHunk(metadata: FileDiffMetadata, side: FileSide, line: number) {
+    return metadata.hunks.some((hunk) => {
+      if (side === 'old') {
+        return line >= hunk.deletionStart && line < hunk.deletionStart + hunk.deletionCount
+      }
+      return line >= hunk.additionStart && line < hunk.additionStart + hunk.additionCount
+    })
   }
 
   private static isPositioned(instance: object): instance is PositionedInstance {

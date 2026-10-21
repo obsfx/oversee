@@ -1,26 +1,22 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
+import { fn } from 'storybook/test'
 import { ReviewSessionsPanel } from '@/src/components/topbar/review-sessions-panel.tsx'
-import { useReviewSessions } from '@/src/hooks/use-review-sessions.ts'
 import type { Services } from '@/src/lib/services.ts'
 import { createStoryServices } from '@/src/stories/support/fixtures.ts'
 import { StoryFrame } from '@/src/stories/support/story-frame.tsx'
 
 const ConnectedPanel = () => {
-  const { list } = useReviewSessions()
   const [openedId, setOpenedId] = useState<string | null>(null)
-  const opened =
-    list.find((session) => {
-      return session.id === openedId
-    }) ?? null
 
   return (
     <ReviewSessionsPanel
-      openedSession={opened}
+      openedSessionId={openedId}
       onOpen={setOpenedId}
       onBack={() => {
         setOpenedId(null)
       }}
+      onNavigate={fn()}
     />
   )
 }

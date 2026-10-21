@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { CommentLocation } from '@/src/primitives/comment-location.tsx'
 import { OutdatedLabel } from '@/src/primitives/outdated-label.tsx'
+import { fn } from 'storybook/test'
 
 const meta = {
   title: 'Primitives/CommentLocation',
@@ -33,3 +34,5 @@ export const LongPath: Story = {
     filePath: 'src/graphql/resolvers/AdminUser/mutations/very/deeply/nested/folder/deleteMany.ts',
   },
 }
+
+export const Clickable: Story = { args: { onOpen: fn() } }

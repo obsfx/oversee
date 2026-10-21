@@ -129,12 +129,13 @@ Check the layout representation: `/Users/omercanbalandi/studio-2/oversee-visual-
 ##### tabs
 - definitions open in tabs. `DefinitionTabStrip` (`TabStrip`, `TabItem`) shows under the topbar only while a definition tab is open: `Review` first (never closed), then one tab per target file.
 - `Review` is pinned at the left and never scrolls. the file tabs scroll inside the strip without a scrollbar: a vertical wheel scrolls them sideways, and the edges fade where more tabs are hidden. while the tabs overflow, a group at the right end holds page left and page right (`ScrollButtons`, disabled at the ends, smooth unless reduced motion is preferred) and `OpenFilesPopover`, a list of every open file that becomes filterable past 10 files. `useTabStripOverflow` and `TabStripOverflow` own the scroller (edges, fade mask, wheel, paging) and keep the active tab in view when it changes, when the same tab is re-targeted (`DefinitionTabs.revealKey`), or when the strip resizes. the fade mask is only set while an edge is hidden.
-- a tab is one file (`DefinitionTabs.idOf`: repo or external, and the path). its view follows the current change set (`DefinitionTabs.viewOf`, `useTabView`): a file in the change set shows a **diff tab** (`DiffTabView`, the same `FileDiffView` with unchanged regions expanded, comments work there), anything else a **read-only tab** (`FileTabView`, pierre `File`) with a `NoticeBar` (`ReadOnlyFileNotice`): `Not changed in this comparison`, or `Outside the repository` for files outside the repo. a file that enters or leaves the change set switches its tab's view. external files are always read-only, and repo tabs show the diff tab's loading state until the change set is ready. read-only tab titles are italic.
+- a tab is one file (`DefinitionTabs.idOf`: repo or external, and the path). its view follows the current change set (`DefinitionTabs.viewOf`, `useTabView`): a file in the change set shows a **diff tab** (`DiffTabView`, the same `FileDiffView` with unchanged regions expanded, comments work there), anything else a **read-only tab** (`FileTabView`, pierre `File`) with a `NoticeBar` (`ReadOnlyFileNotice`): `Not changed in this comparison`, or `Outside the repository` for files outside the repo. a repo file that no longer exists (`/api/file-content` 404, `ApiError.isNotFound`) shows `This file no longer exists` (`DefinitionLabels.missing`) instead of the notice and the content. external tabs keep the read failure with retry, because the server also answers 404 for an external path that no lookup of this serve process returned. a file that enters or leaves the change set switches its tab's view. external files are always read-only, and repo tabs show the diff tab's loading state until the change set is ready. read-only tab titles are italic.
 - tab titles keep their last 10 characters visible and truncate before them, so `x.controller.ts` and `x.controller.spec.ts` stay apart. tabs that share a file name get the shortest distinguishing parent folder as a muted hint (`index.ts billing`), and their `aria-label` carries the full name and hint (`DefinitionLabels.tabTitles`). the active tab is kept in view (see the overflow line above).
 - file names and folders split on `/` and `\` (`PathParts`, shared with the tree and language server labels), so windows paths of external files show their file name.
 - both views share `TabResourceView` (loading bar, `LoadFailure` with retry, the virtualized scroller) and `useCodeSurface` (editor metrics, the base pierre options, definition interactions and the line reveal). a diff tab shows a failed change set as its failure. `useFileDiffResource` finds the change and its diff resource for both the review diff and diff tabs.
 - opening a target that already has a tab focuses it and moves its line. closing a tab returns to the tab it was opened from.
 - `TabPanel` renders the active tab: Review keeps the toolbar, the install notice and the diff viewer. definition tabs replace them.
+- comment paths open tabs too, see **comment locations**.
 - the tab reveals its line with `useLineReveal`: it jumps through `getLinePosition` until the line is rendered (positions of unrendered lines are estimates), then centers it and flashes it (`data-reveal-line`). a jump that would not move the scroll position is skipped, so pierre is not interrupted while it renders. the target carries its side, so old side lines reveal in the deletions column. scrolling, clicking or typing stops the reveal. a `LoadingBar` shows until the line lands. it runs once per reveal request, so a silent refresh of the file never scrolls back to the line. a target past the end of the file (it got shorter since the lookup) reveals the last line (`DiffLineReveal.lastLine`). the flash attribute, its duration and its css live in `DiffLineReveal`.
 - editor rows use a whole pixel line height (`DiffSurface.lineHeight`, written to `--editor-line-height-px` and pierre's `--diffs-line-height`), so rendered rows match the virtualizer metrics. a fractional height (19.2px) is laid out as 19.203125px and drifts from pierre's estimates in long files.
 - far lines of large files still land late: pierre tokenizes progressively in the worker, and a window renders only after its lines are tokenized.
@@ -171,7 +172,7 @@ Check the layout representation: `/Users/omercanbalandi/studio-2/oversee-visual-
     - the stored position is checked first, then the nearest match. the earlier match wins a tie.
     - ranges that cross sides (a unified selection from deletions into additions) are never re-anchored, only checked in place.
     - a comment with an empty snapshot can not be located, so only the change set rule applies to it.
-- outdated comments are **hidden from the diff**. the `Current` tab shows a notice row (`2 outdated comments`) that drills into an **Outdated** view: each comment with its saved code, `Open file` and `Delete`, plus `Delete all`.
+- outdated comments are **hidden from the diff**. the `Current` tab shows a notice row (`2 outdated comments`) that drills into an **Outdated** view: each comment with its saved code, `Open file` (always shown, see **comment locations**) and `Delete`, plus `Delete all`.
 - they stay in the session and move to Sessions on finish, and the finish confirmation says they keep their saved code. finished sessions are never reconciled, so the flag freezes there: the session detail shows an `outdated` label and dims the comment, `oversee review get` prints `outdated since ...`, and `--json` carries `outdatedAt` (`0` while live).
 - **backend**
     - `comments.outdated_at`, added by migration `0002`.
@@ -190,18 +191,35 @@ Check the layout representation: `/Users/omercanbalandi/studio-2/oversee-visual-
 - the topbar `comments` button opens a tabbed popover. its count and tooltip include outdated comments (`7 comments, 5 outdated`).
     - `Current`: comments of the open session. clicking one navigates to its file and scrolls to its line. outdated comments sit behind the notice row, see **outdated comments**.
     - `Sessions`: finished sessions of the current comparison, newest first. each row shows the status icon, finish date, branch and comment count.
-- selecting a session drills into it inside the same popover (with a back button). each comment shows its file, line range, the saved code lines with **syntax highlighting** (same theme as the diff view), the full comment text as markdown and its replies. one-line rows (the `Current` tab) use `CommentMarkdown.summary` instead.
+- selecting a session drills into it inside the same popover (with a back button). `ReviewSessionLoader` shows it: `useReviewSession` uses the current comparison's listed session when it has one and fetches it by id otherwise, so a session of another comparison opens there too. each comment shows its file and line range (a link, see **comment locations**), the saved code lines with **syntax highlighting** (same theme as the diff view), the full comment text as markdown and its replies. one-line rows (the `Current` tab) use `CommentMarkdown.summary` instead.
 
 ##### how it works
 - `ReviewSessionGateway` (http, and in-memory for stories) and the `ReviewSessions` class own the data. finishing updates the session list and clears the active comments. `ReviewSessions.session(id)` loads a single session from any comparison.
+- `useCommentsMenuStore` holds the popover state (open, tab, opened session, Outdated view, comment focus), so a notification can open it. the opened session, the Outdated view and the focus reset once the popover finishes closing (`onOpenChangeComplete`, `resetAfterClose`), so a reopened popover never shows another comparison's session. `showComment(sessionId, commentId)` opens the session in `Sessions`, and `SessionCommentItem` (`useSessionCommentFocus`) scrolls that comment into view and plays the highlight ring once.
 - `useFinishReview`, `useReviewSessions`, `useReviewSession`, `useCommentsMenu` and `useSnippetHighlight` drive the UI. `SnippetHighlighter` tokenizes saved lines with the shared `@pierre/diffs` highlighter.
 - `ReviewComment` carries `lines` (the saved snapshot) and `outdatedAt` (`null` while live). `CommentLists.live`/`outdated` split them, `CommentLabels` builds the count, notice, age and finish texts, and `useOutdatedComments`/`useOutdatedComment` drive the Outdated view.
+
+##### comment locations
+- the file path of a comment in the comments popover (session detail, Outdated view) is a link to where the comment points, also when it is outdated or its session is finished. it keeps the current comparison.
+
+```text
+comment path click
+  → CommentLocations.targetOf(comment, current change set)
+    → file in the change set (path or previousPath) → navigation.revealLine(path, side, line)
+      → Review tab, the file selected, the line revealed and flashed
+        → line outside the hunks (`DiffLineReveal.isInHunk`) → unchanged regions expanded until the next file pick
+    → otherwise → useTabStore.open (read-only tab at the line)
+      → the file is missing → `This file no longer exists`
+  → the popover closes
+```
+
+- the side follows the range, a deleted file always reveals the old side and an added or untracked file the new side. `useCommentLocationOpener` runs it for both the session detail and the Outdated view.
 
 ## notifications
 
 - agent actions (`review start`, `review close`, `review reply`) create **persisted** notifications with a read state, so things that happened while the UI was closed still show up.
 - the topbar bell shows the unread count. its popover lists notifications newest first, with a `Mark all read` action.
-- clicking a notification marks it read and drills into its review session inside the same popover, even when the session belongs to another comparison.
+- clicking a notification marks it read. a status notification drills into its review session inside the same popover, even when the session belongs to another comparison. a reply notification closes the bell and opens the **comments popover** at the replied comment (`useCommentsMenuStore.showComment`), scrolled into view and highlighted with its reply.
 - `NotificationGateway` (http and in-memory) and the `Notifications` class own the data. `useNotifications` and `useNotificationsMenu` drive the UI.
 
 ##### server events

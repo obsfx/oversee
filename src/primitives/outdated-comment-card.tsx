@@ -9,6 +9,7 @@ interface OutdatedCommentCardProps {
   body: ReactNode
   error?: string
   actions: ReactNode
+  onOpenFile?: () => void
 }
 
 export function OutdatedCommentCard({
@@ -19,10 +20,11 @@ export function OutdatedCommentCard({
   body,
   error,
   actions,
+  onOpenFile,
 }: OutdatedCommentCardProps) {
   return (
     <div className={'flex flex-col gap-1 px-1.5 py-1.5'}>
-      <CommentLocation filePath={filePath} location={location}>
+      <CommentLocation filePath={filePath} location={location} onOpen={onOpenFile}>
         <span className={'ml-auto shrink-0 text-fg-faint'}>{age}</span>
       </CommentLocation>
       {snippet}

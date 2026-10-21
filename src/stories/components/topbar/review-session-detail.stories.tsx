@@ -4,13 +4,19 @@ import { ReviewSessionDetail } from '@/src/components/topbar/review-session-deta
 import { createStoryServices } from '@/src/stories/support/fixtures.ts'
 import { reviewSessions } from '@/src/stories/support/review-session-fixture.ts'
 import { StoryFrame } from '@/src/stories/support/story-frame.tsx'
+import { useCommentsMenuStore } from '@/src/store/comments-menu-store.ts'
 
 const services = createStoryServices()
 
 const meta = {
   title: 'Components/Topbar/ReviewSessionDetail',
   component: ReviewSessionDetail,
-  args: { session: reviewSessions[1], onBack: fn() },
+  args: {
+    session: reviewSessions[1],
+    backLabel: 'Back to sessions',
+    onBack: fn(),
+    onNavigate: fn(),
+  },
   decorators: [
     (Story) => {
       return (
@@ -29,3 +35,12 @@ export default meta
 export const Default: StoryObj<typeof meta> = {}
 
 export const WithOutdated: StoryObj<typeof meta> = { args: { session: reviewSessions[0] } }
+
+export const FocusedComment: StoryObj<typeof meta> = {
+  beforeEach: () => {
+    useCommentsMenuStore.setState({ focus: { commentId: 's2c2', requestedAt: Date.now() } })
+    return () => {
+      useCommentsMenuStore.setState({ focus: null })
+    }
+  },
+}

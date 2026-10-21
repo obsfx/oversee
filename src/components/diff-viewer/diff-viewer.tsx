@@ -11,7 +11,7 @@ import { ImageDiffView } from '@/src/components/diff-viewer/image-diff-view.tsx'
 import { VirtualizedScroller } from '@/src/components/diff-viewer/virtualized-scroller.tsx'
 
 export function DiffViewer() {
-  const { change, state, shown, loading, retry } = useFileDiff()
+  const { change, state, shown, reveal, expandUnchanged, loading, retry } = useFileDiff()
   const placeholder = useDiffPlaceholder(change, shown)
 
   if (state.status === 'failed') {
@@ -38,7 +38,12 @@ export function DiffViewer() {
       {loading && <LoadingBar />}
       {shown && !shown.diff.binary && (
         <VirtualizedScroller className={surface}>
-          <FileDiffView path={shown.path} diff={shown.diff} />
+          <FileDiffView
+            path={shown.path}
+            diff={shown.diff}
+            reveal={reveal}
+            expandUnchanged={expandUnchanged}
+          />
         </VirtualizedScroller>
       )}
       {shown?.diff.binary && (

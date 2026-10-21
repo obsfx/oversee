@@ -1,7 +1,7 @@
 import { Popover } from '@base-ui/react/popover'
 import { VscBell, VscBellDot } from 'react-icons/vsc'
 import { NotificationList } from '@/src/components/topbar/notification-list.tsx'
-import { NotificationSession } from '@/src/components/topbar/notification-session.tsx'
+import { ReviewSessionLoader } from '@/src/components/topbar/review-session-loader.tsx'
 import { useNotificationsMenu } from '@/src/hooks/use-notifications-menu.ts'
 import { IconButton } from '@/src/primitives/icon-button.tsx'
 import { NotificationsHeader } from '@/src/primitives/notifications-header.tsx'
@@ -28,7 +28,12 @@ export function NotificationsMenu() {
       </Tooltip>
       <PopoverSurface align={'end'} className={'w-[26rem]'}>
         {menu.openedSessionId ? (
-          <NotificationSession sessionId={menu.openedSessionId} onBack={menu.closeSession} />
+          <ReviewSessionLoader
+            sessionId={menu.openedSessionId}
+            backLabel={'Back to notifications'}
+            onBack={menu.closeSession}
+            onNavigate={menu.close}
+          />
         ) : (
           <>
             <NotificationsHeader meta={menu.unreadLabel} action={markAll} />
