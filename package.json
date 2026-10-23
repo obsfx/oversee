@@ -13,6 +13,7 @@
     "release": "node scripts/release.mjs",
     "generate:sql": "go tool sqlc generate -f internal/storage/sqlite/sqlc.yaml",
     "generate:gdscript": "node scripts/generate-gdscript-grammar.mjs",
+    "generate:notices": "go run ./cmd/notices-gen",
     "lint": "eslint .",
     "test": "vitest run",
     "test:unit": "vitest run --project unit",

@@ -46,6 +46,7 @@ transport (httpapi, ws, cli)   decode input, map errors, render DTOs or presente
     → lsp                      JSON-RPC over a process transport, LSP client, session pool
       → lsp/lsptest            test helpers only: PipeTransport over net.Pipe, Connect, Frame, WriteFrame, ReadFrame. imports nothing from the project, so lsp's own tests use it too
     → catalog                  the embedded language server catalog, plain data with validation
+    → notices                  the embedded license notices of Go and every module compiled into the binary, plain data
     → gdscript                 GDScript syntax facts (generated tree-sitter grammar through bonsai), Godot project model, call resolution
 app                            composition root: workspace, db, repositories, services, http server
 ```
@@ -75,7 +76,8 @@ app                            composition root: workspace, db, repositories, se
 - `oversee review start <session-id>`: sets the session status to `in progress`.
 - `oversee review close <session-id>`: sets the session status to `closed`.
 - `oversee review reply <comment-id>`: when a comment is a question or not something to fix, the agent replies to it with `--body` or stdin. `--author` defaults to `agent`.
-- `oversee licenses`: prints the license and version of the third-party code compiled into the GDScript parser (tree-sitter, tree-sitter-gdscript, bonsai), so their MIT notices ship with the binary.
+- `oversee licenses`: prints the license and version of the third-party code compiled into the binary, so their notices ship with it: Go (the running `runtime.Version()`, with its `LICENSE` and `PATENTS` from `internal/notices/go`), every Go module sorted by path, then tree-sitter and tree-sitter-gdscript of the GDScript parser (`gdscript.Notices`). bonsai's C inputs in the grammar are covered by the `github.com/msuozzo/bonsai` module notice, whose version moves with the grammar pin.
+    - `go run ./cmd/notices-gen` (`pnpm generate:notices`) lists the modules of `./cmd/oversee` for the six release targets (`go list -deps`, `CGO_ENABLED=0`), copies each module's `LICENSE`, `COPYING`, `NOTICE` and `PATENTS` files into `internal/notices/modules.json` (embedded, read with `notices.Modules()`), and `-check` fails when the file is out of date. run it after changing a Go dependency. the logic lives in `internal/noticesgen` (`Collect`, `Encode`, `Check`), and `TestEmbeddedModulesAreCurrent` fails while the file is out of date.
 - every command accepts `-C <dir>` to run as if started in that directory. `list` and `get` accept `--json`.
 
 ## UI shell
@@ -513,7 +515,7 @@ gdscript.Analyzer.Flow(ProjectSources{Root, Settings: project.godot, Scripts: ev
 
 - **resolution**: bare and `self.` calls look up the class and its extends chain, `super.f()` and `super()` start at the parent. `x.f()` resolves `x` as a typed local or parameter (scoped to its block: bodies, for loops, match sections, lambdas), a member (typed, `:= Type.new()`, `preload`/`load`, along the extends chain and the script's top level), a type name (inner class, `const X = preload(...)` alias, a `class_name` declared by only one script of the project) or an autoload. `(x as Type).f()` uses the cast type, and inside `if x is Type:` (also joined with `and`, never `is not`) `x` is that type. a member chain (`player.stamina.f()`) follows typed members step by step. untyped parameters, locals, for variables, pattern bindings and members shadow the outer names and stay unresolved, like receivers that are calls (`get_x().f()`), `$Node.f()` and engine classes, so an edge is never a guess.
 - **signals**: `sig.emit()`, `obj.sig.emit()` and `emit_signal("sig")` are emit sites, `sig.connect(handler)`, `obj.sig.connect(handler)` and `connect("sig", handler)` are connect sites (handler: `f`, `self.f`, `obj.f`, `f.bind(...)`, `Callable(obj, "f")`, lambdas are skipped). `x.emit()` and `x.connect(handler)` also record a call, so a project method named `emit` or `connect` still resolves. a signal is identified by the class that declares it along the extends chain of the receiver, so emits and connects through subclasses meet. scene `[connection]` entries resolve the `to` node's script (or the root script of an instanced scene) for the handler and the `from` node's script for the signal.
-- the grammar is generated into `internal/gdscript/grammar` (committed, never edited): tree-sitter `v0.25.10` and `PrestonKnopp/tree-sitter-gdscript` at a pinned commit, compiled to wasm with wasi-sdk and binaryen and translated to Go by `wasm2go`, the same pipeline as bonsai's builder. `parser.go` there is the only hand written file. the tree-sitter, grammar and bonsai licenses ship next to it and are embedded, and `oversee licenses` prints them (`gdscript.Notices`).
+- the grammar is generated into `internal/gdscript/grammar` (committed, never edited): tree-sitter `v0.25.10` and `PrestonKnopp/tree-sitter-gdscript` at a pinned commit, compiled to wasm with wasi-sdk and binaryen and translated to Go by `wasm2go`, the same pipeline as bonsai's builder. `parser.go` there is the only hand written file. the tree-sitter, grammar and bonsai licenses ship next to it and are embedded, and `oversee licenses` prints the tree-sitter and grammar ones (`gdscript.Notices`, bonsai comes from its module notice).
 - tests: `internal/gdscript/testdata/dash-knight` is the story fixture game as a real Godot project (the analyzer tests expect its graph edge for edge, and serving this repo shows it in the flow while it is uncommitted). `internal/service/change_flow_godot_test.go` covers the wiring.
 - measured on godot-demo-projects (461 scripts, 396 scenes, 139 projects): 886 call, 154 connect and 60 signal edges in about 0.6s cold, autoload calls 105 of 105 resolved. the story fixture game (`godot-flow-fixture.ts`) comes out edge for edge as written.
 
@@ -530,8 +532,9 @@ gdscript.Analyzer.Flow(ProjectSources{Root, Settings: project.godot, Scripts: ev
 - `pnpm generate:gdscript`: regenerates `internal/gdscript/grammar` from the pinned grammar, tree-sitter and bonsai commits. it downloads wasi-sdk and binaryen (sha256 pinned for darwin and linux, arm64 and x64) into `~/.cache/oversee/gdscript-grammar` (`OVERSEE_GRAMMAR_CACHE` overrides it) and installs `wasm2go` and `libc-gen` there. the pins live in `scripts/gdscript-grammar.json`.
     - `--update` moves the grammar commit to the head of its branch before generating, and reports newer tree-sitter releases and bonsai tags without moving them: tree-sitter and bonsai move together by hand, because bonsai's builder fixes the tree-sitter version. `--summary <file>` writes a markdown report.
     - `.github/workflows/gdscript-grammar.yml` runs it weekly on linux x64 with the toolchain cache restored by the pins file. it regenerates even when nothing moved, so toolchain drift shows up as a change. when the generated files or the pins changed, it runs `go vet` for `internal/gdscript` and `go test -short` for `internal/gdscript` and `internal/service` and opens a `gdscript-grammar/update` pull request. failing tests are noted in the pull request and fail the run.
-- `go test ./internal/...`: the go tests (stdlib `testing`, package internal fakes, temporary git repositories, a fake language server over `net.Pipe` in `internal/service`). `-short` skips `TestChangeFlowWithRealServers`, which runs gopls and typescript-language-server from the app home and skips a server that is not installed.
+- `go test ./internal/...`: the go tests (stdlib `testing`, package internal fakes, temporary git repositories, a fake language server over `net.Pipe` in `internal/service`). `-short` skips `TestChangeFlowWithRealServers`, which runs gopls and typescript-language-server from the app home and skips a server that is not installed, and `TestEmbeddedModulesAreCurrent`, which runs `go list` for every release target (it may download modules of other platforms).
 - `go run ./cmd/catalog-gen`: regenerates `internal/catalog/catalog.json` from `servers.json` and mason (`GITHUB_TOKEN` raises the API rate limit). the coverage summary goes to stdout or `-summary`.
+- `pnpm generate:notices`: regenerates `internal/notices/modules.json` after a Go dependency changes, see **CLI interface**.
 - `../oversee-proto-backend` was the node mock backend of the first phase. the go server replaced it.
 
 ## distribution
@@ -549,6 +552,7 @@ gdscript.Analyzer.Flow(ProjectSources{Root, Settings: project.godot, Scripts: ev
 ```text
 pnpm release <patch|minor|major> [--dry-run]   (scripts/release.mjs)
   → the next version from package.json, a clean working tree, no v<version> tag yet, npm whoami
+    → go run ./cmd/notices-gen -check (fails when the module notices are out of date)
     → pnpm ci → pnpm build:cli (the UI and bin/oversee) → node scripts/build-npm.mjs <version> (every target)
       → npm publish of the platform packages, then @obsfx/oversee, skipping versions already on the registry (2FA prompts in the terminal)
         → pnpm version <version> → commit package.json as v<version> → annotated tag v<version>
@@ -602,7 +606,7 @@ executables (manual dispatch with a tag)
 - use the `use-modern-go` skill (`https://github.com/JetBrains/go-modern-guidelines`) before writing go code.
 - use `encoding/json/v2`, the standard library `uuid` package and stdlib `net/http` routing with method patterns.
 - keep the build `cgo` free: `modernc.org/sqlite` for sqlite, `github.com/coder/websocket` for websockets, `cobra` for the CLI.
-- generated code is never edited: `internal/storage/sqlite/sqldb` (`pnpm generate:sql`) and `internal/gdscript/grammar` (`pnpm generate:gdscript`).
+- generated code is never edited: `internal/storage/sqlite/sqldb` (`pnpm generate:sql`), `internal/gdscript/grammar` (`pnpm generate:gdscript`) and `internal/notices/modules.json` (`pnpm generate:notices`).
 - database access goes through `sqlc`: queries live in `internal/storage/sqlite/query`, generated code in `internal/storage/sqlite/sqldb` (committed, never edited). run `pnpm generate:sql` after changing queries or migrations.
 - schema changes are new files in `internal/storage/sqlite/migrations`, tracked with `PRAGMA user_version`. never edit an existing migration, user databases already ran it.
 - put logic in receiver methods on the type that owns it (domain entities, git output types, presenters), and orchestrate those calls in services.
@@ -629,12 +633,15 @@ executables (manual dispatch with a tag)
 ##### go
 - `./cmd/oversee`: the binary entry point, calls `transport/cli`.
 - `./cmd/catalog-gen`: generates the embedded language server catalog.
+- `./cmd/notices-gen`: generates the embedded module license notices.
 - `./internal/app`: composition root, wires workspace, database, repositories, services and the http server.
 - `./internal/domain`: entities, value objects, rules, domain events and errors.
 - `./internal/service`: `DiffService`, `CommentService`, `ReviewService`, `NotificationService`, `SettingsService`, `EventFeed`, `WorkspaceWatcher`, `LanguageServerService`, `DefinitionService` (definitions and the file content of read-only tabs), `ChangeFlowService` (the change flow and its progress signal).
 - `./internal/lsp`: JSON-RPC connection, LSP client and session pool.
 - `./internal/lsp/lsptest`: helpers for fake language servers in the lsp and service tests: `PipeTransport` (an lsp transport over net.Pipe), `Connect` (serves a fake on the other end), `Frame`, `WriteFrame` and `ReadFrame` (Content-Length frames).
 - `./internal/catalog`: the embedded language server catalog (`catalog.json`) and its validation.
+- `./internal/notices`: the `Notice` type, Go's `LICENSE` and `PATENTS` and the generated `modules.json`.
+- `./internal/noticesgen`: module notice generation for `cmd/notices-gen`: `go list` per release target, license file selection, encoding and the up to date check.
 - `./internal/cataloggen`: catalog generation from `servers.json` and mason-registry.
 - `./internal/langserver`: app home, platform detection, toolchain lookup, installer, installations, launcher, process and project files.
 - `./internal/gdscript`: GDScript facts, the Godot project model, call resolution and the analyzer. `./internal/gdscript/grammar` is the generated parser (`pnpm generate:gdscript`).

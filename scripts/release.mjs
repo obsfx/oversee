@@ -99,6 +99,7 @@ const tag = `v${version}`
 checkReady(tag)
 console.log(`releasing ${current} -> ${version}${dryRun ? ' (dry run)' : ''}`)
 
+run('go', ['run', './cmd/notices-gen', '-check'])
 run('pnpm', ['ci'])
 run('pnpm', ['build:cli'])
 run('node', [join('scripts', 'build-npm.mjs'), version])

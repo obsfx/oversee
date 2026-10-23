@@ -14,7 +14,6 @@ func TestNotices(t *testing.T) {
 	}{
 		{project: "tree-sitter/tree-sitter", version: grammar.TreeSitterVersion},
 		{project: "PrestonKnopp/tree-sitter-gdscript", version: grammar.GrammarCommit},
-		{project: "msuozzo/bonsai", version: grammar.BonsaiVersion},
 	}
 
 	notices := Notices()
@@ -32,13 +31,5 @@ func TestNotices(t *testing.T) {
 		if !strings.Contains(notice.License, "MIT") {
 			t.Errorf("%s license does not contain MIT: %q", notice.Project, notice.License)
 		}
-	}
-}
-
-func TestNoticeText(t *testing.T) {
-	notice := Notice{Project: "msuozzo/bonsai", Version: "v0.4.1", License: "MIT License\n\nCopyright\n"}
-
-	if got, want := notice.Text(), "msuozzo/bonsai v0.4.1\n\nMIT License\n\nCopyright\n"; got != want {
-		t.Errorf("Text = %q, want %q", got, want)
 	}
 }
