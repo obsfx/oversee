@@ -1,0 +1,73 @@
+name: executables
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to build (v1.2.3), pushed by pnpm release
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: executables-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ inputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ inputs.tag }}
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.25.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build:npm "$TAG"
+
+      - name: collect executables
+        run: |
+          mkdir release
+          for directory in npm-dist/oversee-*/; do
+            name=$(basename "$directory")
+            name=${name/win32/windows}
+            if [ -f "${directory}bin/oversee.exe" ]; then
+              cp "${directory}bin/oversee.exe" "release/$name.exe"
+            else
+              cp "${directory}bin/oversee" "release/$name"
+            fi
+          done
+          cd release && sha256sum -- * > checksums.txt
+
+      - name: create github release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG }}
+          files: release/*
+          fail_on_unmatched_files: true
+          generate_release_notes: true
+          body: |
+            Install with npm:
+
+            ```bash
+            npm install -g @obsfx/oversee
+            ```
+
+            Or download the executable for your platform, rename it to `oversee` (`oversee.exe` on windows), make it executable with `chmod +x` and put it on your `PATH`. `checksums.txt` lists the sha256 of every executable.

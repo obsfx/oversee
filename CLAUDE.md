@@ -541,8 +541,25 @@ gdscript.Analyzer.Flow(ProjectSources{Root, Settings: project.godot, Scripts: ev
     - `@obsfx/oversee-<os>-<arch>`: one go binary each, limited by `os` and `cpu`, so npm only installs the one for the current machine.
 - platforms: `darwin`, `linux` and `win32` on `arm64` and `x64`, built with `CGO_ENABLED=0`.
 - `pnpm build:npm <version>` writes every package into `npm-dist/`.
-- `.github/workflows/release.yml` builds and publishes on `v*` tags. it needs the `NPM_TOKEN` secret.
+- windows executables carry the eye painting as their icon and the release version in their version info: `cmd/oversee/winres/` holds `winres.json` and the 256px `icon.png` (resized to 256, 64, 48, 32 and 16), and `build:npm` runs `go tool go-winres make` (pinned in the `tool` block of `go.mod`) with the version before the builds. the generated `cmd/oversee/rsrc_windows_<arch>.syso` files are git ignored and only linked into windows builds.
+- every release is also a GitHub release with the executables (`oversee-<darwin|linux|windows>-<arm64|x64>`, `.exe` on windows) and a `checksums.txt` of their sha256, created by the manually dispatched `executables` workflow for a pushed tag.
 - the `oversee-address` agent skill (`skills/oversee-address/SKILL.md`) walks an agent through `review list`, `start`, `get`, `reply` and `close`. `npx skills add obsfx/oversee` installs it for any agent.
+- the version lives in `package.json`. releases run by hand on the maintainer's machine: there is no CD, and CI holds no npm token.
+
+```text
+pnpm release <patch|minor|major> [--dry-run]   (scripts/release.mjs)
+  → the next version from package.json, a clean working tree, no v<version> tag yet, npm whoami
+    → pnpm ci → pnpm build:cli (the UI and bin/oversee) → node scripts/build-npm.mjs <version> (every target)
+      → npm publish of the platform packages, then @obsfx/oversee, skipping versions already on the registry (2FA prompts in the terminal)
+        → pnpm version <version> → commit package.json as v<version> → annotated tag v<version>
+          → prints the next steps: git push --atomic origin HEAD v<version>, gh workflow run executables.yml --field tag=v<version>
+
+executables (manual dispatch with a tag)
+  → checkout the tag → pnpm build:npm <tag> → copy the binaries out of npm-dist, win32 named windows, sha256 into checksums.txt
+    → GitHub release for the tag (generated notes, assets overwritten on a re-run)
+```
+
+- nothing is written before the publish step, so a failed release reruns with the same bump: the version comes out the same and the published packages are skipped. `--dry-run` runs everything with `npm publish --dry-run`, accepts a dirty working tree and stops before the version, commit and tag.
 
 ## component development decision flow
 

@@ -30,6 +30,7 @@ storybook-static
 internal/webui/dist/*
 !internal/webui/dist/.gitkeep
 /bin
+/cmd/oversee/rsrc_windows_*.syso
 
 npm-dist
 

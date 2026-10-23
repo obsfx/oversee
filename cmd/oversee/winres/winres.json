@@ -1,0 +1,26 @@
+{
+  "RT_GROUP_ICON": {
+    "APP": {
+      "0000": "icon.png"
+    }
+  },
+  "RT_VERSION": {
+    "#1": {
+      "0000": {
+        "fixed": {
+          "file_version": "0.0.0.0",
+          "product_version": "0.0.0.0"
+        },
+        "info": {
+          "0409": {
+            "FileDescription": "oversee",
+            "InternalName": "oversee",
+            "OriginalFilename": "oversee.exe",
+            "ProductName": "oversee",
+            "Comments": "Diff review and line annotation for git repositories, with a CLI for AI agents."
+          }
+        }
+      }
+    }
+  }
+}

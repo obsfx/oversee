@@ -32,6 +32,30 @@ const packageNameOf = ({ platform, arch }) => {
   return `${SCOPE}/oversee-${platform}-${arch}`
 }
 
+const generateWindowsResources = () => {
+  const architectures = TARGETS.filter((target) => {
+    return target.goos === 'windows'
+  }).map((target) => {
+    return target.goarch
+  })
+  console.log('generating windows resources')
+  execFileSync(
+    'go',
+    [
+      'tool',
+      'go-winres',
+      'make',
+      '--arch',
+      architectures.join(','),
+      '--product-version',
+      version,
+      '--file-version',
+      version,
+    ],
+    { cwd: join(ROOT, 'cmd', 'oversee'), stdio: 'inherit' },
+  )
+}
+
 const buildTarget = (target) => {
   const name = packageNameOf(target)
   const directory = join(OUT_DIR, `oversee-${target.platform}-${target.arch}`)
@@ -90,6 +114,7 @@ const buildMainPackage = () => {
 }
 
 rmSync(OUT_DIR, { recursive: true, force: true })
+generateWindowsResources()
 for (const target of TARGETS) {
   buildTarget(target)
 }
