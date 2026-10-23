@@ -542,6 +542,7 @@ gdscript.Analyzer.Flow(ProjectSources{Root, Settings: project.godot, Scripts: ev
 - platforms: `darwin`, `linux` and `win32` on `arm64` and `x64`, built with `CGO_ENABLED=0`.
 - `pnpm build:npm <version>` writes every package into `npm-dist/`.
 - `.github/workflows/release.yml` builds and publishes on `v*` tags. it needs the `NPM_TOKEN` secret.
+- the `oversee-address` agent skill (`skills/oversee-address/SKILL.md`) walks an agent through `review list`, `start`, `get`, `reply` and `close`. `npx skills add obsfx/oversee` installs it for any agent.
 
 ## component development decision flow
 
@@ -631,3 +632,4 @@ gdscript.Analyzer.Flow(ProjectSources{Root, Settings: project.godot, Scripts: ev
 - `./internal/lint`: repository checks that run as tests (distinct function names).
 - `./internal/webui`: the embedded UI shell (`dist/index.html.gz`, built by `pnpm build:ui`).
 - `./npm`, `./scripts`: npm shim and package build script.
+- `./skills`: the agent skills, installed with `npx skills add obsfx/oversee`.
