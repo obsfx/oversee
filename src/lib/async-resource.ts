@@ -1,4 +1,5 @@
 import { createStore, type StoreApi } from 'zustand/vanilla'
+import { Errors } from '@/src/lib/errors.ts'
 
 export type ResourceState<T> =
   | { status: 'idle' }
@@ -16,10 +17,11 @@ export class AsyncResource<T> {
   readonly store: StoreApi<ResourceState<T>>
   private readonly fetcher: () => Promise<T>
   private pending: Promise<void> | null = null
+  private refreshing: Promise<void> | null = null
+  private dirty = false
   private watchers = 0
   private stale = false
   private refreshTicket = 0
-  private settledTicket = 0
 
   constructor(fetcher: () => Promise<T>) {
     this.fetcher = fetcher
@@ -42,14 +44,18 @@ export class AsyncResource<T> {
           this.store.setState({ status: 'ready', data }, true)
         },
         (error: unknown) => {
-          const failure = error instanceof Error ? error : new Error(String(error))
-          this.store.setState({ status: 'failed', error: failure }, true)
+          this.store.setState({ status: 'failed', error: Errors.of(error) }, true)
         },
       )
       .finally(() => {
         this.pending = null
       })
     return this.pending
+  }
+
+  follow(listener: (state: ResourceState<T>) => void) {
+    listener(this.store.getState())
+    return this.store.subscribe(listener)
   }
 
   watch() {
@@ -78,12 +84,33 @@ export class AsyncResource<T> {
       return
     }
     this.store.setState({ status: 'ready', data: change(state.data) }, true)
-    if (this.refreshTicket !== this.settledTicket) {
+    if (this.refreshing) {
+      this.refreshTicket += 1
       void this.refresh()
     }
   }
 
-  async refresh() {
+  refresh() {
+    if (this.refreshing) {
+      this.dirty = true
+      return this.refreshing
+    }
+    this.refreshing = this.refreshWhileDirty()
+    return this.refreshing
+  }
+
+  private async refreshWhileDirty() {
+    try {
+      do {
+        this.dirty = false
+        await this.refreshOnce()
+      } while (this.dirty)
+    } finally {
+      this.refreshing = null
+    }
+  }
+
+  private async refreshOnce() {
     if (this.pending) {
       await this.pending
     }
@@ -100,10 +127,6 @@ export class AsyncResource<T> {
       }
     } catch {
       return
-    } finally {
-      if (ticket === this.refreshTicket) {
-        this.settledTicket = ticket
-      }
     }
   }
 

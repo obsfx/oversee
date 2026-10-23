@@ -14,12 +14,21 @@ import (
 const warmup = 20 * time.Second
 
 type Client struct {
-	conn      *Conn
-	transport Transport
-	root      string
-	startedAt time.Time
-	slot      chan struct{}
-	progress  sync.Map
+	conn         *Conn
+	transport    Transport
+	root         string
+	startedAt    time.Time
+	slot         chan struct{}
+	documents    map[string]*openDocument
+	replaced     uint64
+	progress     sync.Map
+	capabilities Capabilities
+}
+
+type openDocument struct {
+	text    string
+	version int
+	users   int
 }
 
 type Document struct {
@@ -29,7 +38,7 @@ type Document struct {
 }
 
 func Start(ctx context.Context, transport Transport, root string, initializationOptions map[string]any) (*Client, error) {
-	client := &Client{transport: transport, root: root, startedAt: time.Now(), slot: make(chan struct{}, 1)}
+	client := &Client{transport: transport, root: root, startedAt: time.Now(), slot: make(chan struct{}, 1), documents: map[string]*openDocument{}}
 	client.conn = NewConn(transport, client.handle, client.notified)
 	params := initializeParams{
 		ProcessID:             os.Getpid(),
@@ -40,7 +49,8 @@ func Start(ctx context.Context, transport Transport, root string, initialization
 		Capabilities:          clientCapabilities,
 		InitializationOptions: initializationOptions,
 	}
-	if err := client.conn.Call(ctx, "initialize", params, nil); err != nil {
+	var initialized initializeResult
+	if err := client.conn.Call(ctx, "initialize", params, &initialized); err != nil {
 		transport.Kill()
 		if ctx.Err() != nil {
 			err = context.Cause(ctx)
@@ -51,25 +61,36 @@ func Start(ctx context.Context, transport Transport, root string, initialization
 		transport.Kill()
 		return nil, err
 	}
+	client.capabilities = initialized.capabilities()
 	return client, nil
 }
 
-func (c *Client) Definition(ctx context.Context, document Document, position Position) ([]Location, error) {
-	select {
-	case c.slot <- struct{}{}:
-	case <-ctx.Done():
-		return nil, ctx.Err()
+func (c *Client) Capabilities() Capabilities {
+	return c.capabilities
+}
+
+func (c *Client) Batch(ctx context.Context, documents []Document, work func(batch *Batch) error) error {
+	batch := &Batch{ctx: ctx, client: c, texts: map[string]string{}}
+	defer batch.close()
+	if err := batch.open(documents); err != nil {
+		return err
 	}
-	defer func() { <-c.slot }()
-	uri := FileURI(document.Path)
-	item := textDocumentItem{URI: uri, LanguageID: document.LanguageID, Version: 1, Text: document.Text}
-	if err := c.conn.Notify("textDocument/didOpen", didOpenParams{TextDocument: item}); err != nil {
+	return work(batch)
+}
+
+func (c *Client) Definition(ctx context.Context, document Document, position Position) ([]Location, error) {
+	release, err := c.acquire(ctx)
+	if err != nil {
 		return nil, err
 	}
-	defer c.conn.Notify("textDocument/didClose", didCloseParams{TextDocument: textDocumentIdentifier{URI: uri}})
+	defer release()
+	restore, err := c.show(document)
+	defer restore()
+	if err != nil {
+		return nil, err
+	}
 	var raw jsontext.Value
-	params := positionParams{TextDocument: textDocumentIdentifier{URI: uri}, Position: position}
-	if err := c.conn.Call(ctx, "textDocument/definition", params, &raw); err != nil {
+	if err := c.conn.Call(ctx, "textDocument/definition", position.in(document.Path), &raw); err != nil {
 		return nil, err
 	}
 	return parseLocations(raw)
@@ -112,6 +133,78 @@ func (c *Client) Shutdown(ctx context.Context) {
 	}
 }
 
+func (c *Client) acquire(ctx context.Context) (func(), error) {
+	select {
+	case c.slot <- struct{}{}:
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+	if err := ctx.Err(); err != nil {
+		<-c.slot
+		return nil, err
+	}
+	return c.leave, nil
+}
+
+func (c *Client) wait() func() {
+	c.slot <- struct{}{}
+	return c.leave
+}
+
+func (c *Client) leave() {
+	<-c.slot
+}
+
+func (c *Client) hold(uri string, document Document) error {
+	current, open := c.documents[uri]
+	if !open {
+		c.documents[uri] = &openDocument{text: document.Text, version: 1, users: 1}
+		item := textDocumentItem{URI: uri, LanguageID: document.LanguageID, Version: 1, Text: document.Text}
+		return c.conn.Notify("textDocument/didOpen", didOpenParams{TextDocument: item})
+	}
+	current.users++
+	return c.replace(uri, current, document.Text)
+}
+
+func (c *Client) replace(uri string, document *openDocument, text string) error {
+	if document.text == text {
+		return nil
+	}
+	c.replaced++
+	return c.change(uri, document, text)
+}
+
+func (c *Client) change(uri string, document *openDocument, text string) error {
+	document.text = text
+	document.version++
+	return c.conn.Notify("textDocument/didChange", didChangeParams{
+		TextDocument:   versionedTextDocumentIdentifier{URI: uri, Version: document.version},
+		ContentChanges: []contentChange{{Text: text}},
+	})
+}
+
+func (c *Client) release(uri string) {
+	current := c.documents[uri]
+	current.users--
+	if current.users > 0 {
+		return
+	}
+	delete(c.documents, uri)
+	c.conn.Notify("textDocument/didClose", didCloseParams{TextDocument: textDocumentIdentifier{URI: uri}})
+}
+
+func (c *Client) show(document Document) (func(), error) {
+	uri := FileURI(document.Path)
+	current, open := c.documents[uri]
+	if !open || current.text == document.Text {
+		err := c.hold(uri, document)
+		return func() { c.release(uri) }, err
+	}
+	previous := current.text
+	err := c.change(uri, current, document.Text)
+	return func() { c.change(uri, current, previous) }, err
+}
+
 func (c *Client) folder() workspaceFolder {
 	return workspaceFolder{URI: FileURI(c.root), Name: filepath.Base(c.root)}
 }
@@ -121,7 +214,7 @@ func (c *Client) notified(method string, params jsontext.Value) {
 		return
 	}
 	var notification progressParams
-	if err := json.Unmarshal(params, &notification); err != nil {
+	if err := json.Unmarshal(params, &notification, lenient...); err != nil {
 		return
 	}
 	token := string(notification.Token)
@@ -137,7 +230,7 @@ func (c *Client) handle(method string, params jsontext.Value) (any, error) {
 	switch method {
 	case "workspace/configuration":
 		var request configurationParams
-		if err := json.Unmarshal(params, &request); err != nil {
+		if err := json.Unmarshal(params, &request, lenient...); err != nil {
 			return nil, err
 		}
 		return make([]any, len(request.Items)), nil

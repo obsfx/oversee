@@ -23,7 +23,7 @@ const meta = {
     const { path } = context.parameters as NoticeParameters
     useNavigationStore.setState({ selectedPath: path })
     useSettingsStore.setState({ dismissedLanguageServers: [] })
-    useLanguageServerStore.setState({ readyId: null })
+    useLanguageServerStore.setState({ readyId: null, requestFailures: new Map() })
   },
   decorators: [
     (Story, context) => {

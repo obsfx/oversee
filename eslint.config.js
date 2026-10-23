@@ -99,11 +99,109 @@ const oneHookPerFile = {
   },
 }
 
+const declaredName = (node) => {
+  if (node.type === 'FunctionDeclaration' || node.type === 'ClassDeclaration') {
+    return node.id ? [node.id] : []
+  }
+  if (node.type === 'VariableDeclaration') {
+    return node.declarations.flatMap((declarator) => {
+      return declarator.id.type === 'Identifier' ? [declarator.id] : []
+    })
+  }
+  return []
+}
+
+const memberName = (member) => {
+  if (member.type !== 'MethodDefinition' && member.type !== 'PropertyDefinition') return null
+  if (member.key.type === 'Identifier') return member.key.name
+  if (member.key.type === 'PrivateIdentifier') return `#${member.key.name}`
+  return null
+}
+
+const distinctNames = {
+  meta: {
+    type: 'problem',
+    docs: {
+      description:
+        'Disallow functions, classes and members whose names only differ by letter case from another one in the same module or class',
+    },
+    messages: {
+      clash:
+        "'{{name}}' has the same name as '{{other}}' when letter case is ignored. Give each one a name of its own.",
+    },
+    schema: [],
+  },
+  create(context) {
+    const reportClashes = (entries) => {
+      const seen = new Map()
+      for (const entry of entries) {
+        const key = entry.name.toLowerCase()
+        const first = seen.get(key)
+        if (first === undefined) {
+          seen.set(key, entry)
+          continue
+        }
+        if (first.accessor && entry.accessor && first.name === entry.name) continue
+        context.report({
+          node: entry.node,
+          messageId: 'clash',
+          data: { name: entry.name, other: first.name },
+        })
+      }
+    }
+
+    return {
+      ClassBody(node) {
+        reportClashes(
+          node.body.flatMap((member) => {
+            const name = memberName(member)
+            if (name === null) return []
+            const accessor = member.kind === 'get' || member.kind === 'set'
+            return [{ name, node: member.key, accessor }]
+          }),
+        )
+      },
+      'Program:exit'(program) {
+        const entries = []
+        const classMembers = []
+        for (const statement of program.body) {
+          const declaration =
+            statement.type === 'ExportNamedDeclaration' && statement.declaration
+              ? statement.declaration
+              : statement
+          for (const id of declaredName(declaration)) {
+            entries.push({ name: id.name, node: id, accessor: false })
+          }
+          if (declaration.type === 'ClassDeclaration') {
+            for (const member of declaration.body.body) {
+              const name = memberName(member)
+              if (name !== null) classMembers.push({ name, node: member.key })
+            }
+          }
+        }
+        reportClashes(entries)
+        const topLevel = new Map(entries.map((entry) => [entry.name.toLowerCase(), entry]))
+        for (const member of classMembers) {
+          const clash = topLevel.get(member.name.toLowerCase())
+          if (clash !== undefined) {
+            context.report({
+              node: clash.node,
+              messageId: 'clash',
+              data: { name: clash.name, other: member.name },
+            })
+          }
+        }
+      },
+    }
+  },
+}
+
 const overseePlugin = {
   meta: { name: 'oversee' },
   rules: {
     'one-component-per-file': oneComponentPerFile,
     'one-hook-per-file': oneHookPerFile,
+    'distinct-names': distinctNames,
   },
 }
 
@@ -157,6 +255,7 @@ export default defineConfig([
       ],
       'oversee/one-component-per-file': 'error',
       'oversee/one-hook-per-file': 'error',
+      'oversee/distinct-names': 'error',
       'no-relative-import-paths/no-relative-import-paths': [
         'error',
         { allowSameFolder: false, prefix: '@' },
@@ -168,6 +267,12 @@ export default defineConfig([
     files: ['*.config.{js,ts}', '**/*.stories.{ts,tsx}', '.storybook/**'],
     rules: {
       'no-restricted-syntax': ['error', inlineAwaitRestriction, ...nonAsciiRestrictions],
+    },
+  },
+  {
+    files: ['*.config.{js,ts}'],
+    rules: {
+      'no-relative-import-paths/no-relative-import-paths': 'off',
     },
   },
   prettier,

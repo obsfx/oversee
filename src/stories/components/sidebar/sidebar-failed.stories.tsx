@@ -5,7 +5,7 @@ import { SidebarFailed } from '@/src/components/sidebar/sidebar-failed.tsx'
 const meta = {
   title: 'Components/Sidebar/SidebarFailed',
   component: SidebarFailed,
-  args: { reason: 'get-file-tree: request failed', onRetry: fn() },
+  args: { label: 'Could not load files', reason: 'get-file-tree: request failed', onRetry: fn() },
   decorators: [
     (Story) => {
       return (

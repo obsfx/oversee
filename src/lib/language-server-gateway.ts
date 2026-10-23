@@ -10,6 +10,12 @@ export interface InstallProgress {
   total: number
 }
 
+export interface OutdatedTool {
+  tool: string
+  minimum: string
+  found: string
+}
+
 export interface LanguageServer {
   id: string
   description: string
@@ -19,6 +25,7 @@ export interface LanguageServer {
   version: string
   requires: string[]
   missing: string[]
+  outdated: OutdatedTool[]
   available: boolean
   status: LanguageServerStatus
   progress: InstallProgress | null
@@ -58,6 +65,10 @@ export abstract class LanguageServerShapes {
     version: v.string(),
     requires: LanguageServerShapes.strings,
     missing: LanguageServerShapes.strings,
+    outdated: v.fallback(
+      v.array(v.object({ tool: v.string(), minimum: v.string(), found: v.string() })),
+      [],
+    ),
     available: v.boolean(),
     status: v.picklist(STATUSES),
     progress: v.fallback(

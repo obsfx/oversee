@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { ChangeSets } from '@/src/lib/change-set.ts'
 import { ComparisonRules } from '@/src/lib/comparison-rules.ts'
 import { type FileAnchor, FileNavigationRules } from '@/src/lib/file-navigation.ts'
-import { FileOrder } from '@/src/lib/file-order.ts'
+import { FileTreeRows } from '@/src/lib/file-tree-rows.ts'
 import { useNavigationStore } from '@/src/store/navigation-store.ts'
 import { useChangeSet } from '@/src/hooks/use-change-set.ts'
 import { useComparison } from '@/src/hooks/use-comparison.ts'
@@ -20,7 +20,7 @@ export const useFileNavigation = () => {
     return navigation.followFile
   })
   const [anchor, setAnchor] = useState<FileAnchor | null>(null)
-  const files = FileOrder.ofTree(ChangeSets.changesOf(state))
+  const files = FileTreeRows.files(ChangeSets.changesOf(state))
   const position = FileNavigationRules.of(files, selectedPath)
   const comparisonKey = comparison ? ComparisonRules.key(comparison) : null
   const currentAnchor = FileNavigationRules.anchor(position, comparisonKey)

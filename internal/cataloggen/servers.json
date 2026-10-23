@@ -39,6 +39,7 @@
     "rootMarkers": ["mvnw", "gradlew", "settings.gradle", "settings.gradle.kts"],
     "run": { "bin": "jdtls", "args": ["-data", "${dataDir}"] },
     "requires": ["java"],
+    "minimums": { "java": "21" },
     "skipFiles": ["lombok.jar"]
   },
   "kotlin-language-server": {
@@ -63,7 +64,8 @@
     "run": {
       "bin": "OmniSharp",
       "args": ["-z", "DotNet:enablePackageRestore=false", "--encoding", "utf-8", "--languageserver"]
-    }
+    },
+    "minimums": { "dotnet": "6" }
   },
   "pyright": {
     "fileTypes": {
@@ -77,7 +79,13 @@
       "rust": { "extensions": ["rs"] }
     },
     "rootMarkers": ["Cargo.toml"],
-    "run": { "bin": "rust-analyzer" }
+    "run": {
+      "bin": "rust-analyzer",
+      "initializationOptions": {
+        "checkOnSave": false,
+        "cargo": { "targetDir": "${dataDir}/target" }
+      }
+    }
   },
   "typescript-language-server": {
     "fileTypes": {

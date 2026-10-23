@@ -1,7 +1,10 @@
 import { ApiError } from '@/src/lib/api-client.ts'
 import type { Definition, DefinitionLookup } from '@/src/lib/definition-gateway.ts'
 import type { DefinitionTab } from '@/src/lib/definition-tabs.ts'
+import { LanguageServerLabels } from '@/src/lib/language-server-labels.ts'
+import { LocationLabels } from '@/src/lib/location-labels.ts'
 import { PathParts } from '@/src/lib/path-parts.ts'
+import { ServerStatusLabels } from '@/src/lib/server-status-labels.ts'
 
 interface DefinitionStatusLabel {
   title: string
@@ -37,7 +40,7 @@ export abstract class DefinitionLabels {
   }
 
   static location(definition: Definition) {
-    return `${PathParts.name(definition.path)}:${definition.line}`
+    return LocationLabels.fileLine(definition.path, definition.line)
   }
 
   static tabTitle(tab: DefinitionTab) {
@@ -78,18 +81,26 @@ export abstract class DefinitionLabels {
       case 'unsupported':
         return { title: 'No language server for this file', detail: '' }
       case 'not-installed':
-        return { title: `${server} is not installed`, detail: 'Install it to go to definitions' }
+        return {
+          title: ServerStatusLabels.title(lookup.status, server),
+          detail: 'Install it to go to definitions',
+        }
       case 'needs-checkout':
         return {
           title: 'This branch is not checked out',
           detail: 'Go to definition reads the working tree',
         }
       case 'starting':
-        return { title: `Starting ${server}`, detail: 'Try again in a moment' }
       case 'indexing':
-        return { title: `${server} is indexing`, detail: 'Try again in a moment' }
+        return {
+          title: ServerStatusLabels.title(lookup.status, server),
+          detail: 'Try again in a moment',
+        }
       case 'failed':
-        return { title: `${server} failed`, detail: lookup.error.split('\n')[0] }
+        return {
+          title: ServerStatusLabels.title(lookup.status, server),
+          detail: LanguageServerLabels.firstLine(lookup.error),
+        }
     }
   }
 

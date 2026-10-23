@@ -26,6 +26,7 @@ export interface HighlightedSnippet {
 
 const FONT_STYLE_ITALIC = 1
 const FONT_STYLE_BOLD = 2
+const CACHE_LIMIT = 200
 
 export abstract class SnippetHighlighter {
   private static readonly cache = new Map<string, Promise<HighlightedSnippet>>()
@@ -38,10 +39,12 @@ export abstract class SnippetHighlighter {
     const key = SnippetHighlighter.key(lines, filePath, theme)
     const cached = SnippetHighlighter.cache.get(key)
     if (cached) {
+      SnippetHighlighter.cache.delete(key)
+      SnippetHighlighter.cache.set(key, cached)
       return cached
     }
     const pending = SnippetHighlighter.tokenize(SnippetHighlighter.codeOf(lines), filePath, theme)
-    SnippetHighlighter.cache.set(key, pending)
+    SnippetHighlighter.remember(key, pending)
     return pending
   }
 
@@ -72,6 +75,21 @@ export abstract class SnippetHighlighter {
             bold: (fontStyle & FONT_STYLE_BOLD) !== 0,
           }
         }),
+      }
+    })
+  }
+
+  private static remember(key: string, pending: Promise<HighlightedSnippet>) {
+    SnippetHighlighter.cache.set(key, pending)
+    for (const oldest of SnippetHighlighter.cache.keys()) {
+      if (SnippetHighlighter.cache.size <= CACHE_LIMIT) {
+        break
+      }
+      SnippetHighlighter.cache.delete(oldest)
+    }
+    pending.catch(() => {
+      if (SnippetHighlighter.cache.get(key) === pending) {
+        SnippetHighlighter.cache.delete(key)
       }
     })
   }

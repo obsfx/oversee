@@ -3,6 +3,7 @@ import { type RefObject, useEffect, useEffectEvent, useState } from 'react'
 import type { FileSide } from '@/src/lib/change-set.ts'
 import type { TabReveal } from '@/src/lib/definition-tabs.ts'
 import { DiffLineReveal, type RenderedLines } from '@/src/lib/diff-line-reveal.ts'
+import { FileSides } from '@/src/lib/line-range.ts'
 
 const REVEAL_TIMEOUT_MS = 10000
 const JUMP_INTERVAL_MS = 120
@@ -27,11 +28,7 @@ export const useLineReveal = (
     let frame = 0
     let nextJump = 0
     const deadline = performance.now() + REVEAL_TIMEOUT_MS
-    let side: 'additions' | 'deletions' = 'additions'
-    if (reveal.side === 'old') {
-      side = 'deletions'
-    }
-    const anchor = { lineNumber: target, side }
+    const anchor = { lineNumber: target, side: FileSides.toAnnotation(reveal.side) }
     const release = () => {
       cancelAnimationFrame(frame)
       for (const type of INTERRUPTIONS) {

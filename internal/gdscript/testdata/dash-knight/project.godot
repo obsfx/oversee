@@ -1,0 +1,6 @@
+[application]
+config/name="Dash Knight"
+
+[autoload]
+
+GameState="*res://autoload/game_state.gd"

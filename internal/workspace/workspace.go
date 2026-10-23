@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"syscall"
 
 	"github.com/obsfx/oversee/internal/domain"
+	"github.com/obsfx/oversee/internal/git"
 )
 
 const (
@@ -40,7 +40,7 @@ func Resolve(ctx context.Context, dir string) (Workspace, error) {
 	if err != nil {
 		return Workspace{}, err
 	}
-	output, err := gitOutput(ctx, resolved, "rev-parse", "--show-toplevel", "--absolute-git-dir")
+	output, err := git.NewRunner(resolved).Text(ctx, "rev-parse", "--show-toplevel", "--absolute-git-dir")
 	if err != nil {
 		return Workspace{}, ErrNotRepository
 	}
@@ -82,7 +82,7 @@ func (w Workspace) Init(ctx context.Context) (created bool, err error) {
 }
 
 func (w Workspace) excludeFromGit(ctx context.Context) error {
-	excludePath, err := gitOutput(ctx, w.RepoRoot, "rev-parse", "--path-format=absolute", "--git-path", "info/exclude")
+	excludePath, err := git.NewRunner(w.RepoRoot).Text(ctx, "rev-parse", "--path-format=absolute", "--git-path", "info/exclude")
 	if err != nil {
 		return err
 	}
@@ -121,14 +121,4 @@ func (w Workspace) excludePattern() (string, error) {
 		return "", err
 	}
 	return "/" + filepath.ToSlash(relative) + "/", nil
-}
-
-func gitOutput(ctx context.Context, dir string, args ...string) (string, error) {
-	command := exec.CommandContext(ctx, "git", args...)
-	command.Dir = dir
-	output, err := command.Output()
-	if err != nil {
-		return "", err
-	}
-	return strings.TrimSpace(string(output)), nil
 }

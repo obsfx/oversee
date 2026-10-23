@@ -1,11 +1,7 @@
 import { create } from 'zustand'
+import { type CommentFocusRequest, CommentFocusRequests } from '@/src/lib/comment-focus-requests.ts'
 
 type CommentsMenuTab = 'current' | 'sessions'
-
-interface CommentFocusRequest {
-  commentId: string
-  requestedAt: number
-}
 
 interface CommentsMenuState {
   open: boolean
@@ -50,12 +46,12 @@ export const useCommentsMenuStore = create<CommentsMenuState>()((set) => {
         open: true,
         tab: 'sessions',
         openedSessionId,
-        focus: { commentId, requestedAt: Date.now() },
+        focus: CommentFocusRequests.request(commentId),
       })
     },
     clearFocus: (requestedAt) => {
       set((state) => {
-        return state.focus?.requestedAt === requestedAt ? { focus: null } : {}
+        return { focus: CommentFocusRequests.cleared(state.focus, requestedAt) }
       })
     },
     resetAfterClose: () => {

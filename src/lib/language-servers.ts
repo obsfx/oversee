@@ -37,6 +37,14 @@ export class LanguageServers {
     this.list.invalidate()
   }
 
+  static byId(list: LanguageServerList | null, id: string) {
+    return (
+      list?.servers.find((server) => {
+        return server.id === id
+      }) ?? null
+    )
+  }
+
   private static replace(list: LanguageServerList, server: LanguageServer): LanguageServerList {
     return {
       ...list,

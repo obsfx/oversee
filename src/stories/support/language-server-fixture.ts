@@ -8,6 +8,7 @@ const server = (
     homepage: '',
     requires: [],
     missing: [],
+    outdated: [],
     available: true,
     status: 'not-installed',
     progress: null,
@@ -103,6 +104,7 @@ export const languageServerList: LanguageServerList = {
       fileTypes: ['java'],
       requires: ['java', 'python3'],
       missing: ['java'],
+      outdated: [{ tool: 'java', minimum: '21', found: '17' }],
       description: 'Java language server.',
     }),
     server({

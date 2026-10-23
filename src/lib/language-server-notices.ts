@@ -43,19 +43,7 @@ export abstract class LanguageServerNotices {
     if (server.status === 'installed' || dismissed.includes(server.id)) {
       return null
     }
-    if (server.status === 'installing') {
-      return notice('installing')
-    }
-    if (server.status === 'failed') {
-      return notice('failed', server.error)
-    }
-    const failure = failures.get(server.id)
-    if (failure) {
-      return notice('failed', failure)
-    }
-    if (LanguageServerStates.blocker(server)) {
-      return notice('blocked')
-    }
-    return notice('offer')
+    const state = LanguageServerStates.installState(server, failures)
+    return notice(state.kind, state.error)
   }
 }

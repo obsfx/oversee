@@ -2,26 +2,60 @@ package langserver
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/obsfx/oversee/internal/catalog"
+	"github.com/obsfx/oversee/internal/domain"
 )
 
-type Toolchain struct{}
+const javaHomeEnv = "JAVA_HOME"
 
-func (t Toolchain) Missing(requirements []catalog.Requirement) []catalog.Requirement {
-	var missing []catalog.Requirement
+type Toolchain struct {
+	versions *toolVersions
+}
+
+func NewToolchain() Toolchain {
+	return Toolchain{versions: newToolVersions()}
+}
+
+func (t Toolchain) Missing(requirements []catalog.Requirement, minimums map[catalog.Requirement]string) []domain.MissingTool {
+	var missing []domain.MissingTool
 	for _, requirement := range requirements {
-		if _, err := t.Command(requirement); err != nil {
-			missing = append(missing, requirement)
+		command, err := t.Command(requirement)
+		if err != nil {
+			missing = append(missing, domain.MissingTool{Tool: string(requirement)})
+			continue
+		}
+		minimum, required := minimums[requirement]
+		if !required {
+			continue
+		}
+		version := t.versions.of(requirement, command)
+		if version.failed {
+			missing = append(missing, domain.MissingTool{Tool: string(requirement)})
+			continue
+		}
+		if version.known && version.major < atoi(minimum) {
+			missing = append(missing, domain.MissingTool{Tool: string(requirement), Minimum: minimum, Found: strconv.Itoa(version.major)})
 		}
 	}
 	return missing
 }
 
+func atoi(value string) int {
+	number, _ := strconv.Atoi(value)
+	return number
+}
+
 func (Toolchain) Command(requirement catalog.Requirement) (string, error) {
+	if java, found := javaHomeCommand(requirement); found {
+		return java, nil
+	}
 	for _, name := range commandNames(requirement) {
 		path, err := exec.LookPath(name)
 		if err == nil && !windowsAppAlias(requirement, path) {
@@ -29,6 +63,19 @@ func (Toolchain) Command(requirement catalog.Requirement) (string, error) {
 		}
 	}
 	return "", fmt.Errorf("%s is not on PATH", requirement)
+}
+
+func javaHomeCommand(requirement catalog.Requirement) (string, bool) {
+	home := os.Getenv(javaHomeEnv)
+	if requirement != catalog.RequiresJava || home == "" {
+		return "", false
+	}
+	java := filepath.Join(home, "bin", "java")
+	if runtime.GOOS == "windows" {
+		java += ".exe"
+	}
+	info, err := os.Stat(java)
+	return java, err == nil && info.Mode().IsRegular()
 }
 
 func windowsAppAlias(requirement catalog.Requirement, path string) bool {

@@ -1,11 +1,34 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { FileDiffView } from '@/src/components/diff-viewer/file-diff-view.tsx'
 import { createStoryServices } from '@/src/stories/support/fixtures.ts'
-import { fileDiffFor } from '@/src/stories/support/file-diff-fixture.ts'
+import { fileDiffFor, fixtureContents } from '@/src/stories/support/file-diff-fixture.ts'
 import { StoryFrame } from '@/src/stories/support/story-frame.tsx'
 import { resetReviewState, STORY_PATH } from '@/src/stories/support/story-review-state.ts'
+import { useSymbolHighlightStore } from '@/src/store/symbol-highlight-store.ts'
 
 const services = createStoryServices()
+
+const newLines = fixtureContents(STORY_PATH, 'new').split('\n')
+
+const lineOf = (needle: string, from = 0) => {
+  return (
+    newLines.findIndex((line, index) => {
+      return index >= from && line.includes(needle)
+    }) + 1
+  )
+}
+
+const lineExactly = (text: string, from = 0) => {
+  return (
+    newLines.findIndex((line, index) => {
+      return index >= from && line === text
+    }) + 1
+  )
+}
+
+const refreshStart = lineOf('async refresh(')
+const refreshEnd = lineExactly('  }', refreshStart)
+const findByIdCall = lineOf('this.sessions.findById', refreshStart)
 
 const meta = {
   title: 'Components/DiffViewer/FileDiffView',
@@ -23,6 +46,7 @@ const meta = {
   },
   beforeEach: () => {
     resetReviewState()
+    useSymbolHighlightStore.getState().clear()
   },
   decorators: [
     (Story) => {
@@ -39,4 +63,30 @@ const meta = {
 
 export default meta
 
-export const Default: StoryObj<typeof meta> = {}
+type Story = StoryObj<typeof meta>
+
+export const Default: Story = {}
+
+export const SymbolHighlight: Story = {
+  beforeEach: () => {
+    useSymbolHighlightStore.getState().show({
+      path: STORY_PATH,
+      side: 'new',
+      start: refreshStart,
+      end: refreshEnd,
+      focus: refreshStart,
+    })
+  },
+}
+
+export const CallSiteFocus: Story = {
+  beforeEach: () => {
+    useSymbolHighlightStore.getState().show({
+      path: STORY_PATH,
+      side: 'new',
+      start: refreshStart,
+      end: refreshEnd,
+      focus: findByIdCall,
+    })
+  },
+}

@@ -20,18 +20,18 @@ var masonTargets = map[catalog.Platform][]string{
 type targetSet []string
 
 func targetSetOf(value any) targetSet {
-	return targetSet(stringListOf(value))
+	return targetSet(oneOrList[string](value))
 }
 
-func stringListOf(value any) []string {
+func oneOrList[T any](value any) []T {
 	switch typed := value.(type) {
-	case string:
-		return []string{typed}
+	case T:
+		return []T{typed}
 	case []any:
-		list := make([]string, 0, len(typed))
+		list := make([]T, 0, len(typed))
 		for _, item := range typed {
-			if text, ok := item.(string); ok {
-				list = append(list, text)
+			if entry, ok := item.(T); ok {
+				list = append(list, entry)
 			}
 		}
 		return list
@@ -52,20 +52,7 @@ func (t targetSet) Matches(platform catalog.Platform) bool {
 type variantList []map[string]any
 
 func variantListOf(value any) variantList {
-	switch typed := value.(type) {
-	case map[string]any:
-		return variantList{typed}
-	case []any:
-		variants := make(variantList, 0, len(typed))
-		for _, item := range typed {
-			if variant, ok := item.(map[string]any); ok {
-				variants = append(variants, variant)
-			}
-		}
-		return variants
-	default:
-		return nil
-	}
+	return variantList(oneOrList[map[string]any](value))
 }
 
 func (v variantList) For(platform catalog.Platform) (map[string]any, bool) {

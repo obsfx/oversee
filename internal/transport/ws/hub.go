@@ -46,20 +46,25 @@ func (h *Hub) Publish(events []domain.RecordedEvent) {
 }
 
 func (h *Hub) PublishWorkspaceChange(change domain.WorkspaceChange) {
-	envelope, err := dto.WorkspaceChangedOf(change, time.Now())
+	h.publishSignal(dto.WorkspaceChangedOf(change, time.Now()))
+}
+
+func (h *Hub) PublishLanguageServersChange() {
+	h.publishSignal(dto.LanguageServersChangedOf(time.Now()))
+}
+
+func (h *Hub) PublishFlowProgress(progress domain.FlowProgress) {
+	h.publishSignal(dto.FlowProgressOf(progress, time.Now()))
+}
+
+func (h *Hub) publishSignal(envelope dto.Envelope, err error) {
 	if err != nil {
-		slog.Warn("workspace change signal encoding failed", "error", err)
+		slog.Warn("signal encoding failed", "error", err)
 		return
 	}
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.broadcast(envelope)
-}
-
-func (h *Hub) PublishLanguageServersChange() {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	h.broadcast(dto.LanguageServersChangedOf(time.Now()))
 }
 
 func (h *Hub) HasClients() bool {

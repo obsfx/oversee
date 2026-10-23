@@ -26,6 +26,10 @@ func (c Comparison) IsUncommitted() bool {
 	return c.Source == UncommittedSource
 }
 
+func (c Comparison) OnWorkingTree(currentBranch string) bool {
+	return c.IsUncommitted() || c.Source == currentBranch
+}
+
 func (c Comparison) Refs() []string {
 	if c.IsUncommitted() {
 		return []string{c.Target}
@@ -71,11 +75,11 @@ func (f FileRef) SnapshotPath(r LineRange) string {
 }
 
 func (f FileRef) Validate() error {
-	if !isRepoPath(f.Path) {
-		return invalid("path", "must be a path inside the repository")
+	if problem := repoPathProblem(f.Path); problem != "" {
+		return invalid("path", problem)
 	}
-	if !isRepoPath(f.OldPath()) {
-		return invalid("previousPath", "must be a path inside the repository")
+	if problem := repoPathProblem(f.OldPath()); problem != "" {
+		return invalid("previousPath", problem)
 	}
 	return nil
 }
@@ -84,6 +88,15 @@ func isRef(value string) bool {
 	return value != "" && !strings.HasPrefix(value, "-")
 }
 
-func isRepoPath(value string) bool {
-	return value != "" && !strings.HasPrefix(value, "-") && filepath.IsLocal(filepath.FromSlash(value))
+func repoPathProblem(value string) string {
+	switch {
+	case value == "":
+		return "is required"
+	case strings.HasPrefix(value, "-"):
+		return "must not start with -"
+	case !filepath.IsLocal(filepath.FromSlash(value)):
+		return "must stay inside the repository"
+	default:
+		return ""
+	}
 }

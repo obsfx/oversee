@@ -12,5 +12,5 @@ export const useFileDiffResource = (path: string | null) => {
   const resource = comparison && change ? fileDiffs.get({ comparison, change }) : null
   const state = useResource(resource)
 
-  return { changeSet, change, resource, state }
+  return { comparison, changeSet, change, resource, state }
 }

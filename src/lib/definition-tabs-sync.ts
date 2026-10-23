@@ -1,4 +1,5 @@
-import type { FollowedComparison } from '@/src/lib/reviewed-marks-sync.ts'
+import { Disposers } from '@/src/lib/disposers.ts'
+import type { FollowedComparison } from '@/src/lib/followed-change-set-watch.ts'
 
 export interface DefinitionTabsPort {
   reset(): void
@@ -25,18 +26,13 @@ export class DefinitionTabsSync {
   }
 
   start() {
-    const disposers = [
+    return Disposers.all([
       this.comparison.subscribe(() => {
         this.tabs.reset()
       }),
       this.navigation.subscribe(() => {
         this.tabs.showReview()
       }),
-    ]
-    return () => {
-      for (const dispose of disposers) {
-        dispose()
-      }
-    }
+    ])
   }
 }

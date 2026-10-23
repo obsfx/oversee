@@ -4,6 +4,7 @@ import { SidebarEmpty } from '@/src/components/sidebar/sidebar-empty.tsx'
 const meta = {
   title: 'Components/Sidebar/SidebarEmpty',
   component: SidebarEmpty,
+  args: { label: 'No changed files' },
   decorators: [
     (Story) => {
       return (

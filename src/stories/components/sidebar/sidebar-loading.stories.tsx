@@ -4,6 +4,7 @@ import { SidebarLoading } from '@/src/components/sidebar/sidebar-loading.tsx'
 const meta = {
   title: 'Components/Sidebar/SidebarLoading',
   component: SidebarLoading,
+  args: { label: 'Loading files' },
   decorators: [
     (Story) => {
       return (

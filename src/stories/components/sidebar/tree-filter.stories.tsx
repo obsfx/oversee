@@ -1,12 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import { fn } from 'storybook/test'
 import { TreeFilter } from '@/src/components/sidebar/tree-filter.tsx'
-import { createStoryTree } from '@/src/stories/support/story-tree.ts'
 
 const meta = {
   title: 'Components/Sidebar/TreeFilter',
   component: TreeFilter,
-  args: { model: createStoryTree() },
-  argTypes: { model: { table: { disable: true } } },
+  args: { label: 'Filter files', value: '', onChange: fn() },
   decorators: [
     (Story) => {
       return (
@@ -20,4 +19,8 @@ const meta = {
 
 export default meta
 
-export const Default: StoryObj<typeof meta> = {}
+type Story = StoryObj<typeof meta>
+
+export const Empty: Story = {}
+
+export const WithValue: Story = { args: { value: 'resolvers' } }

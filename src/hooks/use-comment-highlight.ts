@@ -1,19 +1,14 @@
+import { useFocusHighlight } from '@/src/hooks/use-focus-highlight.ts'
+import { CommentFocusRequests } from '@/src/lib/comment-focus-requests.ts'
 import { useNavigationStore } from '@/src/store/navigation-store.ts'
 
 export const useCommentHighlight = (commentId: string) => {
   const requestedAt = useNavigationStore((navigation) => {
-    return navigation.focus?.commentId === commentId ? navigation.focus.requestedAt : null
+    return CommentFocusRequests.requestedAt(navigation.focus, commentId)
   })
   const clearFocus = useNavigationStore((navigation) => {
     return navigation.clearFocus
   })
 
-  return {
-    highlightKey: requestedAt,
-    endHighlight: () => {
-      if (requestedAt !== null) {
-        clearFocus(requestedAt)
-      }
-    },
-  }
+  return useFocusHighlight(requestedAt, clearFocus)
 }

@@ -2,8 +2,7 @@ package langserver
 
 import (
 	"context"
-	"slices"
-	"strings"
+	"os"
 
 	"github.com/obsfx/oversee/internal/catalog"
 )
@@ -17,17 +16,17 @@ func NewLauncher(home Home, toolchain Toolchain) Launcher {
 	return Launcher{home: home, toolchain: toolchain}
 }
 
-func (l Launcher) Start(ctx context.Context, installation Installation, run catalog.Run, root string) (*Process, error) {
-	args := slices.Clone(run.Args)
-	for index, arg := range args {
-		if !strings.Contains(arg, catalog.DataDirArgument) {
-			continue
+func (l Launcher) Start(ctx context.Context, installation Installation, run catalog.Run, root string) (*Process, map[string]any, error) {
+	dir := l.home.DataDir(installation.ID, root)
+	resolved, usesDataDir := run.WithDataDir(dir)
+	if usesDataDir {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			return nil, nil, err
 		}
-		dir, err := l.home.EnsureDataDir(installation.ID, root)
-		if err != nil {
-			return nil, err
-		}
-		args[index] = strings.ReplaceAll(arg, catalog.DataDirArgument, dir)
 	}
-	return installation.Start(ctx, l.toolchain, args, root)
+	process, err := installation.Start(ctx, l.toolchain, resolved.Args, root)
+	if err != nil {
+		return nil, nil, err
+	}
+	return process, resolved.InitializationOptions, nil
 }

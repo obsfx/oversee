@@ -1,10 +1,12 @@
 package git
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os/exec"
 	"strings"
 )
@@ -33,19 +35,48 @@ func (r Runner) Text(ctx context.Context, args ...string) (string, error) {
 }
 
 func (r Runner) Bytes(ctx context.Context, args ...string) ([]byte, error) {
-	command := exec.CommandContext(ctx, "git", args...)
-	command.Dir = r.dir
-	var stderr bytes.Buffer
-	command.Stderr = &stderr
+	command, stderr := r.command(ctx, nil, args)
 	output, err := command.Output()
-	if exitErr, ok := errors.AsType[*exec.ExitError](err); ok {
-		return nil, &CommandError{Args: args, ExitCode: exitErr.ExitCode(), Stderr: strings.TrimSpace(stderr.String())}
-	}
 	if err != nil {
-		return nil, err
+		return nil, commandFailure(args, err, stderr)
 	}
 	if output == nil {
 		return []byte{}, nil
 	}
 	return output, nil
+}
+
+func (r Runner) Stream(ctx context.Context, input []byte, read func(*bufio.Reader), args ...string) error {
+	command, stderr := r.command(ctx, input, args)
+	stdout, err := command.StdoutPipe()
+	if err != nil {
+		return err
+	}
+	if err := command.Start(); err != nil {
+		return err
+	}
+	read(bufio.NewReader(stdout))
+	_, drainErr := io.Copy(io.Discard, stdout)
+	if err := command.Wait(); err != nil {
+		return commandFailure(args, err, stderr)
+	}
+	return drainErr
+}
+
+func (r Runner) command(ctx context.Context, input []byte, args []string) (*exec.Cmd, *bytes.Buffer) {
+	command := exec.CommandContext(ctx, "git", args...)
+	command.Dir = r.dir
+	if input != nil {
+		command.Stdin = bytes.NewReader(input)
+	}
+	stderr := &bytes.Buffer{}
+	command.Stderr = stderr
+	return command, stderr
+}
+
+func commandFailure(args []string, err error, stderr *bytes.Buffer) error {
+	if exitErr, ok := errors.AsType[*exec.ExitError](err); ok {
+		return &CommandError{Args: args, ExitCode: exitErr.ExitCode(), Stderr: strings.TrimSpace(stderr.String())}
+	}
+	return err
 }

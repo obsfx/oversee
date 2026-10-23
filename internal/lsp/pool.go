@@ -21,10 +21,9 @@ var (
 )
 
 type Launch struct {
-	Key                   string
-	Root                  string
-	InitializationOptions map[string]any
-	Start                 func(ctx context.Context) (Transport, error)
+	Key   string
+	Root  string
+	Start func(ctx context.Context) (Transport, map[string]any, error)
 }
 
 type Pool struct {
@@ -127,22 +126,22 @@ func (p *Pool) session(launch Launch) (*session, error) {
 		exists = false
 	}
 	if !exists {
-		current = p.start(launch)
+		current = p.startSession(launch)
 		p.sessions[launch.Key] = current
 	}
 	current.lastUsed = now
 	return current, nil
 }
 
-func (p *Pool) start(launch Launch) *session {
+func (p *Pool) startSession(launch Launch) *session {
 	ctx, cancel := context.WithCancelCause(p.ctx)
 	started := &session{ready: make(chan struct{}), cancel: cancel}
 	p.group.Go(func() {
 		defer close(started.ready)
-		transport, err := launch.Start(ctx)
+		transport, initializationOptions, err := launch.Start(ctx)
 		if err == nil {
 			startCtx, stop := context.WithTimeoutCause(ctx, startTimeout, errStartTimeout)
-			started.client, err = Start(startCtx, transport, launch.Root, launch.InitializationOptions)
+			started.client, err = Start(startCtx, transport, launch.Root, initializationOptions)
 			stop()
 		}
 		if err != nil {

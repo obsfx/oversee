@@ -7,13 +7,23 @@ interface ProgressBarProps {
 }
 
 export function ProgressBar({ label, ratio, className }: ProgressBarProps) {
-  let fill = <div className={'h-full w-1/3 animate-loading-bar bg-accent'} />
+  let fill = (
+    <div
+      className={c(
+        'h-full w-1/3 animate-loading-bar bg-accent',
+        'motion-reduce:w-full motion-reduce:animate-pulse',
+      )}
+    />
+  )
   let value
   if (ratio !== null) {
     value = Math.round(ratio * 100)
     fill = (
       <div
-        className={'h-full origin-left bg-accent transition-[scale] duration-150 ease-linear'}
+        className={c(
+          'h-full origin-left bg-accent',
+          'transition-[scale] duration-150 ease-linear motion-reduce:transition-none',
+        )}
         style={{ scale: `${ratio} 1` }}
       />
     )

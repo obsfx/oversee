@@ -71,6 +71,10 @@ export abstract class ComparisonRules {
     return `${sourceKey}..${target}`
   }
 
+  static fileKey(comparison: Comparison, path: string) {
+    return `${ComparisonRules.key(comparison)}:${path}`
+  }
+
   static query({ source, target }: Comparison) {
     return { source: ComparisonRules.branchName(source) ?? UNCOMMITTED_REF, target }
   }

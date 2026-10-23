@@ -10,4 +10,5 @@ type Services struct {
 	Watcher         *WorkspaceWatcher
 	LanguageServers *LanguageServerService
 	Definitions     *DefinitionService
+	Flows           *ChangeFlowService
 }

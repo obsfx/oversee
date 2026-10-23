@@ -15,7 +15,6 @@ export class DocumentTitleSync {
 
   start() {
     void this.workspace.load()
-    DocumentTitleSync.apply(this.workspace.store.getState())
-    return this.workspace.store.subscribe(DocumentTitleSync.apply)
+    return this.workspace.follow(DocumentTitleSync.apply)
   }
 }

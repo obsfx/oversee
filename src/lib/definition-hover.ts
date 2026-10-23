@@ -54,10 +54,6 @@ export class DefinitionHover {
     this.apple = apple
   }
 
-  static sideOf(side: AnnotationSide): FileSide {
-    return side === 'deletions' ? 'old' : 'new'
-  }
-
   private static same(left: HoverToken | null, right: HoverToken | null) {
     return left !== null && right !== null && left.element === right.element
   }

@@ -1,7 +1,6 @@
 package dto
 
 import (
-	"encoding/json/jsontext"
 	"time"
 
 	"github.com/obsfx/oversee/internal/service"
@@ -30,12 +29,19 @@ type LanguageServer struct {
 	Version          string                  `json:"version"`
 	Requires         []string                `json:"requires"`
 	Missing          []string                `json:"missing"`
+	Outdated         []OutdatedTool          `json:"outdated"`
 	Available        bool                    `json:"available"`
 	Status           string                  `json:"status"`
 	Progress         *LanguageServerProgress `json:"progress"`
 	InstalledVersion string                  `json:"installedVersion"`
 	UpdateAvailable  bool                    `json:"updateAvailable"`
 	Error            string                  `json:"error"`
+}
+
+type OutdatedTool struct {
+	Tool    string `json:"tool"`
+	Minimum string `json:"minimum"`
+	Found   string `json:"found"`
 }
 
 type LanguageServerProgress struct {
@@ -60,6 +66,14 @@ func LanguageServerOf(entry service.LanguageServerEntry) LanguageServer {
 	for _, requirement := range entry.Server.Requires {
 		requires = append(requires, string(requirement))
 	}
+	missing := make([]string, 0, len(entry.State.Missing))
+	outdated := make([]OutdatedTool, 0)
+	for _, tool := range entry.State.Missing {
+		missing = append(missing, tool.Tool)
+		if tool.Outdated() {
+			outdated = append(outdated, OutdatedTool{Tool: tool.Tool, Minimum: tool.Minimum, Found: tool.Found})
+		}
+	}
 	var progress *LanguageServerProgress
 	if entry.State.Installing && entry.State.Progress.Known() {
 		progress = &LanguageServerProgress{Received: entry.State.Progress.Received, Total: entry.State.Progress.Total}
@@ -72,7 +86,8 @@ func LanguageServerOf(entry service.LanguageServerEntry) LanguageServer {
 		FileTypes:        entry.Server.FileTypes,
 		Version:          entry.Server.Version,
 		Requires:         requires,
-		Missing:          entry.State.Missing,
+		Missing:          missing,
+		Outdated:         outdated,
 		Available:        entry.State.Available,
 		Status:           string(entry.State.Status()),
 		Progress:         progress,
@@ -82,6 +97,6 @@ func LanguageServerOf(entry service.LanguageServerEntry) LanguageServer {
 	}
 }
 
-func LanguageServersChangedOf(at time.Time) Envelope {
-	return Envelope{Kind: languageServersChangedKind, Payload: jsontext.Value("{}"), CreatedAt: millis(at)}
+func LanguageServersChangedOf(at time.Time) (Envelope, error) {
+	return signalOf(languageServersChangedKind, struct{}{}, at)
 }

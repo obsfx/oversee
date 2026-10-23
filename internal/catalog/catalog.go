@@ -8,6 +8,7 @@ import (
 	"iter"
 	"path"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -19,6 +20,8 @@ const DataDirArgument = "${dataDir}"
 const sha256Length = 64
 
 var requirements = []Requirement{RequiresNode, RequiresNpm, RequiresGo, RequiresPython, RequiresJava, RequiresDotnet}
+
+var versionedRequirements = []Requirement{RequiresJava, RequiresDotnet}
 
 var installRequirements = map[InstallType][]Requirement{
 	InstallNpm:    {RequiresNode, RequiresNpm},
@@ -112,23 +115,66 @@ type FileType struct {
 }
 
 type Server struct {
-	ID          string        `json:"id"`
-	Description string        `json:"description,omitempty"`
-	Homepage    string        `json:"homepage,omitempty"`
-	Licenses    []string      `json:"licenses,omitempty"`
-	Languages   []string      `json:"languages,omitempty"`
-	Version     string        `json:"version"`
-	FileTypes   []string      `json:"fileTypes"`
-	RootMarkers []string      `json:"rootMarkers,omitempty"`
-	Run         Run           `json:"run"`
-	Install     Install       `json:"install"`
-	Requires    []Requirement `json:"requires,omitempty"`
+	ID          string                 `json:"id"`
+	Description string                 `json:"description,omitempty"`
+	Homepage    string                 `json:"homepage,omitempty"`
+	Licenses    []string               `json:"licenses,omitempty"`
+	Languages   []string               `json:"languages,omitempty"`
+	Version     string                 `json:"version"`
+	FileTypes   []string               `json:"fileTypes"`
+	RootMarkers []string               `json:"rootMarkers,omitempty"`
+	Run         Run                    `json:"run"`
+	Install     Install                `json:"install"`
+	Requires    []Requirement          `json:"requires,omitempty"`
+	Minimums    map[Requirement]string `json:"minimums,omitempty"`
 }
 
 type Run struct {
 	Bin                   string         `json:"bin"`
 	Args                  []string       `json:"args,omitempty"`
 	InitializationOptions map[string]any `json:"initializationOptions,omitempty"`
+}
+
+func (r Run) WithDataDir(dir string) (Run, bool) {
+	resolved := r
+	used := false
+	resolved.Args = make([]string, 0, len(r.Args))
+	for _, arg := range r.Args {
+		used = used || strings.Contains(arg, DataDirArgument)
+		resolved.Args = append(resolved.Args, strings.ReplaceAll(arg, DataDirArgument, dir))
+	}
+	if r.InitializationOptions != nil {
+		options, optionsUsed := replaceDataDir(r.InitializationOptions, dir)
+		resolved.InitializationOptions = options.(map[string]any)
+		used = used || optionsUsed
+	}
+	return resolved, used
+}
+
+func replaceDataDir(value any, dir string) (any, bool) {
+	switch typed := value.(type) {
+	case string:
+		return strings.ReplaceAll(typed, DataDirArgument, dir), strings.Contains(typed, DataDirArgument)
+	case map[string]any:
+		resolved := make(map[string]any, len(typed))
+		used := false
+		for key, item := range typed {
+			itemResolved, itemUsed := replaceDataDir(item, dir)
+			resolved[key] = itemResolved
+			used = used || itemUsed
+		}
+		return resolved, used
+	case []any:
+		resolved := make([]any, 0, len(typed))
+		used := false
+		for _, item := range typed {
+			itemResolved, itemUsed := replaceDataDir(item, dir)
+			resolved = append(resolved, itemResolved)
+			used = used || itemUsed
+		}
+		return resolved, used
+	}
+	return value, false
 }
 
 type Install struct {
@@ -204,6 +250,15 @@ func (c Catalog) Server(id string) (Server, bool) {
 	return c.Servers[index], true
 }
 
+func (c Catalog) ServerFor(file string) (Server, string, bool) {
+	languageID, ok := c.FileTypeOf(file)
+	if !ok {
+		return Server{}, "", false
+	}
+	server, ok := c.Server(c.FileTypes[languageID].Server)
+	return server, languageID, ok
+}
+
 func (c Catalog) FileTypeOf(file string) (string, bool) {
 	base := path.Base(file)
 	_, extension, hasExtension := strings.CutLast(base, ".")
@@ -238,6 +293,17 @@ func (s Server) Validate() error {
 	for _, requirement := range s.Requires {
 		if !slices.Contains(requirements, requirement) {
 			return fmt.Errorf("catalog server %q requires unknown %q", s.ID, requirement)
+		}
+	}
+	for requirement, minimum := range s.Minimums {
+		if !slices.Contains(s.Requires, requirement) {
+			return fmt.Errorf("catalog server %q sets a minimum for %q, which it does not require", s.ID, requirement)
+		}
+		if !slices.Contains(versionedRequirements, requirement) {
+			return fmt.Errorf("catalog server %q sets a minimum for %q, which has no version check", s.ID, requirement)
+		}
+		if major, err := strconv.Atoi(minimum); err != nil || major < 1 {
+			return fmt.Errorf("catalog server %q minimum %q for %q is not a major version", s.ID, minimum, requirement)
 		}
 	}
 	for bins := range s.Install.binSets() {

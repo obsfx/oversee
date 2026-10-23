@@ -6,6 +6,7 @@ import {
   type TokenHandlers,
 } from '@/src/lib/definition-hover.ts'
 import { EditableTargets } from '@/src/lib/editable-targets.ts'
+import { FileSides } from '@/src/lib/line-range.ts'
 
 interface ShownToken {
   token: HoverToken
@@ -55,7 +56,7 @@ export const useDefinitionHover = (
   const tokenOf = (props: TokenEventProps): HoverToken => {
     let side: HoverToken['side'] = 'new'
     if (props.side) {
-      side = DefinitionHover.sideOf(props.side)
+      side = FileSides.fromAnnotation(props.side)
     }
     return {
       path,

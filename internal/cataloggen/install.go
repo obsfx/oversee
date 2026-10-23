@@ -122,7 +122,7 @@ func (r installResolver) files(fields map[string]any) ([]catalog.File, error) {
 	if r.purl.Type == "generic" {
 		return r.genericFiles(fields["files"])
 	}
-	specs := stringListOf(fields["file"])
+	specs := oneOrList[string](fields["file"])
 	if len(specs) == 0 {
 		return nil, fmt.Errorf("%s download has no file", r.purl.Type)
 	}

@@ -1,0 +1,90 @@
+name: gdscript-grammar
+
+on:
+  schedule:
+    - cron: '43 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: gdscript-grammar
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/gdscript-grammar
+          key: gdscript-grammar-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/gdscript-grammar.json') }}
+          restore-keys: gdscript-grammar-${{ runner.os }}-${{ runner.arch }}-
+
+      - name: generate grammar
+        run: |
+          status=0
+          node scripts/generate-gdscript-grammar.mjs --update --summary "$RUNNER_TEMP/summary.md" || status=$?
+          cat "$RUNNER_TEMP/summary.md" >> "$GITHUB_STEP_SUMMARY" || true
+          exit "$status"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OVERSEE_GRAMMAR_CACHE: ${{ runner.temp }}/gdscript-grammar
+
+      - name: detect changes
+        id: changes
+        run: |
+          if [ -n "$(git status --porcelain -- internal/gdscript/grammar scripts/gdscript-grammar.json)" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "no grammar changes" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: test analyzer
+        id: test
+        if: steps.changes.outputs.changed == 'true'
+        continue-on-error: true
+        run: |
+          go vet ./internal/gdscript/...
+          go test -short ./internal/gdscript/... ./internal/service/...
+
+      - name: open pull request
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          paths=(internal/gdscript/grammar scripts/gdscript-grammar.json)
+          if [ "$TESTS" != success ]; then
+            echo "- go test failed: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" >> "$RUNNER_TEMP/summary.md"
+          fi
+          branch=gdscript-grammar/update
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch --create "$branch"
+          git add -- "${paths[@]}"
+          git commit --quiet --message "update GDScript grammar to $(jq -r .grammar.commit scripts/gdscript-grammar.json | cut -c1-7)"
+          git push --quiet --force origin "$branch"
+          if [ -z "$(gh pr list --head "$branch" --state open --json number --jq '.[].number')" ]; then
+            gh pr create --head "$branch" --title "Update GDScript grammar" --body-file "$RUNNER_TEMP/summary.md"
+          else
+            gh pr edit "$branch" --body-file "$RUNNER_TEMP/summary.md"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TESTS: ${{ steps.test.outcome }}
+
+      - name: fail on test failures
+        if: steps.changes.outputs.changed == 'true' && steps.test.outcome == 'failure'
+        run: exit 1

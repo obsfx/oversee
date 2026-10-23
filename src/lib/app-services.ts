@@ -1,6 +1,7 @@
 import { ApiClient } from '@/src/lib/api-client.ts'
 import { AppGlobals } from '@/src/lib/app-globals.ts'
 import { HttpBranchGateway } from '@/src/lib/http-branch-gateway.ts'
+import { HttpChangeFlowGateway } from '@/src/lib/http-change-flow-gateway.ts'
 import { HttpChangeSetGateway } from '@/src/lib/http-change-set-gateway.ts'
 import { HttpCommentGateway } from '@/src/lib/http-comment-gateway.ts'
 import { HttpDefinitionGateway } from '@/src/lib/http-definition-gateway.ts'
@@ -25,6 +26,7 @@ export const appServices = new Services({
   comments: new HttpCommentGateway(apiClient),
   sessions: new HttpReviewSessionGateway(apiClient),
   changeSets: new HttpChangeSetGateway(apiClient),
+  changeFlows: new HttpChangeFlowGateway(apiClient),
   fileDiffs: new HttpFileDiffGateway(apiClient),
   notifications: new HttpNotificationGateway(apiClient),
   settings: new HttpSettingsGateway(apiClient),

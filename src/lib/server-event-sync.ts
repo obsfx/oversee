@@ -1,3 +1,4 @@
+import type { ChangeFlowProgress } from '@/src/lib/change-flow-progress.ts'
 import type { Definitions } from '@/src/lib/definitions.ts'
 import type { LanguageServers } from '@/src/lib/language-servers.ts'
 import type { Notifications } from '@/src/lib/notifications.ts'
@@ -14,6 +15,7 @@ export class ServerEventSync {
   private readonly workspace: WorkspaceRefresh
   private readonly languageServers: LanguageServers
   private readonly definitions: Definitions
+  private readonly flowProgress: ChangeFlowProgress
 
   constructor(
     events: EventStream,
@@ -23,6 +25,7 @@ export class ServerEventSync {
     workspace: WorkspaceRefresh,
     languageServers: LanguageServers,
     definitions: Definitions,
+    flowProgress: ChangeFlowProgress,
   ) {
     this.events = events
     this.sessions = sessions
@@ -31,6 +34,7 @@ export class ServerEventSync {
     this.workspace = workspace
     this.languageServers = languageServers
     this.definitions = definitions
+    this.flowProgress = flowProgress
   }
 
   start() {
@@ -45,8 +49,13 @@ export class ServerEventSync {
       return
     }
     if (event.kind === 'stream.resumed') {
+      this.flowProgress.clear()
       this.workspace.apply(WorkspaceRefresh.everything)
       this.languageServers.refresh()
+      return
+    }
+    if (event.kind === 'change-flow.progress') {
+      this.flowProgress.receive({ comparison: event.comparison, servers: event.servers })
       return
     }
     if (event.kind === 'language-servers.changed') {

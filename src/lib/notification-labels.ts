@@ -1,13 +1,13 @@
 import { ComparisonLabels } from '@/src/lib/comparison-labels.ts'
 import type { ReviewNotification } from '@/src/lib/notification-gateway.ts'
+import { LocationLabels } from '@/src/lib/location-labels.ts'
 import { RelativeTime } from '@/src/lib/relative-time.ts'
 import { SessionStatuses } from '@/src/lib/session-statuses.ts'
-import { TreePaths } from '@/src/lib/tree-paths.ts'
 
 export abstract class NotificationLabels {
   static title(notification: ReviewNotification) {
     if (notification.kind === 'comment-reply') {
-      return `Agent replied on ${TreePaths.split(notification.filePath).name}:${notification.line}`
+      return `Agent replied on ${LocationLabels.fileLine(notification.filePath, notification.line)}`
     }
     if (notification.status === 'closed') {
       return 'Review closed'

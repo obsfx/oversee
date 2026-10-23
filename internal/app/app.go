@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/obsfx/oversee/internal/catalog"
+	"github.com/obsfx/oversee/internal/gdscript"
 	"github.com/obsfx/oversee/internal/git"
 	"github.com/obsfx/oversee/internal/langserver"
 	"github.com/obsfx/oversee/internal/lsp"
@@ -98,7 +99,7 @@ func (a *App) openLanguageServers() error {
 		return err
 	}
 	platform := langserver.DetectPlatform()
-	toolchain := langserver.Toolchain{}
+	toolchain := langserver.NewToolchain()
 	installations := langserver.NewInstallations(home)
 	a.sessions = lsp.NewPool(sessionIdle, sessionRetry)
 	installer := langserver.NewInstaller(home, toolchain, &http.Client{})
@@ -107,12 +108,17 @@ func (a *App) openLanguageServers() error {
 	project := langserver.NewProject(a.Workspace.RepoRoot)
 	a.Services.Definitions = service.NewDefinitionService(servers, a.git, installations, launcher, project, a.sessions)
 	a.Services.Watcher.Listen(a.Services.Definitions)
+	a.Services.Flows = service.NewChangeFlowService(servers, a.git, installations, launcher, project, a.sessions, gdscript.NewAnalyzer())
+	a.Services.Watcher.Listen(a.Services.Flows)
 	return nil
 }
 
 func (a *App) Close() error {
 	if a.Services.LanguageServers != nil {
 		a.Services.LanguageServers.Close()
+	}
+	if a.Services.Flows != nil {
+		a.Services.Flows.Close()
 	}
 	if a.sessions != nil {
 		a.sessions.Close()

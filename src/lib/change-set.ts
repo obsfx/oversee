@@ -46,4 +46,18 @@ export abstract class ChangeSets {
       }) ?? null
     )
   }
+
+  static findEither(changes: readonly FileChange[], path: string) {
+    const current = ChangeSets.find(changes, path)
+    if (current !== null) {
+      return current
+    }
+    const renamed = changes.find((change) => {
+      return change.previousPath === path
+    })
+    if (renamed !== undefined) {
+      return renamed
+    }
+    return null
+  }
 }

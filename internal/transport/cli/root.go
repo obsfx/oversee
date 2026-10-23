@@ -29,7 +29,7 @@ func Execute(version string) int {
 		SilenceErrors: true,
 	}
 	root.PersistentFlags().StringVarP(&opts.dir, "dir", "C", ".", "run as if oversee was started in this directory")
-	root.AddCommand(initCommand(opts), serveCommand(opts), reviewCommand(opts))
+	root.AddCommand(initCommand(opts), serveCommand(opts), reviewCommand(opts), licensesCommand())
 	if err := root.ExecuteContext(ctx); err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
 		return 1

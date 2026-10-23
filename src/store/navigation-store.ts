@@ -1,15 +1,14 @@
 import { create } from 'zustand'
 import type { FileSide } from '@/src/lib/change-set.ts'
+import { type CommentFocusRequest, CommentFocusRequests } from '@/src/lib/comment-focus-requests.ts'
 import type { ReviewComment } from '@/src/lib/comment-gateway.ts'
 import type { TabReveal } from '@/src/lib/definition-tabs.ts'
 import type { ReviewNavigation } from '@/src/lib/definition-tabs-sync.ts'
 import { type LineAnchor, LineRanges } from '@/src/lib/line-range.ts'
 
-export interface FocusRequest {
-  commentId: string
+export interface FocusRequest extends CommentFocusRequest {
   filePath: string
   anchor: LineAnchor
-  requestedAt: number
 }
 
 interface ReviewReveal extends TabReveal {
@@ -55,16 +54,15 @@ export const useNavigationStore = create<NavigationState>()((set) => {
         selectedAt: Date.now(),
         reveal: null,
         focus: {
-          commentId: comment.id,
+          ...CommentFocusRequests.request(comment.id),
           filePath: comment.filePath,
           anchor: LineRanges.anchor(comment.range),
-          requestedAt: Date.now(),
         },
       })
     },
     clearFocus: (requestedAt) => {
       set((state) => {
-        return state.focus?.requestedAt === requestedAt ? { focus: null } : {}
+        return { focus: CommentFocusRequests.cleared(state.focus, requestedAt) }
       })
     },
   }

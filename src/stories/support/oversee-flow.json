@@ -1,0 +1,647 @@
+{
+  "files": [
+    {
+      "path": "src/components/definitions/file-tab-view.tsx",
+      "status": "modified",
+      "additions": 19,
+      "deletions": 6,
+      "old": "import { useFileContent } from '@/src/hooks/use-file-content.ts'\nimport type { DefinitionTab } from '@/src/lib/definition-tabs.ts'\nimport { FileContentView } from '@/src/components/definitions/file-content-view.tsx'\nimport { TabResourceView } from '@/src/components/definitions/tab-resource-view.tsx'\n\nexport function FileTabView({ tab }: { tab: DefinitionTab }) {\n  const { state, retry } = useFileContent(tab)\n\n  return (\n    <TabResourceView state={state} failure={'Could not read this file'} onRetry={retry}>\n      {(content) => {\n        return <FileContentView tab={tab} content={content} />\n      }}\n    </TabResourceView>\n  )\n}\n",
+      "new": "import { VscCircleSlash } from 'react-icons/vsc'\nimport { useFileContent } from '@/src/hooks/use-file-content.ts'\nimport type { DefinitionTab } from '@/src/lib/definition-tabs.ts'\nimport { DiffPlaceholder } from '@/src/primitives/diff-placeholder.tsx'\nimport { FileContentView } from '@/src/components/definitions/file-content-view.tsx'\nimport { ReadOnlyFileNotice } from '@/src/components/definitions/read-only-file-notice.tsx'\nimport { TabResourceView } from '@/src/components/definitions/tab-resource-view.tsx'\n\nexport function FileTabView({ tab }: { tab: DefinitionTab }) {\n  const { state, missing, retry } = useFileContent(tab)\n\n  if (missing) {\n    return (\n      <DiffPlaceholder icon={<VscCircleSlash />} title={missing.title} detail={missing.detail} />\n    )\n  }\n  return (\n    <div className={'flex h-full flex-col'}>\n      <ReadOnlyFileNotice tab={tab} />\n      <div className={'min-h-0 flex-1'}>\n        <TabResourceView state={state} failure={'Could not read this file'} onRetry={retry}>\n          {(content) => {\n            return <FileContentView tab={tab} content={content} />\n          }}\n        </TabResourceView>\n      </div>\n    </div>\n  )\n}\n"
+    },
+    {
+      "path": "src/components/definitions/tab-panel.tsx",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 7,
+      "old": "import { useActiveTab } from '@/src/hooks/use-active-tab.ts'\nimport { TabContent } from '@/src/primitives/tab-content.tsx'\nimport { DiffTabView } from '@/src/components/definitions/diff-tab-view.tsx'\nimport { FileTabView } from '@/src/components/definitions/file-tab-view.tsx'\nimport { ReadOnlyFileNotice } from '@/src/components/definitions/read-only-file-notice.tsx'\nimport { DiffViewer } from '@/src/components/diff-viewer/diff-viewer.tsx'\nimport { LanguageServerNotice } from '@/src/components/language-server-notice.tsx'\nimport { Toolbar } from '@/src/components/toolbar/toolbar.tsx'\n\nexport function TabPanel() {\n  const { active, view, hasTabs, label } = useActiveTab()\n\n  if (!active) {\n    return (\n      <>\n        <Toolbar />\n        <LanguageServerNotice />\n        <TabContent tabbed={hasTabs} label={label}>\n          <DiffViewer />\n        </TabContent>\n      </>\n    )\n  }\n  if (view === 'diff') {\n    return (\n      <TabContent tabbed={hasTabs} label={label}>\n        <DiffTabView key={active.id} tab={active} />\n      </TabContent>\n    )\n  }\n  return (\n    <>\n      <ReadOnlyFileNotice tab={active} />\n      <TabContent tabbed={hasTabs} label={label}>\n        <FileTabView key={active.id} tab={active} />\n      </TabContent>\n    </>\n  )\n}\n",
+      "new": "import { useActiveTab } from '@/src/hooks/use-active-tab.ts'\nimport { TabContent } from '@/src/primitives/tab-content.tsx'\nimport { DiffTabView } from '@/src/components/definitions/diff-tab-view.tsx'\nimport { FileTabView } from '@/src/components/definitions/file-tab-view.tsx'\nimport { DiffViewer } from '@/src/components/diff-viewer/diff-viewer.tsx'\nimport { LanguageServerNotice } from '@/src/components/language-server-notice.tsx'\nimport { Toolbar } from '@/src/components/toolbar/toolbar.tsx'\n\nexport function TabPanel() {\n  const { active, view, hasTabs, label } = useActiveTab()\n\n  if (!active) {\n    return (\n      <>\n        <Toolbar />\n        <LanguageServerNotice />\n        <TabContent tabbed={hasTabs} label={label}>\n          <DiffViewer />\n        </TabContent>\n      </>\n    )\n  }\n  if (view === 'diff') {\n    return (\n      <TabContent tabbed={hasTabs} label={label}>\n        <DiffTabView key={active.id} tab={active} />\n      </TabContent>\n    )\n  }\n  return (\n    <TabContent tabbed={hasTabs} label={label}>\n      <FileTabView key={active.id} tab={active} />\n    </TabContent>\n  )\n}\n"
+    },
+    {
+      "path": "src/components/diff-viewer/diff-viewer.tsx",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 2,
+      "old": "import { VscCheckAll, VscDiff, VscFileBinary } from 'react-icons/vsc'\nimport { c } from '@/src/c.ts'\nimport { useDiffPlaceholder } from '@/src/hooks/use-diff-placeholder.ts'\nimport { useFileDiff } from '@/src/hooks/use-file-diff.ts'\nimport { CenteredStatus } from '@/src/primitives/centered-status.tsx'\nimport { DiffPlaceholder } from '@/src/primitives/diff-placeholder.tsx'\nimport { LoadFailure } from '@/src/primitives/load-failure.tsx'\nimport { LoadingBar } from '@/src/primitives/loading-bar.tsx'\nimport { FileDiffView } from '@/src/components/diff-viewer/file-diff-view.tsx'\nimport { ImageDiffView } from '@/src/components/diff-viewer/image-diff-view.tsx'\nimport { VirtualizedScroller } from '@/src/components/diff-viewer/virtualized-scroller.tsx'\n\nexport function DiffViewer() {\n  const { change, state, shown, loading, retry } = useFileDiff()\n  const placeholder = useDiffPlaceholder(change, shown)\n\n  if (state.status === 'failed') {\n    return <LoadFailure message={'Could not load this diff'} onRetry={retry} />\n  }\n\n  if (placeholder) {\n    return (\n      <DiffPlaceholder\n        icon={placeholder.kind === 'no-changes' ? <VscCheckAll /> : <VscDiff />}\n        title={placeholder.title}\n        detail={placeholder.detail}\n      />\n    )\n  }\n\n  const surface = c(\n    'h-full overflow-auto transition-opacity duration-150',\n    loading && 'pointer-events-none opacity-50',\n  )\n\n  return (\n    <div className={'relative h-full'}>\n      {loading && <LoadingBar />}\n      {shown && !shown.diff.binary && (\n        <VirtualizedScroller className={surface}>\n          <FileDiffView path={shown.path} diff={shown.diff} />\n        </VirtualizedScroller>\n      )}\n      {shown?.diff.binary && (\n        <div className={surface}>\n          {shown.diff.images ? (\n            <ImageDiffView images={shown.diff.images} />\n          ) : (\n            <CenteredStatus icon={<VscFileBinary />}>Binary file not shown</CenteredStatus>\n          )}\n        </div>\n      )}\n    </div>\n  )\n}\n",
+      "new": "import { VscCheckAll, VscDiff, VscFileBinary } from 'react-icons/vsc'\nimport { c } from '@/src/c.ts'\nimport { useDiffPlaceholder } from '@/src/hooks/use-diff-placeholder.ts'\nimport { useFileDiff } from '@/src/hooks/use-file-diff.ts'\nimport { CenteredStatus } from '@/src/primitives/centered-status.tsx'\nimport { DiffPlaceholder } from '@/src/primitives/diff-placeholder.tsx'\nimport { LoadFailure } from '@/src/primitives/load-failure.tsx'\nimport { LoadingBar } from '@/src/primitives/loading-bar.tsx'\nimport { FileDiffView } from '@/src/components/diff-viewer/file-diff-view.tsx'\nimport { ImageDiffView } from '@/src/components/diff-viewer/image-diff-view.tsx'\nimport { VirtualizedScroller } from '@/src/components/diff-viewer/virtualized-scroller.tsx'\n\nexport function DiffViewer() {\n  const { change, state, shown, reveal, expandUnchanged, loading, retry } = useFileDiff()\n  const placeholder = useDiffPlaceholder(change, shown)\n\n  if (state.status === 'failed') {\n    return <LoadFailure message={'Could not load this diff'} onRetry={retry} />\n  }\n\n  if (placeholder) {\n    return (\n      <DiffPlaceholder\n        icon={placeholder.kind === 'no-changes' ? <VscCheckAll /> : <VscDiff />}\n        title={placeholder.title}\n        detail={placeholder.detail}\n      />\n    )\n  }\n\n  const surface = c(\n    'h-full overflow-auto transition-opacity duration-150',\n    loading && 'pointer-events-none opacity-50',\n  )\n\n  return (\n    <div className={'relative h-full'}>\n      {loading && <LoadingBar />}\n      {shown && !shown.diff.binary && (\n        <VirtualizedScroller className={surface}>\n          <FileDiffView\n            path={shown.path}\n            diff={shown.diff}\n            reveal={reveal}\n            expandUnchanged={expandUnchanged}\n          />\n        </VirtualizedScroller>\n      )}\n      {shown?.diff.binary && (\n        <div className={surface}>\n          {shown.diff.images ? (\n            <ImageDiffView images={shown.diff.images} />\n          ) : (\n            <CenteredStatus icon={<VscFileBinary />}>Binary file not shown</CenteredStatus>\n          )}\n        </div>\n      )}\n    </div>\n  )\n}\n"
+    },
+    {
+      "path": "src/components/topbar/comments-menu.tsx",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 2,
+      "old": "import { Popover } from '@base-ui/react/popover'\nimport { Tabs } from '@base-ui/react/tabs'\nimport { VscComment } from 'react-icons/vsc'\nimport { CurrentCommentsPanel } from '@/src/components/topbar/current-comments-panel.tsx'\nimport { OutdatedCommentsPanel } from '@/src/components/topbar/outdated-comments-panel.tsx'\nimport { ReviewSessionsPanel } from '@/src/components/topbar/review-sessions-panel.tsx'\nimport { useCommentsMenu } from '@/src/hooks/use-comments-menu.ts'\nimport { IconButton } from '@/src/primitives/icon-button.tsx'\nimport { PopoverSurface } from '@/src/primitives/popover-surface.tsx'\nimport { PopoverTab } from '@/src/primitives/popover-tab.tsx'\nimport { PopoverTabsHeader } from '@/src/primitives/popover-tabs-header.tsx'\nimport { Tooltip } from '@/src/primitives/tooltip.tsx'\n\nexport function CommentsMenu() {\n  const menu = useCommentsMenu()\n\n  return (\n    <Popover.Root open={menu.open} onOpenChange={menu.setOpen}>\n      <Tooltip label={menu.countLabel}>\n        <Popover.Trigger render={<IconButton />} aria-label={menu.countLabel}>\n          <VscComment />\n          <span className={'text-xs tabular-nums'}>{menu.commentCount}</span>\n        </Popover.Trigger>\n      </Tooltip>\n      <PopoverSurface align={'end'} className={'w-[26rem]'}>\n        <Tabs.Root value={menu.tab} onValueChange={menu.selectTab}>\n          <PopoverTabsHeader meta={menu.tab === 'current' ? menu.countLabel : 'Recorded reviews'}>\n            <PopoverTab value={'current'} label={'Current'} count={menu.commentCount} />\n            <PopoverTab value={'sessions'} label={'Sessions'} count={menu.sessionCount} />\n          </PopoverTabsHeader>\n          <Tabs.Panel value={'current'} className={'outline-none'}>\n            {menu.outdatedOpen && (\n              <OutdatedCommentsPanel onBack={menu.closeOutdated} onNavigate={menu.close} />\n            )}\n            {!menu.outdatedOpen && (\n              <CurrentCommentsPanel onNavigate={menu.close} onOpenOutdated={menu.openOutdated} />\n            )}\n          </Tabs.Panel>\n          <Tabs.Panel value={'sessions'} className={'outline-none'}>\n            <ReviewSessionsPanel\n              openedSession={menu.openedSession}\n              onOpen={menu.openSession}\n              onBack={menu.closeSession}\n            />\n          </Tabs.Panel>\n        </Tabs.Root>\n      </PopoverSurface>\n    </Popover.Root>\n  )\n}\n",
+      "new": "import { Popover } from '@base-ui/react/popover'\nimport { Tabs } from '@base-ui/react/tabs'\nimport { VscComment } from 'react-icons/vsc'\nimport { CurrentCommentsPanel } from '@/src/components/topbar/current-comments-panel.tsx'\nimport { OutdatedCommentsPanel } from '@/src/components/topbar/outdated-comments-panel.tsx'\nimport { ReviewSessionsPanel } from '@/src/components/topbar/review-sessions-panel.tsx'\nimport { useCommentsMenu } from '@/src/hooks/use-comments-menu.ts'\nimport { IconButton } from '@/src/primitives/icon-button.tsx'\nimport { PopoverSurface } from '@/src/primitives/popover-surface.tsx'\nimport { PopoverTab } from '@/src/primitives/popover-tab.tsx'\nimport { PopoverTabsHeader } from '@/src/primitives/popover-tabs-header.tsx'\nimport { Tooltip } from '@/src/primitives/tooltip.tsx'\n\nexport function CommentsMenu() {\n  const menu = useCommentsMenu()\n\n  return (\n    <Popover.Root open={menu.open} onOpenChange={menu.setOpen} onOpenChangeComplete={menu.settle}>\n      <Tooltip label={menu.countLabel}>\n        <Popover.Trigger render={<IconButton />} aria-label={menu.countLabel}>\n          <VscComment />\n          <span className={'text-xs tabular-nums'}>{menu.commentCount}</span>\n        </Popover.Trigger>\n      </Tooltip>\n      <PopoverSurface align={'end'} className={'w-[26rem]'}>\n        <Tabs.Root value={menu.tab} onValueChange={menu.selectTab}>\n          <PopoverTabsHeader meta={menu.tab === 'current' ? menu.countLabel : 'Recorded reviews'}>\n            <PopoverTab value={'current'} label={'Current'} count={menu.commentCount} />\n            <PopoverTab value={'sessions'} label={'Sessions'} count={menu.sessionCount} />\n          </PopoverTabsHeader>\n          <Tabs.Panel value={'current'} className={'outline-none'}>\n            {menu.outdatedOpen && (\n              <OutdatedCommentsPanel onBack={menu.closeOutdated} onNavigate={menu.close} />\n            )}\n            {!menu.outdatedOpen && (\n              <CurrentCommentsPanel onNavigate={menu.close} onOpenOutdated={menu.openOutdated} />\n            )}\n          </Tabs.Panel>\n          <Tabs.Panel value={'sessions'} className={'outline-none'}>\n            <ReviewSessionsPanel\n              openedSessionId={menu.openedSessionId}\n              onOpen={menu.openSession}\n              onBack={menu.closeSession}\n              onNavigate={menu.close}\n            />\n          </Tabs.Panel>\n        </Tabs.Root>\n      </PopoverSurface>\n    </Popover.Root>\n  )\n}\n"
+    },
+    {
+      "path": "src/components/topbar/notifications-menu.tsx",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 2,
+      "old": "import { Popover } from '@base-ui/react/popover'\nimport { VscBell, VscBellDot } from 'react-icons/vsc'\nimport { NotificationList } from '@/src/components/topbar/notification-list.tsx'\nimport { NotificationSession } from '@/src/components/topbar/notification-session.tsx'\nimport { useNotificationsMenu } from '@/src/hooks/use-notifications-menu.ts'\nimport { IconButton } from '@/src/primitives/icon-button.tsx'\nimport { NotificationsHeader } from '@/src/primitives/notifications-header.tsx'\nimport { PopoverSurface } from '@/src/primitives/popover-surface.tsx'\nimport { TextButton } from '@/src/primitives/text-button.tsx'\nimport { Tooltip } from '@/src/primitives/tooltip.tsx'\n\nexport function NotificationsMenu() {\n  const menu = useNotificationsMenu()\n  const hasUnread = menu.unreadCount > 0\n  const Icon = hasUnread ? VscBellDot : VscBell\n  let markAll = null\n  if (hasUnread) {\n    markAll = <TextButton onClick={menu.markAllRead}>Mark all read</TextButton>\n  }\n\n  return (\n    <Popover.Root open={menu.open} onOpenChange={menu.setOpen}>\n      <Tooltip label={menu.unreadLabel}>\n        <Popover.Trigger render={<IconButton />} aria-label={`Notifications, ${menu.unreadLabel}`}>\n          <Icon className={hasUnread ? 'text-accent' : undefined} />\n          {hasUnread && <span className={'text-xs tabular-nums'}>{menu.unreadCount}</span>}\n        </Popover.Trigger>\n      </Tooltip>\n      <PopoverSurface align={'end'} className={'w-[26rem]'}>\n        {menu.openedSessionId ? (\n          <NotificationSession sessionId={menu.openedSessionId} onBack={menu.closeSession} />\n        ) : (\n          <>\n            <NotificationsHeader meta={menu.unreadLabel} action={markAll} />\n            <NotificationList\n              state={menu.state}\n              notifications={menu.list}\n              onOpen={menu.openNotification}\n            />\n          </>\n        )}\n      </PopoverSurface>\n    </Popover.Root>\n  )\n}\n",
+      "new": "import { Popover } from '@base-ui/react/popover'\nimport { VscBell, VscBellDot } from 'react-icons/vsc'\nimport { NotificationList } from '@/src/components/topbar/notification-list.tsx'\nimport { ReviewSessionLoader } from '@/src/components/topbar/review-session-loader.tsx'\nimport { useNotificationsMenu } from '@/src/hooks/use-notifications-menu.ts'\nimport { IconButton } from '@/src/primitives/icon-button.tsx'\nimport { NotificationsHeader } from '@/src/primitives/notifications-header.tsx'\nimport { PopoverSurface } from '@/src/primitives/popover-surface.tsx'\nimport { TextButton } from '@/src/primitives/text-button.tsx'\nimport { Tooltip } from '@/src/primitives/tooltip.tsx'\n\nexport function NotificationsMenu() {\n  const menu = useNotificationsMenu()\n  const hasUnread = menu.unreadCount > 0\n  const Icon = hasUnread ? VscBellDot : VscBell\n  let markAll = null\n  if (hasUnread) {\n    markAll = <TextButton onClick={menu.markAllRead}>Mark all read</TextButton>\n  }\n\n  return (\n    <Popover.Root open={menu.open} onOpenChange={menu.setOpen}>\n      <Tooltip label={menu.unreadLabel}>\n        <Popover.Trigger render={<IconButton />} aria-label={`Notifications, ${menu.unreadLabel}`}>\n          <Icon className={hasUnread ? 'text-accent' : undefined} />\n          {hasUnread && <span className={'text-xs tabular-nums'}>{menu.unreadCount}</span>}\n        </Popover.Trigger>\n      </Tooltip>\n      <PopoverSurface align={'end'} className={'w-[26rem]'}>\n        {menu.openedSessionId ? (\n          <ReviewSessionLoader\n            sessionId={menu.openedSessionId}\n            backLabel={'Back to notifications'}\n            onBack={menu.closeSession}\n            onNavigate={menu.close}\n          />\n        ) : (\n          <>\n            <NotificationsHeader meta={menu.unreadLabel} action={markAll} />\n            <NotificationList\n              state={menu.state}\n              notifications={menu.list}\n              onOpen={menu.openNotification}\n            />\n          </>\n        )}\n      </PopoverSurface>\n    </Popover.Root>\n  )\n}\n"
+    },
+    {
+      "path": "src/components/topbar/outdated-comment-item.tsx",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 7,
+      "old": "import { VscGoToFile, VscTrash } from 'react-icons/vsc'\nimport { SessionSnippet } from '@/src/components/topbar/session-snippet.tsx'\nimport { MarkdownView } from '@/src/components/markdown-view.tsx'\nimport { useOutdatedComment } from '@/src/hooks/use-outdated-comment.ts'\nimport type { ReviewComment } from '@/src/lib/comment-gateway.ts'\nimport { Button } from '@/src/primitives/button.tsx'\nimport { OutdatedCommentCard } from '@/src/primitives/outdated-comment-card.tsx'\n\ninterface OutdatedCommentItemProps {\n  comment: ReviewComment\n  onNavigate: () => void\n}\n\nexport function OutdatedCommentItem({ comment, onNavigate }: OutdatedCommentItemProps) {\n  const { location, age, remove, removing, failed, canOpenFile, openFile } = useOutdatedComment(\n    comment,\n    onNavigate,\n  )\n\n  return (\n    <OutdatedCommentCard\n      filePath={comment.filePath}\n      location={location}\n      age={age}\n      snippet={<SessionSnippet lines={comment.lines} filePath={comment.filePath} />}\n      body={<MarkdownView body={comment.body} />}\n      error={failed ? 'Could not delete the comment.' : undefined}\n      actions={\n        <>\n          {canOpenFile && (\n            <Button variant={'ghost'} onClick={openFile}>\n              <VscGoToFile />\n              Open file\n            </Button>\n          )}\n          <Button variant={'ghost'} disabled={removing} onClick={remove}>\n            <VscTrash />\n            Delete\n          </Button>\n        </>\n      }\n    />\n  )\n}\n",
+      "new": "import { VscGoToFile, VscTrash } from 'react-icons/vsc'\nimport { SessionSnippet } from '@/src/components/topbar/session-snippet.tsx'\nimport { MarkdownView } from '@/src/components/markdown-view.tsx'\nimport { useOutdatedComment } from '@/src/hooks/use-outdated-comment.ts'\nimport type { ReviewComment } from '@/src/lib/comment-gateway.ts'\nimport { Button } from '@/src/primitives/button.tsx'\nimport { OutdatedCommentCard } from '@/src/primitives/outdated-comment-card.tsx'\n\ninterface OutdatedCommentItemProps {\n  comment: ReviewComment\n  onNavigate: () => void\n}\n\nexport function OutdatedCommentItem({ comment, onNavigate }: OutdatedCommentItemProps) {\n  const { location, age, remove, removing, failed, openFile } = useOutdatedComment(\n    comment,\n    onNavigate,\n  )\n\n  return (\n    <OutdatedCommentCard\n      filePath={comment.filePath}\n      location={location}\n      age={age}\n      snippet={<SessionSnippet lines={comment.lines} filePath={comment.filePath} />}\n      body={<MarkdownView body={comment.body} />}\n      error={failed ? 'Could not delete the comment.' : undefined}\n      onOpenFile={openFile}\n      actions={\n        <>\n          <Button variant={'ghost'} onClick={openFile}>\n            <VscGoToFile />\n            Open file\n          </Button>\n          <Button variant={'ghost'} disabled={removing} onClick={remove}>\n            <VscTrash />\n            Delete\n          </Button>\n        </>\n      }\n    />\n  )\n}\n"
+    },
+    {
+      "path": "src/components/topbar/review-session-detail.tsx",
+      "status": "modified",
+      "additions": 11,
+      "deletions": 22,
+      "old": "import { CommentReplies } from '@/src/components/topbar/comment-replies.tsx'\nimport { ReviewSessionSummary } from '@/src/components/topbar/review-session-summary.tsx'\nimport { SessionSnippet } from '@/src/components/topbar/session-snippet.tsx'\nimport { MarkdownView } from '@/src/components/markdown-view.tsx'\nimport { CommentLists } from '@/src/lib/comment-lists.ts'\nimport { LineRanges } from '@/src/lib/line-range.ts'\nimport type { ReviewSession } from '@/src/lib/review-session-gateway.ts'\nimport { DetailHeader } from '@/src/primitives/detail-header.tsx'\nimport { OutdatedLabel } from '@/src/primitives/outdated-label.tsx'\nimport { PopoverScrollArea } from '@/src/primitives/popover-scroll-area.tsx'\nimport { SessionComment } from '@/src/primitives/session-comment.tsx'\n\ninterface ReviewSessionDetailProps {\n  session: ReviewSession\n  onBack: () => void\n}\n\nexport function ReviewSessionDetail({ session, onBack }: ReviewSessionDetailProps) {\n  return (\n    <>\n      <DetailHeader backLabel={'Back to sessions'} onBack={onBack}>\n        <ReviewSessionSummary session={session} />\n      </DetailHeader>\n      <PopoverScrollArea>\n        <div className={'flex flex-col divide-y divide-line'}>\n          {session.comments.map((comment) => {\n            const outdated = CommentLists.isOutdated(comment)\n            return (\n              <SessionComment\n                key={comment.id}\n                filePath={comment.filePath}\n                location={LineRanges.shortLabel(comment.range)}\n                marker={outdated && <OutdatedLabel />}\n                dimmed={outdated}\n                snippet={<SessionSnippet lines={comment.lines} filePath={comment.filePath} />}\n                body={<MarkdownView body={comment.body} />}\n                replies={<CommentReplies replies={comment.replies} />}\n              />\n            )\n          })}\n        </div>\n      </PopoverScrollArea>\n    </>\n  )\n}\n",
+      "new": "import { ReviewSessionSummary } from '@/src/components/topbar/review-session-summary.tsx'\nimport { SessionCommentItem } from '@/src/components/topbar/session-comment-item.tsx'\nimport type { ReviewSession } from '@/src/lib/review-session-gateway.ts'\nimport { DetailHeader } from '@/src/primitives/detail-header.tsx'\nimport { PopoverScrollArea } from '@/src/primitives/popover-scroll-area.tsx'\n\ninterface ReviewSessionDetailProps {\n  session: ReviewSession\n  backLabel: string\n  onBack: () => void\n  onNavigate: () => void\n}\n\nexport function ReviewSessionDetail({\n  session,\n  backLabel,\n  onBack,\n  onNavigate,\n}: ReviewSessionDetailProps) {\n  return (\n    <>\n      <DetailHeader backLabel={backLabel} onBack={onBack}>\n        <ReviewSessionSummary session={session} />\n      </DetailHeader>\n      <PopoverScrollArea>\n        <div className={'flex flex-col divide-y divide-line'}>\n          {session.comments.map((comment) => {\n            return <SessionCommentItem key={comment.id} comment={comment} onNavigate={onNavigate} />\n          })}\n        </div>\n      </PopoverScrollArea>\n    </>\n  )\n}\n"
+    },
+    {
+      "path": "src/components/topbar/review-sessions-panel.tsx",
+      "status": "modified",
+      "additions": 18,
+      "deletions": 6,
+      "old": "import { VscHistory } from 'react-icons/vsc'\nimport { ReviewSessionDetail } from '@/src/components/topbar/review-session-detail.tsx'\nimport { ReviewSessionSummary } from '@/src/components/topbar/review-session-summary.tsx'\nimport { useReviewSessions } from '@/src/hooks/use-review-sessions.ts'\nimport type { ReviewSession } from '@/src/lib/review-session-gateway.ts'\nimport { MutedHint } from '@/src/primitives/muted-hint.tsx'\nimport { PopoverEmptyState } from '@/src/primitives/popover-empty-state.tsx'\nimport { PopoverScrollArea } from '@/src/primitives/popover-scroll-area.tsx'\nimport { SessionRow } from '@/src/primitives/session-row.tsx'\n\ninterface ReviewSessionsPanelProps {\n  openedSession: ReviewSession | null\n  onOpen: (id: string) => void\n  onBack: () => void\n}\n\nexport function ReviewSessionsPanel({ openedSession, onOpen, onBack }: ReviewSessionsPanelProps) {\n  const { state, list } = useReviewSessions()\n  if (openedSession) {\n    return <ReviewSessionDetail session={openedSession} onBack={onBack} />\n  }\n\n  return (\n    <PopoverScrollArea>\n      {state.status === 'loading' && <MutedHint>Loading review sessions</MutedHint>}\n      {state.status === 'failed' && <MutedHint>Could not load review sessions</MutedHint>}\n      {state.status === 'ready' && list.length === 0 && (\n        <PopoverEmptyState icon={<VscHistory />}>No finished reviews yet.</PopoverEmptyState>\n      )}\n      {list.map((session) => {\n        return (\n          <SessionRow\n            key={session.id}\n            onSelect={() => {\n              onOpen(session.id)\n            }}\n          >\n            <ReviewSessionSummary session={session} />\n          </SessionRow>\n        )\n      })}\n    </PopoverScrollArea>\n  )\n}\n",
+      "new": "import { VscHistory } from 'react-icons/vsc'\nimport { ReviewSessionLoader } from '@/src/components/topbar/review-session-loader.tsx'\nimport { ReviewSessionSummary } from '@/src/components/topbar/review-session-summary.tsx'\nimport { useReviewSessions } from '@/src/hooks/use-review-sessions.ts'\nimport { MutedHint } from '@/src/primitives/muted-hint.tsx'\nimport { PopoverEmptyState } from '@/src/primitives/popover-empty-state.tsx'\nimport { PopoverScrollArea } from '@/src/primitives/popover-scroll-area.tsx'\nimport { SessionRow } from '@/src/primitives/session-row.tsx'\n\ninterface ReviewSessionsPanelProps {\n  openedSessionId: string | null\n  onOpen: (id: string) => void\n  onBack: () => void\n  onNavigate: () => void\n}\n\nexport function ReviewSessionsPanel({\n  openedSessionId,\n  onOpen,\n  onBack,\n  onNavigate,\n}: ReviewSessionsPanelProps) {\n  const { state, list } = useReviewSessions()\n  if (openedSessionId) {\n    return (\n      <ReviewSessionLoader\n        sessionId={openedSessionId}\n        backLabel={'Back to sessions'}\n        onBack={onBack}\n        onNavigate={onNavigate}\n      />\n    )\n  }\n\n  return (\n    <PopoverScrollArea>\n      {state.status === 'loading' && <MutedHint>Loading review sessions</MutedHint>}\n      {state.status === 'failed' && <MutedHint>Could not load review sessions</MutedHint>}\n      {state.status === 'ready' && list.length === 0 && (\n        <PopoverEmptyState icon={<VscHistory />}>No finished reviews yet.</PopoverEmptyState>\n      )}\n      {list.map((session) => {\n        return (\n          <SessionRow\n            key={session.id}\n            onSelect={() => {\n              onOpen(session.id)\n            }}\n          >\n            <ReviewSessionSummary session={session} />\n          </SessionRow>\n        )\n      })}\n    </PopoverScrollArea>\n  )\n}\n"
+    },
+    {
+      "path": "src/components/topbar/session-comment-item.tsx",
+      "status": "added",
+      "additions": 40,
+      "deletions": 0,
+      "old": null,
+      "new": "import { CommentReplies } from '@/src/components/topbar/comment-replies.tsx'\nimport { SessionSnippet } from '@/src/components/topbar/session-snippet.tsx'\nimport { MarkdownView } from '@/src/components/markdown-view.tsx'\nimport { useCommentLocationOpener } from '@/src/hooks/use-comment-location-opener.ts'\nimport { useSessionCommentFocus } from '@/src/hooks/use-session-comment-focus.ts'\nimport { CommentLists } from '@/src/lib/comment-lists.ts'\nimport { LineRanges } from '@/src/lib/line-range.ts'\nimport type { SessionComment as SessionCommentData } from '@/src/lib/review-session-gateway.ts'\nimport { OutdatedLabel } from '@/src/primitives/outdated-label.tsx'\nimport { SessionComment } from '@/src/primitives/session-comment.tsx'\n\ninterface SessionCommentItemProps {\n  comment: SessionCommentData\n  onNavigate: () => void\n}\n\nexport function SessionCommentItem({ comment, onNavigate }: SessionCommentItemProps) {\n  const { attach, highlightKey, endHighlight } = useSessionCommentFocus(comment.id)\n  const openLocation = useCommentLocationOpener(onNavigate)\n  const outdated = CommentLists.isOutdated(comment)\n\n  return (\n    <SessionComment\n      key={highlightKey ?? 'idle'}\n      ref={attach}\n      highlighted={highlightKey !== null}\n      onAnimationEnd={endHighlight}\n      filePath={comment.filePath}\n      location={LineRanges.shortLabel(comment.range)}\n      onOpenFile={() => {\n        openLocation(comment)\n      }}\n      marker={outdated && <OutdatedLabel />}\n      dimmed={outdated}\n      snippet={<SessionSnippet lines={comment.lines} filePath={comment.filePath} />}\n      body={<MarkdownView body={comment.body} />}\n      replies={<CommentReplies replies={comment.replies} />}\n    />\n  )\n}\n"
+    },
+    {
+      "path": "src/hooks/use-comment-location-opener.ts",
+      "status": "added",
+      "additions": 30,
+      "deletions": 0,
+      "old": null,
+      "new": "import { useChangeSet } from '@/src/hooks/use-change-set.ts'\nimport { ChangeSets } from '@/src/lib/change-set.ts'\nimport type { ReviewComment } from '@/src/lib/comment-gateway.ts'\nimport { CommentLocations } from '@/src/lib/comment-locations.ts'\nimport { useNavigationStore } from '@/src/store/navigation-store.ts'\nimport { useTabStore } from '@/src/store/tab-store.ts'\n\nexport const useCommentLocationOpener = (onNavigate: () => void) => {\n  const { state } = useChangeSet()\n  const changes = ChangeSets.changesOf(state)\n  const revealLine = useNavigationStore((navigation) => {\n    return navigation.revealLine\n  })\n  const openTab = useTabStore((tabs) => {\n    return tabs.open\n  })\n\n  return (comment: Pick<ReviewComment, 'filePath' | 'range'>) => {\n    const target = CommentLocations.targetOf(comment, changes)\n    if (target.kind === 'review') {\n      revealLine(target.path, target.side, target.line)\n    } else {\n      openTab(\n        { path: target.path, external: false, side: 'new', line: target.line },\n        useTabStore.getState().generation,\n      )\n    }\n    onNavigate()\n  }\n}\n"
+    },
+    {
+      "path": "src/hooks/use-comments-menu.ts",
+      "status": "modified",
+      "additions": 43,
+      "deletions": 30,
+      "old": "import { useState } from 'react'\nimport { useComments } from '@/src/hooks/use-comments.ts'\nimport { useReviewSessions } from '@/src/hooks/use-review-sessions.ts'\n\nexport type CommentsMenuTab = 'current' | 'sessions'\n\nexport const useCommentsMenu = () => {\n  const { list, outdated, countLabel } = useComments()\n  const { list: sessions } = useReviewSessions()\n  const [open, setOpen] = useState(false)\n  const [tab, setTab] = useState<CommentsMenuTab>('current')\n  const [openedSessionId, setOpenedSessionId] = useState<string | null>(null)\n  const [outdatedOpen, setOutdatedOpen] = useState(false)\n  const openedSession =\n    sessions.find((session) => {\n      return session.id === openedSessionId\n    }) ?? null\n\n  if (outdatedOpen && outdated.length === 0) {\n    setOutdatedOpen(false)\n  }\n\n  const selectTab = (value: CommentsMenuTab) => {\n    setTab(value)\n  }\n\n  const close = () => {\n    setOpen(false)\n  }\n\n  return {\n    open,\n    setOpen,\n    close,\n    tab,\n    selectTab,\n    commentCount: list.length,\n    countLabel,\n    sessionCount: sessions.length,\n    openedSession,\n    openSession: setOpenedSessionId,\n    closeSession: () => {\n      setOpenedSessionId(null)\n    },\n    outdatedOpen,\n    openOutdated: () => {\n      setOutdatedOpen(true)\n    },\n    closeOutdated: () => {\n      setOutdatedOpen(false)\n    },\n  }\n}\n",
+      "new": "import { useComments } from '@/src/hooks/use-comments.ts'\nimport { useReviewSessions } from '@/src/hooks/use-review-sessions.ts'\nimport { useCommentsMenuStore } from '@/src/store/comments-menu-store.ts'\n\nexport const useCommentsMenu = () => {\n  const { list, outdated, countLabel } = useComments()\n  const { list: sessions } = useReviewSessions()\n  const open = useCommentsMenuStore((menu) => {\n    return menu.open\n  })\n  const tab = useCommentsMenuStore((menu) => {\n    return menu.tab\n  })\n  const openedSessionId = useCommentsMenuStore((menu) => {\n    return menu.openedSessionId\n  })\n  const outdatedOpen = useCommentsMenuStore((menu) => {\n    return menu.outdatedOpen\n  })\n  const setOpen = useCommentsMenuStore((menu) => {\n    return menu.setOpen\n  })\n  const selectTab = useCommentsMenuStore((menu) => {\n    return menu.selectTab\n  })\n  const openSession = useCommentsMenuStore((menu) => {\n    return menu.openSession\n  })\n  const closeSession = useCommentsMenuStore((menu) => {\n    return menu.closeSession\n  })\n  const setOutdatedOpen = useCommentsMenuStore((menu) => {\n    return menu.setOutdatedOpen\n  })\n  const resetAfterClose = useCommentsMenuStore((menu) => {\n    return menu.resetAfterClose\n  })\n\n  return {\n    open,\n    setOpen,\n    close: () => {\n      setOpen(false)\n    },\n    settle: (open: boolean) => {\n      if (!open) {\n        resetAfterClose()\n      }\n    },\n    tab,\n    selectTab,\n    commentCount: list.length,\n    countLabel,\n    sessionCount: sessions.length,\n    openedSessionId,\n    openSession,\n    closeSession,\n    outdatedOpen: outdatedOpen && outdated.length > 0,\n    openOutdated: () => {\n      setOutdatedOpen(true)\n    },\n    closeOutdated: () => {\n      setOutdatedOpen(false)\n    },\n  }\n}\n"
+    },
+    {
+      "path": "src/hooks/use-file-content.ts",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 0,
+      "old": "import { useServices } from '@/src/context/services/use-services.ts'\nimport { useResource } from '@/src/hooks/use-resource.ts'\nimport type { DefinitionTab } from '@/src/lib/definition-tabs.ts'\n\nexport const useFileContent = (tab: DefinitionTab) => {\n  const services = useServices()\n  const resource = services.fileContents.get({ path: tab.path, external: tab.external })\n  const state = useResource(resource)\n\n  return {\n    state,\n    retry: () => {\n      void resource.reload()\n    },\n  }\n}\n",
+      "new": "import { useServices } from '@/src/context/services/use-services.ts'\nimport { useResource } from '@/src/hooks/use-resource.ts'\nimport { ApiError } from '@/src/lib/api-client.ts'\nimport type { DefinitionTab } from '@/src/lib/definition-tabs.ts'\nimport { DefinitionLabels } from '@/src/lib/definition-labels.ts'\n\nexport const useFileContent = (tab: DefinitionTab) => {\n  const services = useServices()\n  const resource = services.fileContents.get({ path: tab.path, external: tab.external })\n  const state = useResource(resource)\n  let missing = null\n  if (state.status === 'failed' && !tab.external && ApiError.isNotFound(state.error)) {\n    missing = DefinitionLabels.missing(tab)\n  }\n\n  return {\n    state,\n    missing,\n    retry: () => {\n      void resource.reload()\n    },\n  }\n}\n"
+    },
+    {
+      "path": "src/hooks/use-file-diff.ts",
+      "status": "modified",
+      "additions": 24,
+      "deletions": 1,
+      "old": "import { useState } from 'react'\nimport type { FileDiff } from '@/src/lib/file-diff-gateway.ts'\nimport { useNavigationStore } from '@/src/store/navigation-store.ts'\nimport { useFileDiffResource } from '@/src/hooks/use-file-diff-resource.ts'\n\nexport interface ShownDiff {\n  path: string\n  diff: FileDiff\n}\n\nexport const useFileDiff = () => {\n  const selectedPath = useNavigationStore((navigation) => {\n    return navigation.selectedPath\n  })\n  const { changeSet, change, resource, state } = useFileDiffResource(selectedPath)\n  const [shown, setShown] = useState<ShownDiff | null>(null)\n\n  if (state.status === 'ready' && change && shown?.diff !== state.data) {\n    setShown({ path: change.path, diff: state.data })\n  }\n\n  const waitingForChangeSet =\n    changeSet.state.status === 'loading' || changeSet.state.status === 'idle'\n  const loading =\n    state.status === 'loading' ||\n    (resource !== null && state.status === 'idle') ||\n    waitingForChangeSet\n\n  const retry = () => {\n    void resource?.reload()\n  }\n\n  const refresh = () => {\n    void resource?.refresh()\n  }\n\n  return { change, state, shown: change ? shown : null, loading, retry, refresh }\n}\n",
+      "new": "import { useState } from 'react'\nimport { DiffLineReveal } from '@/src/lib/diff-line-reveal.ts'\nimport type { FileDiff } from '@/src/lib/file-diff-gateway.ts'\nimport { ParsedDiffs } from '@/src/lib/parsed-diffs.ts'\nimport { useNavigationStore } from '@/src/store/navigation-store.ts'\nimport { useFileDiffResource } from '@/src/hooks/use-file-diff-resource.ts'\n\nexport interface ShownDiff {\n  path: string\n  diff: FileDiff\n}\n\nexport const useFileDiff = () => {\n  const selectedPath = useNavigationStore((navigation) => {\n    return navigation.selectedPath\n  })\n  const reveal = useNavigationStore((navigation) => {\n    return navigation.reveal\n  })\n  const { changeSet, change, resource, state } = useFileDiffResource(selectedPath)\n  const [shown, setShown] = useState<ShownDiff | null>(null)\n\n  if (state.status === 'ready' && change && shown?.diff !== state.data) {\n    setShown({ path: change.path, diff: state.data })\n  }\n\n  const waitingForChangeSet =\n    changeSet.state.status === 'loading' || changeSet.state.status === 'idle'\n  const loading =\n    state.status === 'loading' ||\n    (resource !== null && state.status === 'idle') ||\n    waitingForChangeSet\n\n  const retry = () => {\n    void resource?.reload()\n  }\n\n  const refresh = () => {\n    void resource?.refresh()\n  }\n\n  const shownNow = change ? shown : null\n  let shownReveal = null\n  let expandUnchanged = false\n  if (reveal && shownNow?.path === reveal.path && !shownNow.diff.binary) {\n    shownReveal = reveal\n    const metadata = ParsedDiffs.of(shownNow.path, shownNow.diff)\n    expandUnchanged = !DiffLineReveal.isInHunk(metadata, reveal.side, reveal.line)\n  }\n\n  return {\n    change,\n    state,\n    shown: shownNow,\n    reveal: shownReveal,\n    expandUnchanged,\n    loading,\n    retry,\n    refresh,\n  }\n}\n"
+    },
+    {
+      "path": "src/hooks/use-notifications-menu.ts",
+      "status": "modified",
+      "additions": 12,
+      "deletions": 0,
+      "old": "import { useState } from 'react'\nimport { useNotifications } from '@/src/hooks/use-notifications.ts'\nimport type { ReviewNotification } from '@/src/lib/notification-gateway.ts'\n\nexport const useNotificationsMenu = () => {\n  const notifications = useNotifications()\n  const [open, setOpen] = useState(false)\n  const [openedSessionId, setOpenedSessionId] = useState<string | null>(null)\n\n  const changeOpen = (next: boolean) => {\n    setOpen(next)\n    if (!next) {\n      setOpenedSessionId(null)\n    }\n  }\n\n  const openNotification = (notification: ReviewNotification) => {\n    notifications.markRead(notification)\n    setOpenedSessionId(notification.sessionId)\n  }\n\n  return {\n    ...notifications,\n    open,\n    setOpen: changeOpen,\n    openedSessionId,\n    openNotification,\n    closeSession: () => {\n      setOpenedSessionId(null)\n    },\n  }\n}\n",
+      "new": "import { useState } from 'react'\nimport { useNotifications } from '@/src/hooks/use-notifications.ts'\nimport type { ReviewNotification } from '@/src/lib/notification-gateway.ts'\nimport { useCommentsMenuStore } from '@/src/store/comments-menu-store.ts'\n\nexport const useNotificationsMenu = () => {\n  const notifications = useNotifications()\n  const showComment = useCommentsMenuStore((menu) => {\n    return menu.showComment\n  })\n  const [open, setOpen] = useState(false)\n  const [openedSessionId, setOpenedSessionId] = useState<string | null>(null)\n\n  const changeOpen = (next: boolean) => {\n    setOpen(next)\n    if (!next) {\n      setOpenedSessionId(null)\n    }\n  }\n\n  const openNotification = (notification: ReviewNotification) => {\n    notifications.markRead(notification)\n    if (notification.kind === 'comment-reply') {\n      changeOpen(false)\n      showComment(notification.sessionId, notification.commentId)\n      return\n    }\n    setOpenedSessionId(notification.sessionId)\n  }\n\n  return {\n    ...notifications,\n    open,\n    setOpen: changeOpen,\n    openedSessionId,\n    openNotification,\n    closeSession: () => {\n      setOpenedSessionId(null)\n    },\n    close: () => {\n      changeOpen(false)\n    },\n  }\n}\n"
+    },
+    {
+      "path": "src/hooks/use-outdated-comment.ts",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 11,
+      "old": "import { ChangeSets } from '@/src/lib/change-set.ts'\nimport type { ReviewComment } from '@/src/lib/comment-gateway.ts'\nimport { CommentLabels } from '@/src/lib/comment-labels.ts'\nimport { LineRanges } from '@/src/lib/line-range.ts'\nimport { useNavigationStore } from '@/src/store/navigation-store.ts'\nimport { useChangeSet } from '@/src/hooks/use-change-set.ts'\nimport { useDeleteComment } from '@/src/hooks/use-delete-comment.ts'\nimport { useNow } from '@/src/hooks/use-now.ts'\n\nexport const useOutdatedComment = (comment: ReviewComment, onNavigate: () => void) => {\n  const { state: changeSetState } = useChangeSet()\n  const changes = ChangeSets.changesOf(changeSetState)\n  const selectFile = useNavigationStore((navigation) => {\n    return navigation.selectFile\n  })\n  const now = useNow()\n  const { remove, removing, failed } = useDeleteComment(comment.id)\n\n  return {\n    location: LineRanges.shortLabel(comment.range),\n    age: CommentLabels.outdatedAge(comment.outdatedAt ?? now, now),\n    remove,\n    removing,\n    failed,\n    canOpenFile: ChangeSets.find(changes, comment.filePath) !== null,\n    openFile: () => {\n      selectFile(comment.filePath)\n      onNavigate()\n    },\n  }\n}\n",
+      "new": "import type { ReviewComment } from '@/src/lib/comment-gateway.ts'\nimport { CommentLabels } from '@/src/lib/comment-labels.ts'\nimport { LineRanges } from '@/src/lib/line-range.ts'\nimport { useCommentLocationOpener } from '@/src/hooks/use-comment-location-opener.ts'\nimport { useDeleteComment } from '@/src/hooks/use-delete-comment.ts'\nimport { useNow } from '@/src/hooks/use-now.ts'\n\nexport const useOutdatedComment = (comment: ReviewComment, onNavigate: () => void) => {\n  const now = useNow()\n  const { remove, removing, failed } = useDeleteComment(comment.id)\n  const openLocation = useCommentLocationOpener(onNavigate)\n\n  return {\n    location: LineRanges.shortLabel(comment.range),\n    age: CommentLabels.outdatedAge(comment.outdatedAt ?? now, now),\n    remove,\n    removing,\n    failed,\n    openFile: () => {\n      openLocation(comment)\n    },\n  }\n}\n"
+    },
+    {
+      "path": "src/hooks/use-review-session.ts",
+      "status": "modified",
+      "additions": 14,
+      "deletions": 2,
+      "old": "import { useServices } from '@/src/context/services/use-services.ts'\nimport { useResource } from '@/src/hooks/use-resource.ts'\n\nexport const useReviewSession = (id: string) => {\n  const { sessions } = useServices()\n  return useResource(sessions.session(id))\n}\n",
+      "new": "import { useServices } from '@/src/context/services/use-services.ts'\nimport type { ResourceState } from '@/src/lib/async-resource.ts'\nimport type { ReviewSession } from '@/src/lib/review-session-gateway.ts'\nimport { useResource } from '@/src/hooks/use-resource.ts'\nimport { useReviewSessions } from '@/src/hooks/use-review-sessions.ts'\n\nexport const useReviewSession = (id: string): ResourceState<ReviewSession> => {\n  const { sessions } = useServices()\n  const { list } = useReviewSessions()\n  const listed = list.find((session) => {\n    return session.id === id\n  })\n  const state = useResource(listed ? null : sessions.session(id))\n\n  if (listed) {\n    return { status: 'ready', data: listed }\n  }\n  return state\n}\n"
+    },
+    {
+      "path": "src/hooks/use-session-comment-focus.ts",
+      "status": "added",
+      "additions": 28,
+      "deletions": 0,
+      "old": null,
+      "new": "import { useEffect, useState } from 'react'\nimport { useCommentsMenuStore } from '@/src/store/comments-menu-store.ts'\n\nexport const useSessionCommentFocus = (commentId: string) => {\n  const [element, setElement] = useState<HTMLElement | null>(null)\n  const requestedAt = useCommentsMenuStore((menu) => {\n    return menu.focus?.commentId === commentId ? menu.focus.requestedAt : null\n  })\n  const clearFocus = useCommentsMenuStore((menu) => {\n    return menu.clearFocus\n  })\n\n  useEffect(() => {\n    if (element && requestedAt !== null) {\n      element.scrollIntoView({ block: 'center' })\n    }\n  }, [element, requestedAt])\n\n  return {\n    attach: setElement,\n    highlightKey: requestedAt,\n    endHighlight: () => {\n      if (requestedAt !== null) {\n        clearFocus(requestedAt)\n      }\n    },\n  }\n}\n"
+    },
+    {
+      "path": "src/lib/api-client.ts",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 0,
+      "old": "import * as v from 'valibot'\n\nexport class ApiError extends Error {\n  readonly path: string\n  readonly status: number | null\n\n  constructor(path: string, message: string, status: number | null = null) {\n    super(`${path}: ${message}`)\n    this.name = 'ApiError'\n    this.path = path\n    this.status = status\n  }\n\n  static unexpectedShape(path: string) {\n    return new ApiError(path, 'unexpected response shape')\n  }\n\n  static describe(error: unknown, subject: string) {\n    if (error instanceof ApiError && error.status !== null) {\n      return `${subject} failed with status ${error.status}`\n    }\n    return `${subject} failed`\n  }\n}\n\ntype WriteMethod = 'POST' | 'PATCH'\n\nexport class ApiClient {\n  private readonly baseUrl: string\n\n  constructor(baseUrl: string) {\n    this.baseUrl = baseUrl\n  }\n\n  static withQuery(path: string, query: URLSearchParams) {\n    return `${path}?${query.toString()}`\n  }\n\n  static parse<TSchema extends v.GenericSchema>(\n    schema: TSchema,\n    body: unknown,\n    path: string,\n  ): v.InferOutput<TSchema> {\n    const result = v.safeParse(schema, body)\n    if (!result.success) {\n      throw ApiError.unexpectedShape(path)\n    }\n    return result.output\n  }\n\n  private static jsonInit(method: WriteMethod, payload: unknown): RequestInit {\n    return {\n      method,\n      headers: { 'content-type': 'application/json' },\n      body: JSON.stringify(payload),\n    }\n  }\n\n  url(path: string) {\n    return new URL(path, this.baseUrl).toString()\n  }\n\n  get<TSchema extends v.GenericSchema>(path: string, schema: TSchema) {\n    return this.request(path, { method: 'GET' }, schema)\n  }\n\n  send<TSchema extends v.GenericSchema>(\n    method: WriteMethod,\n    path: string,\n    payload: unknown,\n    schema: TSchema,\n  ) {\n    return this.request(path, ApiClient.jsonInit(method, payload), schema)\n  }\n\n  async sendWithoutContent(method: WriteMethod, path: string, payload: unknown) {\n    await this.fetchOk(path, ApiClient.jsonInit(method, payload))\n  }\n\n  async delete(path: string) {\n    await this.fetchOk(path, { method: 'DELETE' })\n  }\n\n  private async request<TSchema extends v.GenericSchema>(\n    path: string,\n    init: RequestInit,\n    schema: TSchema,\n  ) {\n    const response = await this.fetchOk(path, init)\n    const body: unknown = await response.json()\n    return ApiClient.parse(schema, body, path)\n  }\n\n  private async fetchOk(path: string, init: RequestInit) {\n    const response = await fetch(this.url(path), init)\n    if (!response.ok) {\n      throw new ApiError(path, 'request failed', response.status)\n    }\n    return response\n  }\n}\n",
+      "new": "import * as v from 'valibot'\n\nexport class ApiError extends Error {\n  readonly path: string\n  readonly status: number | null\n\n  constructor(path: string, message: string, status: number | null = null) {\n    super(`${path}: ${message}`)\n    this.name = 'ApiError'\n    this.path = path\n    this.status = status\n  }\n\n  static unexpectedShape(path: string) {\n    return new ApiError(path, 'unexpected response shape')\n  }\n\n  static isNotFound(error: unknown) {\n    return error instanceof ApiError && error.status === 404\n  }\n\n  static describe(error: unknown, subject: string) {\n    if (error instanceof ApiError && error.status !== null) {\n      return `${subject} failed with status ${error.status}`\n    }\n    return `${subject} failed`\n  }\n}\n\ntype WriteMethod = 'POST' | 'PATCH'\n\nexport class ApiClient {\n  private readonly baseUrl: string\n\n  constructor(baseUrl: string) {\n    this.baseUrl = baseUrl\n  }\n\n  static withQuery(path: string, query: URLSearchParams) {\n    return `${path}?${query.toString()}`\n  }\n\n  static parse<TSchema extends v.GenericSchema>(\n    schema: TSchema,\n    body: unknown,\n    path: string,\n  ): v.InferOutput<TSchema> {\n    const result = v.safeParse(schema, body)\n    if (!result.success) {\n      throw ApiError.unexpectedShape(path)\n    }\n    return result.output\n  }\n\n  private static jsonInit(method: WriteMethod, payload: unknown): RequestInit {\n    return {\n      method,\n      headers: { 'content-type': 'application/json' },\n      body: JSON.stringify(payload),\n    }\n  }\n\n  url(path: string) {\n    return new URL(path, this.baseUrl).toString()\n  }\n\n  get<TSchema extends v.GenericSchema>(path: string, schema: TSchema) {\n    return this.request(path, { method: 'GET' }, schema)\n  }\n\n  send<TSchema extends v.GenericSchema>(\n    method: WriteMethod,\n    path: string,\n    payload: unknown,\n    schema: TSchema,\n  ) {\n    return this.request(path, ApiClient.jsonInit(method, payload), schema)\n  }\n\n  async sendWithoutContent(method: WriteMethod, path: string, payload: unknown) {\n    await this.fetchOk(path, ApiClient.jsonInit(method, payload))\n  }\n\n  async delete(path: string) {\n    await this.fetchOk(path, { method: 'DELETE' })\n  }\n\n  private async request<TSchema extends v.GenericSchema>(\n    path: string,\n    init: RequestInit,\n    schema: TSchema,\n  ) {\n    const response = await this.fetchOk(path, init)\n    const body: unknown = await response.json()\n    return ApiClient.parse(schema, body, path)\n  }\n\n  private async fetchOk(path: string, init: RequestInit) {\n    const response = await fetch(this.url(path), init)\n    if (!response.ok) {\n      throw new ApiError(path, 'request failed', response.status)\n    }\n    return response\n  }\n}\n"
+    },
+    {
+      "path": "src/lib/comment-locations.ts",
+      "status": "added",
+      "additions": 30,
+      "deletions": 0,
+      "old": null,
+      "new": "import { ChangeSets, ChangeStatuses, type FileChange, type FileSide } from '@/src/lib/change-set.ts'\nimport type { ReviewComment } from '@/src/lib/comment-gateway.ts'\n\nexport type CommentLocationTarget =\n  | { kind: 'review'; path: string; side: FileSide; line: number }\n  | { kind: 'file'; path: string; line: number }\n\nexport abstract class CommentLocations {\n  static targetOf(\n    { filePath, range }: Pick<ReviewComment, 'filePath' | 'range'>,\n    changes: readonly FileChange[],\n  ): CommentLocationTarget {\n    const change =\n      ChangeSets.find(changes, filePath) ??\n      changes.find((candidate) => {\n        return candidate.previousPath === filePath\n      })\n    if (!change) {\n      return { kind: 'file', path: filePath, line: range.start }\n    }\n    let side: FileSide = 'new'\n    if (range.side === 'deletions' || !ChangeStatuses.hasNewSide(change.status)) {\n      side = 'old'\n    }\n    if (!ChangeStatuses.hasOldSide(change.status)) {\n      side = 'new'\n    }\n    return { kind: 'review', path: change.path, side, line: range.start }\n  }\n}\n"
+    },
+    {
+      "path": "src/lib/definition-labels.ts",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 0,
+      "old": "import { ApiError } from '@/src/lib/api-client.ts'\nimport type { Definition, DefinitionLookup } from '@/src/lib/definition-gateway.ts'\nimport type { DefinitionTab } from '@/src/lib/definition-tabs.ts'\nimport { PathParts } from '@/src/lib/path-parts.ts'\n\ninterface DefinitionStatusLabel {\n  title: string\n  detail: string\n}\n\ninterface TabTitle {\n  label: string\n  head: string\n  tail: string\n  hint: string\n}\n\nconst TITLE_TAIL = 10\n\nexport abstract class DefinitionLabels {\n  static tabTitles(tabs: DefinitionTab[]) {\n    const groups = new Map<string, DefinitionTab[]>()\n    for (const tab of tabs) {\n      const name = PathParts.name(tab.path)\n      groups.set(name, [...(groups.get(name) ?? []), tab])\n    }\n    const titles = new Map<string, TabTitle>()\n    for (const [name, group] of groups) {\n      const hints = DefinitionLabels.hints(group)\n      group.forEach((tab, index) => {\n        const hint = hints[index]\n        const label = hint ? `${name}, ${hint}` : name\n        titles.set(tab.id, { label, hint, ...DefinitionLabels.titleParts(name) })\n      })\n    }\n    return titles\n  }\n\n  static location(definition: Definition) {\n    return `${PathParts.name(definition.path)}:${definition.line}`\n  }\n\n  static tabTitle(tab: DefinitionTab) {\n    return PathParts.name(tab.path)\n  }\n\n  static closeTab(tab: DefinitionTab) {\n    return `Close ${DefinitionLabels.tabTitle(tab)}`\n  }\n\n  static readOnly(tab: Pick<DefinitionTab, 'external'>) {\n    return tab.external ? 'Outside the repository' : 'Not changed in this comparison'\n  }\n\n  static loading(): DefinitionStatusLabel {\n    return { title: 'Looking up the definition', detail: '' }\n  }\n\n  static requestFailed(error: Error): DefinitionStatusLabel {\n    return {\n      title: 'Could not look up the definition',\n      detail: ApiError.describe(error, 'Request'),\n    }\n  }\n\n  static status(lookup: DefinitionLookup): DefinitionStatusLabel {\n    const server = lookup.server || 'The language server'\n    switch (lookup.status) {\n      case 'ready':\n        return { title: 'No definition found', detail: '' }\n      case 'unsupported':\n        return { title: 'No language server for this file', detail: '' }\n      case 'not-installed':\n        return { title: `${server} is not installed`, detail: 'Install it to go to definitions' }\n      case 'needs-checkout':\n        return {\n          title: 'This branch is not checked out',\n          detail: 'Go to definition reads the working tree',\n        }\n      case 'starting':\n        return { title: `Starting ${server}`, detail: 'Try again in a moment' }\n      case 'indexing':\n        return { title: `${server} is indexing`, detail: 'Try again in a moment' }\n      case 'failed':\n        return { title: `${server} failed`, detail: lookup.error.split('\\n')[0] }\n    }\n  }\n\n  private static titleParts(name: string) {\n    const characters = [...name]\n    if (characters.length <= TITLE_TAIL * 2) {\n      return { head: name, tail: '' }\n    }\n    return {\n      head: characters.slice(0, -TITLE_TAIL).join(''),\n      tail: characters.slice(-TITLE_TAIL).join(''),\n    }\n  }\n\n  private static hints(group: DefinitionTab[]) {\n    if (group.length === 1) {\n      return ['']\n    }\n    const directories = group.map((tab) => {\n      return PathParts.segments(PathParts.directory(tab.path))\n    })\n    const deepest = Math.max(\n      ...directories.map((segments) => {\n        return segments.length\n      }),\n    )\n    let hints = directories.map(() => {\n      return ''\n    })\n    for (let depth = 1; depth <= deepest; depth += 1) {\n      hints = directories.map((segments) => {\n        return segments.slice(-depth).join('/')\n      })\n      if (new Set(hints).size === hints.length) {\n        break\n      }\n    }\n    return hints\n  }\n}\n",
+      "new": "import { ApiError } from '@/src/lib/api-client.ts'\nimport type { Definition, DefinitionLookup } from '@/src/lib/definition-gateway.ts'\nimport type { DefinitionTab } from '@/src/lib/definition-tabs.ts'\nimport { PathParts } from '@/src/lib/path-parts.ts'\n\ninterface DefinitionStatusLabel {\n  title: string\n  detail: string\n}\n\ninterface TabTitle {\n  label: string\n  head: string\n  tail: string\n  hint: string\n}\n\nconst TITLE_TAIL = 10\n\nexport abstract class DefinitionLabels {\n  static tabTitles(tabs: DefinitionTab[]) {\n    const groups = new Map<string, DefinitionTab[]>()\n    for (const tab of tabs) {\n      const name = PathParts.name(tab.path)\n      groups.set(name, [...(groups.get(name) ?? []), tab])\n    }\n    const titles = new Map<string, TabTitle>()\n    for (const [name, group] of groups) {\n      const hints = DefinitionLabels.hints(group)\n      group.forEach((tab, index) => {\n        const hint = hints[index]\n        const label = hint ? `${name}, ${hint}` : name\n        titles.set(tab.id, { label, hint, ...DefinitionLabels.titleParts(name) })\n      })\n    }\n    return titles\n  }\n\n  static location(definition: Definition) {\n    return `${PathParts.name(definition.path)}:${definition.line}`\n  }\n\n  static tabTitle(tab: DefinitionTab) {\n    return PathParts.name(tab.path)\n  }\n\n  static closeTab(tab: DefinitionTab) {\n    return `Close ${DefinitionLabels.tabTitle(tab)}`\n  }\n\n  static missing(tab: Pick<DefinitionTab, 'path'>): DefinitionStatusLabel {\n    return {\n      title: 'This file no longer exists',\n      detail: `${tab.path} is not in the working tree anymore`,\n    }\n  }\n\n  static readOnly(tab: Pick<DefinitionTab, 'external'>) {\n    return tab.external ? 'Outside the repository' : 'Not changed in this comparison'\n  }\n\n  static loading(): DefinitionStatusLabel {\n    return { title: 'Looking up the definition', detail: '' }\n  }\n\n  static requestFailed(error: Error): DefinitionStatusLabel {\n    return {\n      title: 'Could not look up the definition',\n      detail: ApiError.describe(error, 'Request'),\n    }\n  }\n\n  static status(lookup: DefinitionLookup): DefinitionStatusLabel {\n    const server = lookup.server || 'The language server'\n    switch (lookup.status) {\n      case 'ready':\n        return { title: 'No definition found', detail: '' }\n      case 'unsupported':\n        return { title: 'No language server for this file', detail: '' }\n      case 'not-installed':\n        return { title: `${server} is not installed`, detail: 'Install it to go to definitions' }\n      case 'needs-checkout':\n        return {\n          title: 'This branch is not checked out',\n          detail: 'Go to definition reads the working tree',\n        }\n      case 'starting':\n        return { title: `Starting ${server}`, detail: 'Try again in a moment' }\n      case 'indexing':\n        return { title: `${server} is indexing`, detail: 'Try again in a moment' }\n      case 'failed':\n        return { title: `${server} failed`, detail: lookup.error.split('\\n')[0] }\n    }\n  }\n\n  private static titleParts(name: string) {\n    const characters = [...name]\n    if (characters.length <= TITLE_TAIL * 2) {\n      return { head: name, tail: '' }\n    }\n    return {\n      head: characters.slice(0, -TITLE_TAIL).join(''),\n      tail: characters.slice(-TITLE_TAIL).join(''),\n    }\n  }\n\n  private static hints(group: DefinitionTab[]) {\n    if (group.length === 1) {\n      return ['']\n    }\n    const directories = group.map((tab) => {\n      return PathParts.segments(PathParts.directory(tab.path))\n    })\n    const deepest = Math.max(\n      ...directories.map((segments) => {\n        return segments.length\n      }),\n    )\n    let hints = directories.map(() => {\n      return ''\n    })\n    for (let depth = 1; depth <= deepest; depth += 1) {\n      hints = directories.map((segments) => {\n        return segments.slice(-depth).join('/')\n      })\n      if (new Set(hints).size === hints.length) {\n        break\n      }\n    }\n    return hints\n  }\n}\n"
+    },
+    {
+      "path": "src/lib/diff-line-reveal.ts",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 0,
+      "old": "import type { SelectionSide, Virtualizer } from '@pierre/diffs'\nimport type { FileSide } from '@/src/lib/change-set.ts'\nimport type { LineAnchor } from '@/src/lib/line-range.ts'\n\ninterface LinePosition {\n  top: number\n  height: number\n}\n\ninterface PositionedInstance {\n  getLinePosition(lineNumber: number, side?: SelectionSide): LinePosition | undefined\n}\n\nexport interface RenderedLines {\n  node: HTMLElement\n  instance: object\n}\n\nexport abstract class DiffLineReveal {\n  static readonly flashAttribute = 'data-reveal-line'\n  static readonly flashMs = 1600\n\n  static readonly css =\n    `[${DiffLineReveal.flashAttribute}]{animation:reveal-line ${DiffLineReveal.flashMs}ms cubic-bezier(0.23,1,0.32,1)}` +\n    `@keyframes reveal-line{from{box-shadow:inset 3px 0 0 var(--color-accent),inset 0 0 0 999px color-mix(in srgb,var(--color-accent) 18%,transparent)}to{box-shadow:inset 3px 0 0 transparent,inset 0 0 0 999px transparent}}` +\n    `@media (prefers-reduced-motion:reduce){[${DiffLineReveal.flashAttribute}]{animation:none;box-shadow:inset 3px 0 0 var(--color-accent)}}`\n\n  static lastLine(contents: string | undefined) {\n    if (contents === undefined) {\n      return Number.POSITIVE_INFINITY\n    }\n    let count = 1\n    for (\n      let index = contents.indexOf('\\n');\n      index !== -1;\n      index = contents.indexOf('\\n', index + 1)\n    ) {\n      count += 1\n    }\n    if (count > 1 && contents.endsWith('\\n')) {\n      count -= 1\n    }\n    return count\n  }\n\n  private static isPositioned(instance: object): instance is PositionedInstance {\n    return 'getLinePosition' in instance\n  }\n\n  static isLaidOut(element: HTMLElement) {\n    return element.getClientRects().length > 0\n  }\n\n  static scrollToLine(\n    virtualizer: Virtualizer,\n    { node, instance }: RenderedLines,\n    anchor: LineAnchor,\n  ) {\n    if (!DiffLineReveal.isPositioned(instance)) {\n      return false\n    }\n    const position = instance.getLinePosition(anchor.lineNumber, anchor.side)\n    if (!position) {\n      return false\n    }\n    const root = virtualizer.getRoot()\n    const viewportHeight = root instanceof HTMLElement ? root.clientHeight : window.innerHeight\n    const lineCenter =\n      virtualizer.getOffsetInScrollContainer(node) + position.top + position.height / 2\n    const top = Math.max(0, lineCenter - viewportHeight / 2)\n    const current = root instanceof HTMLElement ? root.scrollTop : window.scrollY\n    if (Math.abs(current - top) >= 1) {\n      virtualizer.scrollTo({ top })\n    }\n    return true\n  }\n\n  private static lineSelector(lineNumber: number, side: FileSide) {\n    const line = `[data-line=\"${lineNumber}\"]`\n    if (side === 'old') {\n      return [\n        `[data-code][data-deletions] ${line}`,\n        `[data-code][data-unified] ${line}[data-line-type=\"change-deletion\"]`,\n        `[data-code][data-unified] [data-alt-line=\"${lineNumber}\"]`,\n      ].join(',')\n    }\n    return `[data-code]:not([data-deletions]) ${line}:not([data-line-type=\"change-deletion\"])`\n  }\n\n  private static lineElements(node: HTMLElement, lineNumber: number, side: FileSide) {\n    const root = node.shadowRoot ?? node\n    return [\n      ...root.querySelectorAll<HTMLElement>(DiffLineReveal.lineSelector(lineNumber, side)),\n    ].filter(DiffLineReveal.isLaidOut)\n  }\n\n  static lineElement(node: HTMLElement, lineNumber: number, side: FileSide) {\n    return DiffLineReveal.lineElements(node, lineNumber, side).at(0) ?? null\n  }\n\n  static flash(node: HTMLElement, lineNumber: number, side: FileSide) {\n    const lines = DiffLineReveal.lineElements(node, lineNumber, side)\n    if (lines.length === 0) {\n      return false\n    }\n    for (const line of lines) {\n      line.setAttribute(DiffLineReveal.flashAttribute, '')\n    }\n    setTimeout(() => {\n      for (const line of lines) {\n        line.removeAttribute(DiffLineReveal.flashAttribute)\n      }\n    }, DiffLineReveal.flashMs)\n    return true\n  }\n}\n",
+      "new": "import type { SelectionSide, Virtualizer } from '@pierre/diffs'\nimport type { FileDiffMetadata } from '@pierre/diffs/react'\nimport type { FileSide } from '@/src/lib/change-set.ts'\nimport type { LineAnchor } from '@/src/lib/line-range.ts'\n\ninterface LinePosition {\n  top: number\n  height: number\n}\n\ninterface PositionedInstance {\n  getLinePosition(lineNumber: number, side?: SelectionSide): LinePosition | undefined\n}\n\nexport interface RenderedLines {\n  node: HTMLElement\n  instance: object\n}\n\nexport abstract class DiffLineReveal {\n  static readonly flashAttribute = 'data-reveal-line'\n  static readonly flashMs = 1600\n\n  static readonly css =\n    `[${DiffLineReveal.flashAttribute}]{animation:reveal-line ${DiffLineReveal.flashMs}ms cubic-bezier(0.23,1,0.32,1)}` +\n    `@keyframes reveal-line{from{box-shadow:inset 3px 0 0 var(--color-accent),inset 0 0 0 999px color-mix(in srgb,var(--color-accent) 18%,transparent)}to{box-shadow:inset 3px 0 0 transparent,inset 0 0 0 999px transparent}}` +\n    `@media (prefers-reduced-motion:reduce){[${DiffLineReveal.flashAttribute}]{animation:none;box-shadow:inset 3px 0 0 var(--color-accent)}}`\n\n  static lastLine(contents: string | undefined) {\n    if (contents === undefined) {\n      return Number.POSITIVE_INFINITY\n    }\n    let count = 1\n    for (\n      let index = contents.indexOf('\\n');\n      index !== -1;\n      index = contents.indexOf('\\n', index + 1)\n    ) {\n      count += 1\n    }\n    if (count > 1 && contents.endsWith('\\n')) {\n      count -= 1\n    }\n    return count\n  }\n\n  static isInHunk(metadata: FileDiffMetadata, side: FileSide, line: number) {\n    return metadata.hunks.some((hunk) => {\n      if (side === 'old') {\n        return line >= hunk.deletionStart && line < hunk.deletionStart + hunk.deletionCount\n      }\n      return line >= hunk.additionStart && line < hunk.additionStart + hunk.additionCount\n    })\n  }\n\n  private static isPositioned(instance: object): instance is PositionedInstance {\n    return 'getLinePosition' in instance\n  }\n\n  static isLaidOut(element: HTMLElement) {\n    return element.getClientRects().length > 0\n  }\n\n  static scrollToLine(\n    virtualizer: Virtualizer,\n    { node, instance }: RenderedLines,\n    anchor: LineAnchor,\n  ) {\n    if (!DiffLineReveal.isPositioned(instance)) {\n      return false\n    }\n    const position = instance.getLinePosition(anchor.lineNumber, anchor.side)\n    if (!position) {\n      return false\n    }\n    const root = virtualizer.getRoot()\n    const viewportHeight = root instanceof HTMLElement ? root.clientHeight : window.innerHeight\n    const lineCenter =\n      virtualizer.getOffsetInScrollContainer(node) + position.top + position.height / 2\n    const top = Math.max(0, lineCenter - viewportHeight / 2)\n    const current = root instanceof HTMLElement ? root.scrollTop : window.scrollY\n    if (Math.abs(current - top) >= 1) {\n      virtualizer.scrollTo({ top })\n    }\n    return true\n  }\n\n  private static lineSelector(lineNumber: number, side: FileSide) {\n    const line = `[data-line=\"${lineNumber}\"]`\n    if (side === 'old') {\n      return [\n        `[data-code][data-deletions] ${line}`,\n        `[data-code][data-unified] ${line}[data-line-type=\"change-deletion\"]`,\n        `[data-code][data-unified] [data-alt-line=\"${lineNumber}\"]`,\n      ].join(',')\n    }\n    return `[data-code]:not([data-deletions]) ${line}:not([data-line-type=\"change-deletion\"])`\n  }\n\n  private static lineElements(node: HTMLElement, lineNumber: number, side: FileSide) {\n    const root = node.shadowRoot ?? node\n    return [\n      ...root.querySelectorAll<HTMLElement>(DiffLineReveal.lineSelector(lineNumber, side)),\n    ].filter(DiffLineReveal.isLaidOut)\n  }\n\n  static lineElement(node: HTMLElement, lineNumber: number, side: FileSide) {\n    return DiffLineReveal.lineElements(node, lineNumber, side).at(0) ?? null\n  }\n\n  static flash(node: HTMLElement, lineNumber: number, side: FileSide) {\n    const lines = DiffLineReveal.lineElements(node, lineNumber, side)\n    if (lines.length === 0) {\n      return false\n    }\n    for (const line of lines) {\n      line.setAttribute(DiffLineReveal.flashAttribute, '')\n    }\n    setTimeout(() => {\n      for (const line of lines) {\n        line.removeAttribute(DiffLineReveal.flashAttribute)\n      }\n    }, DiffLineReveal.flashMs)\n    return true\n  }\n}\n"
+    },
+    {
+      "path": "src/primitives/comment-location.tsx",
+      "status": "modified",
+      "additions": 26,
+      "deletions": 3,
+      "old": "import type { ReactNode } from 'react'\n\ninterface CommentLocationProps {\n  filePath: string\n  location: string\n  children?: ReactNode\n}\n\nexport function CommentLocation({ filePath, location, children }: CommentLocationProps) {\n  return (\n    <span className={'flex items-center gap-1.5 text-mini text-fg-muted'}>\n      <span className={'truncate'}>{filePath}</span>\n      <span className={'shrink-0 font-editor text-fg-faint'}>{location}</span>\n      {children}\n    </span>\n  )\n}\n",
+      "new": "import type { ReactNode } from 'react'\nimport { c } from '@/src/c.ts'\n\ninterface CommentLocationProps {\n  filePath: string\n  location: string\n  onOpen?: () => void\n  children?: ReactNode\n}\n\nexport function CommentLocation({ filePath, location, onOpen, children }: CommentLocationProps) {\n  let place = (\n    <>\n      <span className={'truncate'}>{filePath}</span>\n      <span className={'shrink-0 font-editor text-fg-faint'}>{location}</span>\n    </>\n  )\n  if (onOpen) {\n    place = (\n      <button\n        type={'button'}\n        title={`Open ${filePath} at ${location}`}\n        onClick={onOpen}\n        className={c(\n          'flex min-w-0 cursor-pointer items-center gap-1.5 text-left outline-none',\n          'underline-offset-2 hover:text-fg hover:underline',\n          'focus-visible:text-fg focus-visible:underline',\n        )}\n      >\n        {place}\n      </button>\n    )\n  }\n  return (\n    <span className={'flex items-center gap-1.5 text-mini text-fg-muted'}>\n      {place}\n      {children}\n    </span>\n  )\n}\n"
+    },
+    {
+      "path": "src/primitives/outdated-comment-card.tsx",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 1,
+      "old": "import type { ReactNode } from 'react'\nimport { CommentLocation } from '@/src/primitives/comment-location.tsx'\n\ninterface OutdatedCommentCardProps {\n  filePath: string\n  location: string\n  age: string\n  snippet: ReactNode\n  body: ReactNode\n  error?: string\n  actions: ReactNode\n}\n\nexport function OutdatedCommentCard({\n  filePath,\n  location,\n  age,\n  snippet,\n  body,\n  error,\n  actions,\n}: OutdatedCommentCardProps) {\n  return (\n    <div className={'flex flex-col gap-1 px-1.5 py-1.5'}>\n      <CommentLocation filePath={filePath} location={location}>\n        <span className={'ml-auto shrink-0 text-fg-faint'}>{age}</span>\n      </CommentLocation>\n      {snippet}\n      <div>{body}</div>\n      {error && <p className={'text-micro text-danger'}>{error}</p>}\n      <div className={'flex justify-end gap-1'}>{actions}</div>\n    </div>\n  )\n}\n",
+      "new": "import type { ReactNode } from 'react'\nimport { CommentLocation } from '@/src/primitives/comment-location.tsx'\n\ninterface OutdatedCommentCardProps {\n  filePath: string\n  location: string\n  age: string\n  snippet: ReactNode\n  body: ReactNode\n  error?: string\n  actions: ReactNode\n  onOpenFile?: () => void\n}\n\nexport function OutdatedCommentCard({\n  filePath,\n  location,\n  age,\n  snippet,\n  body,\n  error,\n  actions,\n  onOpenFile,\n}: OutdatedCommentCardProps) {\n  return (\n    <div className={'flex flex-col gap-1 px-1.5 py-1.5'}>\n      <CommentLocation filePath={filePath} location={location} onOpen={onOpenFile}>\n        <span className={'ml-auto shrink-0 text-fg-faint'}>{age}</span>\n      </CommentLocation>\n      {snippet}\n      <div>{body}</div>\n      {error && <p className={'text-micro text-danger'}>{error}</p>}\n      <div className={'flex justify-end gap-1'}>{actions}</div>\n    </div>\n  )\n}\n"
+    },
+    {
+      "path": "src/primitives/session-comment.tsx",
+      "status": "modified",
+      "additions": 21,
+      "deletions": 3,
+      "old": "import type { ReactNode } from 'react'\nimport { c } from '@/src/c.ts'\nimport { CommentLocation } from '@/src/primitives/comment-location.tsx'\n\ninterface SessionCommentProps {\n  filePath: string\n  location: string\n  marker?: ReactNode\n  dimmed?: boolean\n  snippet: ReactNode\n  body: ReactNode\n  replies?: ReactNode\n}\n\nexport function SessionComment({\n  filePath,\n  location,\n  marker,\n  dimmed = false,\n  snippet,\n  body,\n  replies,\n}: SessionCommentProps) {\n  return (\n    <div className={c('flex flex-col gap-1 px-1.5 py-1.5', dimmed && 'opacity-70')}>\n      <CommentLocation filePath={filePath} location={location}>\n        {marker}\n      </CommentLocation>\n      {snippet}\n      <div>{body}</div>\n      {replies}\n    </div>\n  )\n}\n",
+      "new": "import type { ReactNode, Ref } from 'react'\nimport { c } from '@/src/c.ts'\nimport { CommentLocation } from '@/src/primitives/comment-location.tsx'\n\ninterface SessionCommentProps {\n  ref?: Ref<HTMLDivElement>\n  filePath: string\n  location: string\n  marker?: ReactNode\n  dimmed?: boolean\n  highlighted?: boolean\n  snippet: ReactNode\n  body: ReactNode\n  replies?: ReactNode\n  onOpenFile?: () => void\n  onAnimationEnd?: () => void\n}\n\nexport function SessionComment({\n  ref,\n  filePath,\n  location,\n  marker,\n  dimmed = false,\n  highlighted = false,\n  snippet,\n  body,\n  replies,\n  onOpenFile,\n  onAnimationEnd,\n}: SessionCommentProps) {\n  return (\n    <div\n      ref={ref}\n      data-highlighted={highlighted || undefined}\n      onAnimationEnd={onAnimationEnd}\n      className={c(\n        'relative flex flex-col gap-1 px-1.5 py-1.5',\n        dimmed && 'opacity-70',\n        highlighted &&\n          'after:pointer-events-none after:absolute after:inset-0 after:animate-highlight-ring after:rounded-[inherit] after:shadow-[inset_0_0_0_1.5px_var(--color-accent)]',\n      )}\n    >\n      <CommentLocation filePath={filePath} location={location} onOpen={onOpenFile}>\n        {marker}\n      </CommentLocation>\n      {snippet}\n      <div>{body}</div>\n      {replies}\n    </div>\n  )\n}\n"
+    },
+    {
+      "path": "src/store/comments-menu-store.ts",
+      "status": "added",
+      "additions": 70,
+      "deletions": 0,
+      "old": null,
+      "new": "import { create } from 'zustand'\n\ntype CommentsMenuTab = 'current' | 'sessions'\n\ninterface CommentFocusRequest {\n  commentId: string\n  requestedAt: number\n}\n\ninterface CommentsMenuState {\n  open: boolean\n  tab: CommentsMenuTab\n  openedSessionId: string | null\n  outdatedOpen: boolean\n  focus: CommentFocusRequest | null\n  setOpen: (open: boolean) => void\n  selectTab: (tab: CommentsMenuTab) => void\n  openSession: (sessionId: string) => void\n  closeSession: () => void\n  setOutdatedOpen: (open: boolean) => void\n  showComment: (sessionId: string, commentId: string) => void\n  clearFocus: (requestedAt: number) => void\n  resetAfterClose: () => void\n}\n\nexport const useCommentsMenuStore = create<CommentsMenuState>()((set) => {\n  return {\n    open: false,\n    tab: 'current',\n    openedSessionId: null,\n    outdatedOpen: false,\n    focus: null,\n    setOpen: (open) => {\n      set({ open })\n    },\n    selectTab: (tab) => {\n      set({ tab })\n    },\n    openSession: (openedSessionId) => {\n      set({ openedSessionId, focus: null })\n    },\n    closeSession: () => {\n      set({ openedSessionId: null, focus: null })\n    },\n    setOutdatedOpen: (outdatedOpen) => {\n      set({ outdatedOpen })\n    },\n    showComment: (openedSessionId, commentId) => {\n      set({\n        open: true,\n        tab: 'sessions',\n        openedSessionId,\n        focus: { commentId, requestedAt: Date.now() },\n      })\n    },\n    clearFocus: (requestedAt) => {\n      set((state) => {\n        return state.focus?.requestedAt === requestedAt ? { focus: null } : {}\n      })\n    },\n    resetAfterClose: () => {\n      set((state) => {\n        if (state.open) {\n          return {}\n        }\n        return { openedSessionId: null, outdatedOpen: false, focus: null }\n      })\n    },\n  }\n})\n"
+    },
+    {
+      "path": "src/store/navigation-store.ts",
+      "status": "modified",
+      "additions": 21,
+      "deletions": 2,
+      "old": "import { create } from 'zustand'\nimport type { ReviewComment } from '@/src/lib/comment-gateway.ts'\nimport type { ReviewNavigation } from '@/src/lib/definition-tabs-sync.ts'\nimport { type LineAnchor, LineRanges } from '@/src/lib/line-range.ts'\n\nexport interface FocusRequest {\n  commentId: string\n  filePath: string\n  anchor: LineAnchor\n  requestedAt: number\n}\n\ninterface NavigationState {\n  selectedPath: string | null\n  selectedAt: number\n  focus: FocusRequest | null\n  selectFile: (path: string) => void\n  followFile: (path: string) => void\n  focusComment: (comment: ReviewComment) => void\n  clearFocus: (requestedAt: number) => void\n}\n\nexport const useNavigationStore = create<NavigationState>()((set) => {\n  return {\n    selectedPath: null,\n    selectedAt: 0,\n    focus: null,\n    selectFile: (selectedPath) => {\n      set({ selectedPath, selectedAt: Date.now() })\n    },\n    followFile: (selectedPath) => {\n      set({ selectedPath })\n    },\n    focusComment: (comment) => {\n      set({\n        selectedPath: comment.filePath,\n        selectedAt: Date.now(),\n        focus: {\n          commentId: comment.id,\n          filePath: comment.filePath,\n          anchor: LineRanges.anchor(comment.range),\n          requestedAt: Date.now(),\n        },\n      })\n    },\n    clearFocus: (requestedAt) => {\n      set((state) => {\n        return state.focus?.requestedAt === requestedAt ? { focus: null } : {}\n      })\n    },\n  }\n})\n\nexport const reviewNavigationPort: ReviewNavigation = {\n  subscribe: (listener) => {\n    return useNavigationStore.subscribe((state, previous) => {\n      if (state.selectedAt !== previous.selectedAt) {\n        listener()\n      }\n    })\n  },\n}\n",
+      "new": "import { create } from 'zustand'\nimport type { FileSide } from '@/src/lib/change-set.ts'\nimport type { ReviewComment } from '@/src/lib/comment-gateway.ts'\nimport type { TabReveal } from '@/src/lib/definition-tabs.ts'\nimport type { ReviewNavigation } from '@/src/lib/definition-tabs-sync.ts'\nimport { type LineAnchor, LineRanges } from '@/src/lib/line-range.ts'\n\nexport interface FocusRequest {\n  commentId: string\n  filePath: string\n  anchor: LineAnchor\n  requestedAt: number\n}\n\ninterface ReviewReveal extends TabReveal {\n  path: string\n}\n\ninterface NavigationState {\n  selectedPath: string | null\n  selectedAt: number\n  focus: FocusRequest | null\n  reveal: ReviewReveal | null\n  selectFile: (path: string) => void\n  followFile: (path: string) => void\n  focusComment: (comment: ReviewComment) => void\n  revealLine: (path: string, side: FileSide, line: number) => void\n  clearFocus: (requestedAt: number) => void\n}\n\nexport const useNavigationStore = create<NavigationState>()((set) => {\n  return {\n    selectedPath: null,\n    selectedAt: 0,\n    focus: null,\n    reveal: null,\n    selectFile: (selectedPath) => {\n      set({ selectedPath, selectedAt: Date.now(), reveal: null })\n    },\n    followFile: (selectedPath) => {\n      set({ selectedPath, reveal: null })\n    },\n    revealLine: (path, side, line) => {\n      const requestedAt = Date.now()\n      set({\n        selectedPath: path,\n        selectedAt: requestedAt,\n        focus: null,\n        reveal: { path, side, line, requestedAt },\n      })\n    },\n    focusComment: (comment) => {\n      set({\n        selectedPath: comment.filePath,\n        selectedAt: Date.now(),\n        reveal: null,\n        focus: {\n          commentId: comment.id,\n          filePath: comment.filePath,\n          anchor: LineRanges.anchor(comment.range),\n          requestedAt: Date.now(),\n        },\n      })\n    },\n    clearFocus: (requestedAt) => {\n      set((state) => {\n        return state.focus?.requestedAt === requestedAt ? { focus: null } : {}\n      })\n    },\n  }\n})\n\nexport const reviewNavigationPort: ReviewNavigation = {\n  subscribe: (listener) => {\n    return useNavigationStore.subscribe((state, previous) => {\n      if (state.selectedAt !== previous.selectedAt) {\n        listener()\n      }\n    })\n  },\n}\n"
+    },
+    {
+      "path": "src/stories/components/definitions/file-tab-view.stories.tsx",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 0,
+      "old": "import type { Meta, StoryObj } from '@storybook/react-vite'\nimport { FileTabView } from '@/src/components/definitions/file-tab-view.tsx'\nimport { createLiveStoryServices } from '@/src/stories/support/fixtures.ts'\nimport { definitionTabs } from '@/src/stories/support/definition-fixture.ts'\nimport { StoryFrame } from '@/src/stories/support/story-frame.tsx'\n\nconst services = createLiveStoryServices()\n\nconst meta = {\n  title: 'Components/Definitions/FileTabView',\n  component: FileTabView,\n  args: { tab: definitionTabs.file },\n  parameters: { layout: 'fullscreen' },\n  decorators: [\n    (Story) => {\n      return (\n        <StoryFrame services={services}>\n          <div className={'-m-3 h-screen'}>\n            <Story />\n          </div>\n        </StoryFrame>\n      )\n    },\n  ],\n} satisfies Meta<typeof FileTabView>\n\nexport default meta\n\ntype Story = StoryObj<typeof meta>\n\nexport const InRepository: Story = {}\n\nexport const External: Story = { args: { tab: definitionTabs.external } }\n\nexport const LargeFile: Story = { args: { tab: definitionTabs.large } }\n\nexport const Missing: Story = {\n  args: { tab: { ...definitionTabs.file, id: 'repo::missing.ts', path: 'missing.ts' } },\n}\n",
+      "new": "import type { Meta, StoryObj } from '@storybook/react-vite'\nimport { FileTabView } from '@/src/components/definitions/file-tab-view.tsx'\nimport { createLiveStoryServices } from '@/src/stories/support/fixtures.ts'\nimport { definitionTabs } from '@/src/stories/support/definition-fixture.ts'\nimport { StoryFrame } from '@/src/stories/support/story-frame.tsx'\n\nconst services = createLiveStoryServices()\n\nconst meta = {\n  title: 'Components/Definitions/FileTabView',\n  component: FileTabView,\n  args: { tab: definitionTabs.file },\n  parameters: { layout: 'fullscreen' },\n  decorators: [\n    (Story) => {\n      return (\n        <StoryFrame services={services}>\n          <div className={'-m-3 h-screen'}>\n            <Story />\n          </div>\n        </StoryFrame>\n      )\n    },\n  ],\n} satisfies Meta<typeof FileTabView>\n\nexport default meta\n\ntype Story = StoryObj<typeof meta>\n\nexport const InRepository: Story = {}\n\nexport const External: Story = { args: { tab: definitionTabs.external } }\n\nexport const LargeFile: Story = { args: { tab: definitionTabs.large } }\n\nexport const Missing: Story = {\n  args: { tab: { ...definitionTabs.file, id: 'repo::missing.ts', path: 'missing.ts' } },\n}\n\nexport const ExternalNotFound: Story = {\n  args: {\n    tab: {\n      ...definitionTabs.external,\n      id: 'external::/usr/lib/node_modules/gone/index.d.ts',\n      path: '/usr/lib/node_modules/gone/index.d.ts',\n    },\n  },\n}\n"
+    },
+    {
+      "path": "src/stories/components/topbar/review-session-detail.stories.tsx",
+      "status": "modified",
+      "additions": 16,
+      "deletions": 1,
+      "old": "import type { Meta, StoryObj } from '@storybook/react-vite'\nimport { fn } from 'storybook/test'\nimport { ReviewSessionDetail } from '@/src/components/topbar/review-session-detail.tsx'\nimport { createStoryServices } from '@/src/stories/support/fixtures.ts'\nimport { reviewSessions } from '@/src/stories/support/review-session-fixture.ts'\nimport { StoryFrame } from '@/src/stories/support/story-frame.tsx'\n\nconst services = createStoryServices()\n\nconst meta = {\n  title: 'Components/Topbar/ReviewSessionDetail',\n  component: ReviewSessionDetail,\n  args: { session: reviewSessions[1], onBack: fn() },\n  decorators: [\n    (Story) => {\n      return (\n        <StoryFrame services={services}>\n          <div className={'w-[26rem] rounded-md border border-line bg-popup'}>\n            <Story />\n          </div>\n        </StoryFrame>\n      )\n    },\n  ],\n} satisfies Meta<typeof ReviewSessionDetail>\n\nexport default meta\n\nexport const Default: StoryObj<typeof meta> = {}\n\nexport const WithOutdated: StoryObj<typeof meta> = { args: { session: reviewSessions[0] } }\n",
+      "new": "import type { Meta, StoryObj } from '@storybook/react-vite'\nimport { fn } from 'storybook/test'\nimport { ReviewSessionDetail } from '@/src/components/topbar/review-session-detail.tsx'\nimport { createStoryServices } from '@/src/stories/support/fixtures.ts'\nimport { reviewSessions } from '@/src/stories/support/review-session-fixture.ts'\nimport { StoryFrame } from '@/src/stories/support/story-frame.tsx'\nimport { useCommentsMenuStore } from '@/src/store/comments-menu-store.ts'\n\nconst services = createStoryServices()\n\nconst meta = {\n  title: 'Components/Topbar/ReviewSessionDetail',\n  component: ReviewSessionDetail,\n  args: {\n    session: reviewSessions[1],\n    backLabel: 'Back to sessions',\n    onBack: fn(),\n    onNavigate: fn(),\n  },\n  decorators: [\n    (Story) => {\n      return (\n        <StoryFrame services={services}>\n          <div className={'w-[26rem] rounded-md border border-line bg-popup'}>\n            <Story />\n          </div>\n        </StoryFrame>\n      )\n    },\n  ],\n} satisfies Meta<typeof ReviewSessionDetail>\n\nexport default meta\n\nexport const Default: StoryObj<typeof meta> = {}\n\nexport const WithOutdated: StoryObj<typeof meta> = { args: { session: reviewSessions[0] } }\n\nexport const FocusedComment: StoryObj<typeof meta> = {\n  beforeEach: () => {\n    useCommentsMenuStore.setState({ focus: { commentId: 's2c2', requestedAt: Date.now() } })\n    return () => {\n      useCommentsMenuStore.setState({ focus: null })\n    }\n  },\n}\n"
+    },
+    {
+      "path": "src/stories/components/topbar/review-sessions-panel.stories.tsx",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 7,
+      "old": "import type { Meta, StoryObj } from '@storybook/react-vite'\nimport { useState } from 'react'\nimport { ReviewSessionsPanel } from '@/src/components/topbar/review-sessions-panel.tsx'\nimport { useReviewSessions } from '@/src/hooks/use-review-sessions.ts'\nimport type { Services } from '@/src/lib/services.ts'\nimport { createStoryServices } from '@/src/stories/support/fixtures.ts'\nimport { StoryFrame } from '@/src/stories/support/story-frame.tsx'\n\nconst ConnectedPanel = () => {\n  const { list } = useReviewSessions()\n  const [openedId, setOpenedId] = useState<string | null>(null)\n  const opened =\n    list.find((session) => {\n      return session.id === openedId\n    }) ?? null\n\n  return (\n    <ReviewSessionsPanel\n      openedSession={opened}\n      onOpen={setOpenedId}\n      onBack={() => {\n        setOpenedId(null)\n      }}\n    />\n  )\n}\n\nconst meta = {\n  title: 'Components/Topbar/ReviewSessionsPanel',\n  args: { services: createStoryServices() },\n  argTypes: { services: { table: { disable: true } } },\n  render: ({ services }) => {\n    return (\n      <StoryFrame services={services}>\n        <div className={'w-[26rem] rounded-md border border-line bg-popup'}>\n          <ConnectedPanel />\n        </div>\n      </StoryFrame>\n    )\n  },\n} satisfies Meta<{ services: Services }>\n\nexport default meta\n\ntype Story = StoryObj<typeof meta>\n\nexport const WithSessions: Story = {}\n\nexport const Empty: Story = { args: { services: createStoryServices({ sessions: [] }) } }\n",
+      "new": "import type { Meta, StoryObj } from '@storybook/react-vite'\nimport { useState } from 'react'\nimport { fn } from 'storybook/test'\nimport { ReviewSessionsPanel } from '@/src/components/topbar/review-sessions-panel.tsx'\nimport type { Services } from '@/src/lib/services.ts'\nimport { createStoryServices } from '@/src/stories/support/fixtures.ts'\nimport { StoryFrame } from '@/src/stories/support/story-frame.tsx'\n\nconst ConnectedPanel = () => {\n  const [openedId, setOpenedId] = useState<string | null>(null)\n\n  return (\n    <ReviewSessionsPanel\n      openedSessionId={openedId}\n      onOpen={setOpenedId}\n      onBack={() => {\n        setOpenedId(null)\n      }}\n      onNavigate={fn()}\n    />\n  )\n}\n\nconst meta = {\n  title: 'Components/Topbar/ReviewSessionsPanel',\n  args: { services: createStoryServices() },\n  argTypes: { services: { table: { disable: true } } },\n  render: ({ services }) => {\n    return (\n      <StoryFrame services={services}>\n        <div className={'w-[26rem] rounded-md border border-line bg-popup'}>\n          <ConnectedPanel />\n        </div>\n      </StoryFrame>\n    )\n  },\n} satisfies Meta<{ services: Services }>\n\nexport default meta\n\ntype Story = StoryObj<typeof meta>\n\nexport const WithSessions: Story = {}\n\nexport const Empty: Story = { args: { services: createStoryServices({ sessions: [] }) } }\n"
+    },
+    {
+      "path": "src/stories/components/topbar/session-comment-item.stories.tsx",
+      "status": "added",
+      "additions": 43,
+      "deletions": 0,
+      "old": null,
+      "new": "import type { Meta, StoryObj } from '@storybook/react-vite'\nimport { fn } from 'storybook/test'\nimport { SessionCommentItem } from '@/src/components/topbar/session-comment-item.tsx'\nimport { createStoryServices } from '@/src/stories/support/fixtures.ts'\nimport { reviewSessions } from '@/src/stories/support/review-session-fixture.ts'\nimport { StoryFrame } from '@/src/stories/support/story-frame.tsx'\nimport { useCommentsMenuStore } from '@/src/store/comments-menu-store.ts'\n\nconst services = createStoryServices()\nconst replied = reviewSessions[1].comments[0]\nconst outdated = reviewSessions[0].comments[1]\n\nconst meta = {\n  title: 'Components/Topbar/SessionCommentItem',\n  component: SessionCommentItem,\n  args: { comment: replied, onNavigate: fn() },\n  decorators: [\n    (Story) => {\n      return (\n        <StoryFrame services={services}>\n          <div className={'w-[26rem] rounded-md border border-line bg-popup'}>\n            <Story />\n          </div>\n        </StoryFrame>\n      )\n    },\n  ],\n} satisfies Meta<typeof SessionCommentItem>\n\nexport default meta\n\nexport const Default: StoryObj<typeof meta> = {}\n\nexport const Focused: StoryObj<typeof meta> = {\n  beforeEach: () => {\n    useCommentsMenuStore.setState({ focus: { commentId: replied.id, requestedAt: Date.now() } })\n    return () => {\n      useCommentsMenuStore.setState({ focus: null })\n    }\n  },\n}\n\nexport const Outdated: StoryObj<typeof meta> = { args: { comment: outdated } }\n"
+    },
+    {
+      "path": "src/stories/primitives/comment-location.stories.tsx",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 0,
+      "old": "import type { Meta, StoryObj } from '@storybook/react-vite'\nimport { CommentLocation } from '@/src/primitives/comment-location.tsx'\nimport { OutdatedLabel } from '@/src/primitives/outdated-label.tsx'\n\nconst meta = {\n  title: 'Primitives/CommentLocation',\n  component: CommentLocation,\n  args: {\n    filePath: 'src/graphql/resolvers/User/mutations/auth.ts',\n    location: 'L53-56',\n  },\n  decorators: [\n    (Story) => {\n      return (\n        <div className={'w-96 text-xs'}>\n          <Story />\n        </div>\n      )\n    },\n  ],\n} satisfies Meta<typeof CommentLocation>\n\nexport default meta\n\ntype Story = StoryObj<typeof meta>\n\nexport const Default: Story = {}\n\nexport const WithMarker: Story = { args: { children: <OutdatedLabel /> } }\n\nexport const LongPath: Story = {\n  args: {\n    filePath: 'src/graphql/resolvers/AdminUser/mutations/very/deeply/nested/folder/deleteMany.ts',\n  },\n}\n",
+      "new": "import type { Meta, StoryObj } from '@storybook/react-vite'\nimport { CommentLocation } from '@/src/primitives/comment-location.tsx'\nimport { OutdatedLabel } from '@/src/primitives/outdated-label.tsx'\nimport { fn } from 'storybook/test'\n\nconst meta = {\n  title: 'Primitives/CommentLocation',\n  component: CommentLocation,\n  args: {\n    filePath: 'src/graphql/resolvers/User/mutations/auth.ts',\n    location: 'L53-56',\n  },\n  decorators: [\n    (Story) => {\n      return (\n        <div className={'w-96 text-xs'}>\n          <Story />\n        </div>\n      )\n    },\n  ],\n} satisfies Meta<typeof CommentLocation>\n\nexport default meta\n\ntype Story = StoryObj<typeof meta>\n\nexport const Default: Story = {}\n\nexport const WithMarker: Story = { args: { children: <OutdatedLabel /> } }\n\nexport const LongPath: Story = {\n  args: {\n    filePath: 'src/graphql/resolvers/AdminUser/mutations/very/deeply/nested/folder/deleteMany.ts',\n  },\n}\n\nexport const Clickable: Story = { args: { onOpen: fn() } }\n"
+    },
+    {
+      "path": "src/stories/primitives/outdated-comment-card.stories.tsx",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "old": "import type { Meta, StoryObj } from '@storybook/react-vite'\nimport { VscGoToFile, VscTrash } from 'react-icons/vsc'\nimport { Button } from '@/src/primitives/button.tsx'\nimport { CodeSnippetView } from '@/src/primitives/code-snippet-view.tsx'\nimport { OutdatedCommentCard } from '@/src/primitives/outdated-comment-card.tsx'\n\nconst meta = {\n  title: 'Primitives/OutdatedCommentCard',\n  component: OutdatedCommentCard,\n  args: {\n    filePath: 'src/graphql/resolvers/User/mutations/auth.ts',\n    location: 'L30-32',\n    age: 'outdated 6m ago',\n    snippet: (\n      <CodeSnippetView\n        lines={[\n          {\n            number: 30,\n            tokens: [{ content: '    if (!user) {', italic: false, bold: false }],\n          },\n          { number: 31, tokens: [{ content: '      return null', italic: false, bold: false }] },\n          { number: 32, tokens: [{ content: '    }', italic: false, bold: false }] },\n        ]}\n      />\n    ),\n    body: 'This early return skips the audit log for failed logins.',\n    actions: (\n      <>\n        <Button variant={'ghost'}>\n          <VscGoToFile />\n          Open file\n        </Button>\n        <Button variant={'ghost'}>\n          <VscTrash />\n          Delete\n        </Button>\n      </>\n    ),\n  },\n  decorators: [\n    (Story) => {\n      return (\n        <div className={'w-96 text-xs'}>\n          <Story />\n        </div>\n      )\n    },\n  ],\n} satisfies Meta<typeof OutdatedCommentCard>\n\nexport default meta\n\ntype Story = StoryObj<typeof meta>\n\nexport const Default: Story = {}\n\nexport const DeleteFailed: Story = { args: { error: 'Could not delete the comment.' } }\n",
+      "new": "import type { Meta, StoryObj } from '@storybook/react-vite'\nimport { VscGoToFile, VscTrash } from 'react-icons/vsc'\nimport { fn } from 'storybook/test'\nimport { Button } from '@/src/primitives/button.tsx'\nimport { CodeSnippetView } from '@/src/primitives/code-snippet-view.tsx'\nimport { OutdatedCommentCard } from '@/src/primitives/outdated-comment-card.tsx'\n\nconst meta = {\n  title: 'Primitives/OutdatedCommentCard',\n  component: OutdatedCommentCard,\n  args: {\n    filePath: 'src/graphql/resolvers/User/mutations/auth.ts',\n    location: 'L30-32',\n    age: 'outdated 6m ago',\n    onOpenFile: fn(),\n    snippet: (\n      <CodeSnippetView\n        lines={[\n          {\n            number: 30,\n            tokens: [{ content: '    if (!user) {', italic: false, bold: false }],\n          },\n          { number: 31, tokens: [{ content: '      return null', italic: false, bold: false }] },\n          { number: 32, tokens: [{ content: '    }', italic: false, bold: false }] },\n        ]}\n      />\n    ),\n    body: 'This early return skips the audit log for failed logins.',\n    actions: (\n      <>\n        <Button variant={'ghost'}>\n          <VscGoToFile />\n          Open file\n        </Button>\n        <Button variant={'ghost'}>\n          <VscTrash />\n          Delete\n        </Button>\n      </>\n    ),\n  },\n  decorators: [\n    (Story) => {\n      return (\n        <div className={'w-96 text-xs'}>\n          <Story />\n        </div>\n      )\n    },\n  ],\n} satisfies Meta<typeof OutdatedCommentCard>\n\nexport default meta\n\ntype Story = StoryObj<typeof meta>\n\nexport const Default: Story = {}\n\nexport const DeleteFailed: Story = { args: { error: 'Could not delete the comment.' } }\n"
+    },
+    {
+      "path": "src/stories/primitives/session-comment.stories.tsx",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 0,
+      "old": "import type { Meta, StoryObj } from '@storybook/react-vite'\nimport { CodeSnippetView } from '@/src/primitives/code-snippet-view.tsx'\nimport { OutdatedLabel } from '@/src/primitives/outdated-label.tsx'\nimport { ReplyEntry } from '@/src/primitives/reply-entry.tsx'\nimport { ReplyThread } from '@/src/primitives/reply-thread.tsx'\nimport { SessionComment } from '@/src/primitives/session-comment.tsx'\n\nconst meta = {\n  title: 'Primitives/SessionComment',\n  component: SessionComment,\n  args: {\n    filePath: '.github/workflows/production-ci.yml',\n    location: 'L16-17',\n    snippet: (\n      <CodeSnippetView\n        lines={[\n          {\n            number: 16,\n            tokens: [{ content: '          node-version: 22', italic: false, bold: false }],\n          },\n          { number: 17, tokens: [{ content: '          cache: npm', italic: false, bold: false }] },\n        ]}\n      />\n    ),\n    body: 'Pin the node version in .nvmrc instead so local and CI match.',\n  },\n  decorators: [\n    (Story) => {\n      return (\n        <div className={'w-96 text-xs'}>\n          <Story />\n        </div>\n      )\n    },\n  ],\n} satisfies Meta<typeof SessionComment>\n\nexport default meta\n\ntype Story = StoryObj<typeof meta>\n\nexport const Default: Story = {}\n\nexport const WithReplies: Story = {\n  args: {\n    replies: (\n      <ReplyThread>\n        <ReplyEntry author={'agent'} age={'20m ago'} body={'Moved the version to .nvmrc.'} />\n      </ReplyThread>\n    ),\n  },\n}\n\nexport const Outdated: Story = {\n  args: { marker: <OutdatedLabel />, dimmed: true },\n}\n",
+      "new": "import type { Meta, StoryObj } from '@storybook/react-vite'\nimport { CodeSnippetView } from '@/src/primitives/code-snippet-view.tsx'\nimport { OutdatedLabel } from '@/src/primitives/outdated-label.tsx'\nimport { ReplyEntry } from '@/src/primitives/reply-entry.tsx'\nimport { ReplyThread } from '@/src/primitives/reply-thread.tsx'\nimport { SessionComment } from '@/src/primitives/session-comment.tsx'\nimport { fn } from 'storybook/test'\n\nconst meta = {\n  title: 'Primitives/SessionComment',\n  component: SessionComment,\n  args: {\n    filePath: '.github/workflows/production-ci.yml',\n    location: 'L16-17',\n    snippet: (\n      <CodeSnippetView\n        lines={[\n          {\n            number: 16,\n            tokens: [{ content: '          node-version: 22', italic: false, bold: false }],\n          },\n          { number: 17, tokens: [{ content: '          cache: npm', italic: false, bold: false }] },\n        ]}\n      />\n    ),\n    body: 'Pin the node version in .nvmrc instead so local and CI match.',\n    onOpenFile: fn(),\n  },\n  decorators: [\n    (Story) => {\n      return (\n        <div className={'w-96 text-xs'}>\n          <Story />\n        </div>\n      )\n    },\n  ],\n} satisfies Meta<typeof SessionComment>\n\nexport default meta\n\ntype Story = StoryObj<typeof meta>\n\nexport const Default: Story = {}\n\nexport const WithReplies: Story = {\n  args: {\n    replies: (\n      <ReplyThread>\n        <ReplyEntry author={'agent'} age={'20m ago'} body={'Moved the version to .nvmrc.'} />\n      </ReplyThread>\n    ),\n  },\n}\n\nexport const Outdated: Story = {\n  args: { marker: <OutdatedLabel />, dimmed: true },\n}\n\nexport const Highlighted: Story = { args: { highlighted: true } }\n"
+    },
+    {
+      "path": "src/stories/support/review-session-fixture.ts",
+      "status": "modified",
+      "additions": 25,
+      "deletions": 0,
+      "old": "import { ChangeSets } from '@/src/lib/change-set.ts'\nimport type { ReviewComment, SnapshotLine } from '@/src/lib/comment-gateway.ts'\nimport { CommentSnapshots } from '@/src/lib/comment-snapshots.ts'\nimport type { Comparison } from '@/src/lib/comparison-rules.ts'\nimport type { LineRange } from '@/src/lib/line-range.ts'\nimport type { ReviewSession } from '@/src/lib/review-session-gateway.ts'\nimport { changeSet } from '@/src/stories/support/change-set-fixture.ts'\nimport { fileDiffFor } from '@/src/stories/support/file-diff-fixture.ts'\n\nconst HOUR = 60 * 60 * 1000\nconst DAY = 24 * HOUR\n\nconst additions = (start: number, end: number): LineRange => {\n  return { start, end, side: 'additions', endSide: 'additions' }\n}\n\nconst numbered = (start: number, texts: string[]) => {\n  return texts.map((text, index) => {\n    return { number: start + index, text }\n  })\n}\n\nexport const snapshotOf = (comment: ReviewComment): SnapshotLine[] => {\n  const change = ChangeSets.find(changeSet.changes, comment.filePath)\n  if (!change) {\n    return []\n  }\n  return numbered(\n    comment.range.start,\n    CommentSnapshots.expectedLines(fileDiffFor(change), comment.range),\n  )\n}\n\nconst comparison: Comparison = {\n  source: { kind: 'branch', name: 'feat/upgrade-deprecated-versions' },\n  target: 'main',\n}\n\nexport const reviewSessions: ReviewSession[] = [\n  {\n    id: 's3',\n    comparison,\n    status: 'created',\n    createdAt: Date.now() - 4 * HOUR,\n    finishedAt: Date.now() - 3 * HOUR,\n    comments: [\n      {\n        id: 's3c1',\n        filePath: '.github/workflows/production-ci.yml',\n        range: additions(14, 17),\n        body: 'Move the node version to `.nvmrc` so local and CI stay in sync.',\n        createdAt: Date.now() - 4 * HOUR,\n        updatedAt: Date.now() - 4 * HOUR,\n        outdatedAt: null,\n        replies: [],\n        lines: numbered(14, [\n          '      - uses: actions/setup-node@v4',\n          '        with:',\n          '          node-version: 22',\n          '          cache: npm',\n        ]),\n      },\n      {\n        id: 's3c2',\n        filePath: 'src/graphql/resolvers/User/mutations/auth.ts',\n        range: additions(24, 24),\n        body: 'Validate the **range** here, a `0` would expire every session instantly.',\n        createdAt: Date.now() - 4 * HOUR,\n        updatedAt: Date.now() - 4 * HOUR,\n        outdatedAt: Date.now() - 3 * HOUR - 10 * 60 * 1000,\n        replies: [],\n        lines: numbered(24, ['    const expiresAt = Date.now() + config.sessionTtl']),\n      },\n    ],\n  },\n  {\n    id: 's2',\n    comparison,\n    status: 'in-progress',\n    createdAt: Date.now() - 1 * DAY - 2 * HOUR,\n    finishedAt: Date.now() - 1 * DAY,\n    comments: [\n      {\n        id: 's2c1',\n        filePath: 'scripts/expire_password.ts',\n        range: additions(6, 9),\n        body: 'This loop runs one query per user. Batch it with `whereIn`.',\n        createdAt: Date.now() - 1 * DAY - HOUR,\n        updatedAt: Date.now() - 1 * DAY - HOUR,\n        outdatedAt: null,\n        replies: [\n          {\n            id: 's2c1r1',\n            commentId: 's2c1',\n            author: 'agent',\n            body: [\n              'The script runs once per deploy, so the extra query is not on a hot path.',\n              '',\n              'Keeping it as is. If it ever runs per request:',\n              '',\n              '- batch the updates with `whereIn`',\n              '- or move the flag into the users query',\n            ].join('\\n'),\n            createdAt: Date.now() - 20 * HOUR,\n          },\n        ],\n        lines: numbered(6, [\n          'for (const user of users) {',\n          '  await db.updateTable(\"users\")',\n          '    .set({ passwordExpired: true })',\n          '    .where(\"id\", \"=\", user.id).execute()',\n        ]),\n      },\n      {\n        id: 's2c2',\n        filePath: '.env.template',\n        range: additions(3, 3),\n        body: 'Add a comment explaining the unit.',\n        createdAt: Date.now() - 1 * DAY - HOUR,\n        updatedAt: Date.now() - 1 * DAY - HOUR,\n        outdatedAt: null,\n        replies: [],\n        lines: numbered(3, ['SESSION_TTL=3600000']),\n      },\n    ],\n  },\n  {\n    id: 's1',\n    comparison,\n    status: 'closed',\n    createdAt: Date.now() - 6 * DAY - 2 * HOUR,\n    finishedAt: Date.now() - 6 * DAY,\n    comments: [\n      {\n        id: 's1c1',\n        filePath: 'src/graphql/resolvers/AdminUser/mutations/deleteMany.ts',\n        range: additions(18, 20),\n        body: 'Wrap this in a transaction.',\n        createdAt: Date.now() - 6 * DAY - HOUR,\n        updatedAt: Date.now() - 6 * DAY - HOUR,\n        outdatedAt: null,\n        replies: [],\n        lines: numbered(18, [\n          '  await db.deleteFrom(\"sessions\").where(\"userId\", \"in\", ids).execute()',\n          '  await db.deleteFrom(\"users\").where(\"id\", \"in\", ids).execute()',\n          '  return ids.length',\n        ]),\n      },\n    ],\n  },\n]\n",
+      "new": "import { ChangeSets } from '@/src/lib/change-set.ts'\nimport type { ReviewComment, SnapshotLine } from '@/src/lib/comment-gateway.ts'\nimport { CommentSnapshots } from '@/src/lib/comment-snapshots.ts'\nimport type { Comparison } from '@/src/lib/comparison-rules.ts'\nimport type { LineRange } from '@/src/lib/line-range.ts'\nimport type { ReviewSession } from '@/src/lib/review-session-gateway.ts'\nimport { changeSet } from '@/src/stories/support/change-set-fixture.ts'\nimport { fileDiffFor } from '@/src/stories/support/file-diff-fixture.ts'\n\nconst HOUR = 60 * 60 * 1000\nconst DAY = 24 * HOUR\n\nconst additions = (start: number, end: number): LineRange => {\n  return { start, end, side: 'additions', endSide: 'additions' }\n}\n\nconst numbered = (start: number, texts: string[]) => {\n  return texts.map((text, index) => {\n    return { number: start + index, text }\n  })\n}\n\nexport const snapshotOf = (comment: ReviewComment): SnapshotLine[] => {\n  const change = ChangeSets.find(changeSet.changes, comment.filePath)\n  if (!change) {\n    return []\n  }\n  return numbered(\n    comment.range.start,\n    CommentSnapshots.expectedLines(fileDiffFor(change), comment.range),\n  )\n}\n\nconst comparison: Comparison = {\n  source: { kind: 'branch', name: 'feat/upgrade-deprecated-versions' },\n  target: 'main',\n}\n\nexport const reviewSessions: ReviewSession[] = [\n  {\n    id: 's3',\n    comparison,\n    status: 'created',\n    createdAt: Date.now() - 4 * HOUR,\n    finishedAt: Date.now() - 3 * HOUR,\n    comments: [\n      {\n        id: 's3c1',\n        filePath: '.github/workflows/production-ci.yml',\n        range: additions(14, 17),\n        body: 'Move the node version to `.nvmrc` so local and CI stay in sync.',\n        createdAt: Date.now() - 4 * HOUR,\n        updatedAt: Date.now() - 4 * HOUR,\n        outdatedAt: null,\n        replies: [],\n        lines: numbered(14, [\n          '      - uses: actions/setup-node@v4',\n          '        with:',\n          '          node-version: 22',\n          '          cache: npm',\n        ]),\n      },\n      {\n        id: 's3c2',\n        filePath: 'src/graphql/resolvers/User/mutations/auth.ts',\n        range: additions(24, 24),\n        body: 'Validate the **range** here, a `0` would expire every session instantly.',\n        createdAt: Date.now() - 4 * HOUR,\n        updatedAt: Date.now() - 4 * HOUR,\n        outdatedAt: Date.now() - 3 * HOUR - 10 * 60 * 1000,\n        replies: [],\n        lines: numbered(24, ['    const expiresAt = Date.now() + config.sessionTtl']),\n      },\n    ],\n  },\n  {\n    id: 's2',\n    comparison,\n    status: 'in-progress',\n    createdAt: Date.now() - 1 * DAY - 2 * HOUR,\n    finishedAt: Date.now() - 1 * DAY,\n    comments: [\n      {\n        id: 's2c1',\n        filePath: 'scripts/expire_password.ts',\n        range: additions(6, 9),\n        body: 'This loop runs one query per user. Batch it with `whereIn`.',\n        createdAt: Date.now() - 1 * DAY - HOUR,\n        updatedAt: Date.now() - 1 * DAY - HOUR,\n        outdatedAt: null,\n        replies: [\n          {\n            id: 's2c1r1',\n            commentId: 's2c1',\n            author: 'agent',\n            body: [\n              'The script runs once per deploy, so the extra query is not on a hot path.',\n              '',\n              'Keeping it as is. If it ever runs per request:',\n              '',\n              '- batch the updates with `whereIn`',\n              '- or move the flag into the users query',\n            ].join('\\n'),\n            createdAt: Date.now() - 20 * HOUR,\n          },\n        ],\n        lines: numbered(6, [\n          'for (const user of users) {',\n          '  await db.updateTable(\"users\")',\n          '    .set({ passwordExpired: true })',\n          '    .where(\"id\", \"=\", user.id).execute()',\n        ]),\n      },\n      {\n        id: 's2c2',\n        filePath: '.env.template',\n        range: additions(3, 3),\n        body: 'Add a comment explaining the unit.',\n        createdAt: Date.now() - 1 * DAY - HOUR,\n        updatedAt: Date.now() - 1 * DAY - HOUR,\n        outdatedAt: null,\n        replies: [],\n        lines: numbered(3, ['SESSION_TTL=3600000']),\n      },\n    ],\n  },\n  {\n    id: 's1',\n    comparison,\n    status: 'closed',\n    createdAt: Date.now() - 6 * DAY - 2 * HOUR,\n    finishedAt: Date.now() - 6 * DAY,\n    comments: [\n      {\n        id: 's1c1',\n        filePath: 'src/graphql/resolvers/AdminUser/mutations/deleteMany.ts',\n        range: additions(18, 20),\n        body: 'Wrap this in a transaction.',\n        createdAt: Date.now() - 6 * DAY - HOUR,\n        updatedAt: Date.now() - 6 * DAY - HOUR,\n        outdatedAt: null,\n        replies: [],\n        lines: numbered(18, [\n          '  await db.deleteFrom(\"sessions\").where(\"userId\", \"in\", ids).execute()',\n          '  await db.deleteFrom(\"users\").where(\"id\", \"in\", ids).execute()',\n          '  return ids.length',\n        ]),\n      },\n      {\n        id: 's1c2',\n        filePath: 'src/stories/support/session.repository.ts',\n        range: additions(10, 11),\n        body: 'This insert should return the stored row.',\n        createdAt: Date.now() - 6 * DAY - HOUR,\n        updatedAt: Date.now() - 6 * DAY - HOUR,\n        outdatedAt: null,\n        replies: [],\n        lines: numbered(10, [\n          '  async insert(session: Omit<SessionRecord, \"id\">): Promise<SessionRecord> {',\n          '    return { ...session, id: crypto.randomUUID() }',\n        ]),\n      },\n      {\n        id: 's1c3',\n        filePath: 'src/legacy/session-cleanup.ts',\n        range: additions(4, 4),\n        body: 'Drop this script once the cron job runs.',\n        createdAt: Date.now() - 6 * DAY - HOUR,\n        updatedAt: Date.now() - 6 * DAY - HOUR,\n        outdatedAt: null,\n        replies: [],\n        lines: numbered(4, ['export const cleanupSessions = async () => {}']),\n      },\n    ],\n  },\n]\n"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "src/components/definitions/file-tab-view.tsx#FileTabView",
+      "name": "FileTabView",
+      "kind": "component",
+      "path": "src/components/definitions/file-tab-view.tsx",
+      "line": 9,
+      "endLine": 29,
+      "change": "modified"
+    },
+    {
+      "id": "src/components/definitions/tab-panel.tsx#TabPanel",
+      "name": "TabPanel",
+      "kind": "component",
+      "path": "src/components/definitions/tab-panel.tsx",
+      "line": 9,
+      "endLine": 35,
+      "change": "modified"
+    },
+    {
+      "id": "src/components/diff-viewer/diff-viewer.tsx#DiffViewer",
+      "name": "DiffViewer",
+      "kind": "component",
+      "path": "src/components/diff-viewer/diff-viewer.tsx",
+      "line": 13,
+      "endLine": 60,
+      "change": "modified"
+    },
+    {
+      "id": "src/components/topbar/comments-menu.tsx#CommentsMenu",
+      "name": "CommentsMenu",
+      "kind": "component",
+      "path": "src/components/topbar/comments-menu.tsx",
+      "line": 14,
+      "endLine": 51,
+      "change": "modified"
+    },
+    {
+      "id": "src/components/topbar/notifications-menu.tsx#NotificationsMenu",
+      "name": "NotificationsMenu",
+      "kind": "component",
+      "path": "src/components/topbar/notifications-menu.tsx",
+      "line": 12,
+      "endLine": 50,
+      "change": "modified"
+    },
+    {
+      "id": "src/components/topbar/outdated-comment-item.tsx#OutdatedCommentItem",
+      "name": "OutdatedCommentItem",
+      "kind": "component",
+      "path": "src/components/topbar/outdated-comment-item.tsx",
+      "line": 14,
+      "endLine": 43,
+      "change": "modified"
+    },
+    {
+      "id": "src/components/topbar/review-session-detail.tsx#ReviewSessionDetail",
+      "name": "ReviewSessionDetail",
+      "kind": "component",
+      "path": "src/components/topbar/review-session-detail.tsx",
+      "line": 14,
+      "endLine": 34,
+      "change": "modified"
+    },
+    {
+      "id": "src/components/topbar/review-sessions-panel.tsx#ReviewSessionsPanel",
+      "name": "ReviewSessionsPanel",
+      "kind": "component",
+      "path": "src/components/topbar/review-sessions-panel.tsx",
+      "line": 17,
+      "endLine": 56,
+      "change": "modified"
+    },
+    {
+      "id": "src/components/topbar/session-comment-item.tsx#SessionCommentItem",
+      "name": "SessionCommentItem",
+      "kind": "component",
+      "path": "src/components/topbar/session-comment-item.tsx",
+      "line": 17,
+      "endLine": 40,
+      "change": "added"
+    },
+    {
+      "id": "src/hooks/use-comment-location-opener.ts#useCommentLocationOpener",
+      "name": "useCommentLocationOpener",
+      "kind": "hook",
+      "path": "src/hooks/use-comment-location-opener.ts",
+      "line": 8,
+      "endLine": 30,
+      "change": "added"
+    },
+    {
+      "id": "src/hooks/use-comments-menu.ts#useCommentsMenu",
+      "name": "useCommentsMenu",
+      "kind": "hook",
+      "path": "src/hooks/use-comments-menu.ts",
+      "line": 5,
+      "endLine": 66,
+      "change": "modified"
+    },
+    {
+      "id": "src/hooks/use-file-content.ts#useFileContent",
+      "name": "useFileContent",
+      "kind": "hook",
+      "path": "src/hooks/use-file-content.ts",
+      "line": 7,
+      "endLine": 23,
+      "change": "modified"
+    },
+    {
+      "id": "src/hooks/use-file-diff.ts#useFileDiff",
+      "name": "useFileDiff",
+      "kind": "hook",
+      "path": "src/hooks/use-file-diff.ts",
+      "line": 13,
+      "endLine": 61,
+      "change": "modified"
+    },
+    {
+      "id": "src/hooks/use-notifications-menu.ts#useNotificationsMenu",
+      "name": "useNotificationsMenu",
+      "kind": "hook",
+      "path": "src/hooks/use-notifications-menu.ts",
+      "line": 6,
+      "endLine": 44,
+      "change": "modified"
+    },
+    {
+      "id": "src/hooks/use-outdated-comment.ts#useOutdatedComment",
+      "name": "useOutdatedComment",
+      "kind": "hook",
+      "path": "src/hooks/use-outdated-comment.ts",
+      "line": 8,
+      "endLine": 23,
+      "change": "modified"
+    },
+    {
+      "id": "src/hooks/use-review-session.ts#useReviewSession",
+      "name": "useReviewSession",
+      "kind": "hook",
+      "path": "src/hooks/use-review-session.ts",
+      "line": 7,
+      "endLine": 19,
+      "change": "modified"
+    },
+    {
+      "id": "src/hooks/use-session-comment-focus.ts#useSessionCommentFocus",
+      "name": "useSessionCommentFocus",
+      "kind": "hook",
+      "path": "src/hooks/use-session-comment-focus.ts",
+      "line": 4,
+      "endLine": 28,
+      "change": "added"
+    },
+    {
+      "id": "src/lib/api-client.ts#ApiError.isNotFound",
+      "name": "ApiError.isNotFound",
+      "kind": "method",
+      "path": "src/lib/api-client.ts",
+      "line": 18,
+      "endLine": 20,
+      "change": "modified"
+    },
+    {
+      "id": "src/lib/comment-locations.ts#CommentLocations.targetOf",
+      "name": "CommentLocations.targetOf",
+      "kind": "method",
+      "path": "src/lib/comment-locations.ts",
+      "line": 9,
+      "endLine": 29,
+      "change": "added"
+    },
+    {
+      "id": "src/lib/definition-labels.ts#DefinitionLabels.missing",
+      "name": "DefinitionLabels.missing",
+      "kind": "method",
+      "path": "src/lib/definition-labels.ts",
+      "line": 51,
+      "endLine": 56,
+      "change": "modified"
+    },
+    {
+      "id": "src/lib/diff-line-reveal.ts#DiffLineReveal.isInHunk",
+      "name": "DiffLineReveal.isInHunk",
+      "kind": "method",
+      "path": "src/lib/diff-line-reveal.ts",
+      "line": 47,
+      "endLine": 54,
+      "change": "modified"
+    },
+    {
+      "id": "src/primitives/comment-location.tsx#CommentLocation",
+      "name": "CommentLocation",
+      "kind": "component",
+      "path": "src/primitives/comment-location.tsx",
+      "line": 11,
+      "endLine": 40,
+      "change": "modified"
+    },
+    {
+      "id": "src/primitives/outdated-comment-card.tsx#OutdatedCommentCard",
+      "name": "OutdatedCommentCard",
+      "kind": "component",
+      "path": "src/primitives/outdated-comment-card.tsx",
+      "line": 15,
+      "endLine": 36,
+      "change": "modified"
+    },
+    {
+      "id": "src/primitives/session-comment.tsx#SessionComment",
+      "name": "SessionComment",
+      "kind": "component",
+      "path": "src/primitives/session-comment.tsx",
+      "line": 19,
+      "endLine": 52,
+      "change": "modified"
+    },
+    {
+      "id": "src/stories/components/topbar/review-sessions-panel.stories.tsx#ConnectedPanel",
+      "name": "ConnectedPanel",
+      "kind": "component",
+      "path": "src/stories/components/topbar/review-sessions-panel.stories.tsx",
+      "line": 9,
+      "endLine": 22,
+      "change": "modified"
+    }
+  ],
+  "edges": [
+    {
+      "from": "src/components/definitions/file-tab-view.tsx#FileTabView",
+      "to": "src/hooks/use-file-content.ts#useFileContent",
+      "line": 10
+    },
+    {
+      "from": "src/components/definitions/tab-panel.tsx#TabPanel",
+      "to": "src/components/diff-viewer/diff-viewer.tsx#DiffViewer",
+      "line": 18
+    },
+    {
+      "from": "src/components/definitions/tab-panel.tsx#TabPanel",
+      "to": "src/components/definitions/file-tab-view.tsx#FileTabView",
+      "line": 32
+    },
+    {
+      "from": "src/components/diff-viewer/diff-viewer.tsx#DiffViewer",
+      "to": "src/hooks/use-file-diff.ts#useFileDiff",
+      "line": 14
+    },
+    {
+      "from": "src/components/topbar/comments-menu.tsx#CommentsMenu",
+      "to": "src/hooks/use-comments-menu.ts#useCommentsMenu",
+      "line": 15
+    },
+    {
+      "from": "src/components/topbar/comments-menu.tsx#CommentsMenu",
+      "to": "src/components/topbar/review-sessions-panel.tsx#ReviewSessionsPanel",
+      "line": 40
+    },
+    {
+      "from": "src/components/topbar/notifications-menu.tsx#NotificationsMenu",
+      "to": "src/hooks/use-notifications-menu.ts#useNotificationsMenu",
+      "line": 13
+    },
+    {
+      "from": "src/components/topbar/outdated-comment-item.tsx#OutdatedCommentItem",
+      "to": "src/hooks/use-outdated-comment.ts#useOutdatedComment",
+      "line": 15
+    },
+    {
+      "from": "src/components/topbar/outdated-comment-item.tsx#OutdatedCommentItem",
+      "to": "src/primitives/outdated-comment-card.tsx#OutdatedCommentCard",
+      "line": 21
+    },
+    {
+      "from": "src/components/topbar/review-session-detail.tsx#ReviewSessionDetail",
+      "to": "src/components/topbar/session-comment-item.tsx#SessionCommentItem",
+      "line": 28
+    },
+    {
+      "from": "src/components/topbar/session-comment-item.tsx#SessionCommentItem",
+      "to": "src/hooks/use-session-comment-focus.ts#useSessionCommentFocus",
+      "line": 18
+    },
+    {
+      "from": "src/components/topbar/session-comment-item.tsx#SessionCommentItem",
+      "to": "src/hooks/use-comment-location-opener.ts#useCommentLocationOpener",
+      "line": 19
+    },
+    {
+      "from": "src/components/topbar/session-comment-item.tsx#SessionCommentItem",
+      "to": "src/primitives/session-comment.tsx#SessionComment",
+      "line": 23
+    },
+    {
+      "from": "src/hooks/use-comment-location-opener.ts#useCommentLocationOpener",
+      "to": "src/lib/comment-locations.ts#CommentLocations.targetOf",
+      "line": 19
+    },
+    {
+      "from": "src/hooks/use-file-content.ts#useFileContent",
+      "to": "src/lib/api-client.ts#ApiError.isNotFound",
+      "line": 12
+    },
+    {
+      "from": "src/hooks/use-file-content.ts#useFileContent",
+      "to": "src/lib/definition-labels.ts#DefinitionLabels.missing",
+      "line": 13
+    },
+    {
+      "from": "src/hooks/use-file-diff.ts#useFileDiff",
+      "to": "src/lib/diff-line-reveal.ts#DiffLineReveal.isInHunk",
+      "line": 48
+    },
+    {
+      "from": "src/hooks/use-outdated-comment.ts#useOutdatedComment",
+      "to": "src/hooks/use-comment-location-opener.ts#useCommentLocationOpener",
+      "line": 11
+    },
+    {
+      "from": "src/primitives/outdated-comment-card.tsx#OutdatedCommentCard",
+      "to": "src/primitives/comment-location.tsx#CommentLocation",
+      "line": 27
+    },
+    {
+      "from": "src/primitives/session-comment.tsx#SessionComment",
+      "to": "src/primitives/comment-location.tsx#CommentLocation",
+      "line": 44
+    },
+    {
+      "from": "src/stories/components/topbar/review-sessions-panel.stories.tsx#ConnectedPanel",
+      "to": "src/components/topbar/review-sessions-panel.tsx#ReviewSessionsPanel",
+      "line": 13
+    }
+  ],
+  "origins": {
+    "src/components/definitions/tab-panel.tsx#TabPanel": [
+      "ReviewMain (src/layouts/review-main.tsx)",
+      "ReadingPathMain (src/alternatives/flow/reading-path-main.tsx)",
+      "StressTabsStory (src/stories/support/stress-tabs-story.tsx)"
+    ],
+    "src/components/diff-viewer/diff-viewer.tsx#DiffViewer": [
+      "diff-viewer.stories.tsx (src/stories/components/diff-viewer/diff-viewer.stories.tsx)"
+    ],
+    "src/components/topbar/comments-menu.tsx#CommentsMenu": [
+      "Topbar (src/components/topbar/topbar.tsx)",
+      "comments-menu.stories.tsx (src/stories/components/topbar/comments-menu.stories.tsx)",
+      "finish-review-button.stories.tsx (src/stories/components/topbar/finish-review-button.stories.tsx)"
+    ],
+    "src/components/topbar/notifications-menu.tsx#NotificationsMenu": [
+      "Topbar (src/components/topbar/topbar.tsx)",
+      "notifications-menu.stories.tsx (src/stories/components/topbar/notifications-menu.stories.tsx)"
+    ],
+    "src/components/topbar/outdated-comment-item.tsx#OutdatedCommentItem": [
+      "OutdatedCommentsPanel (src/components/topbar/outdated-comments-panel.tsx)"
+    ],
+    "src/components/topbar/review-session-detail.tsx#ReviewSessionDetail": [
+      "ReviewSessionLoader (src/components/topbar/review-session-loader.tsx)"
+    ],
+    "src/hooks/use-file-diff.ts#useFileDiff": [
+      "useCommentComposer (src/hooks/use-comment-composer.ts)"
+    ],
+    "src/hooks/use-review-session.ts#useReviewSession": [
+      "ReviewSessionLoader (src/components/topbar/review-session-loader.tsx)"
+    ],
+    "src/primitives/comment-location.tsx#CommentLocation": [
+      "CommentRow (src/primitives/comment-row.tsx)"
+    ],
+    "src/stories/components/topbar/review-sessions-panel.stories.tsx#ConnectedPanel": [
+      "review-sessions-panel.stories.tsx (src/stories/components/topbar/review-sessions-panel.stories.tsx)"
+    ]
+  }
+}

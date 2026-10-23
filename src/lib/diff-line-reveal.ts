@@ -85,16 +85,34 @@ export abstract class DiffLineReveal {
     return true
   }
 
-  private static lineSelector(lineNumber: number, side: FileSide) {
-    const line = `[data-line="${lineNumber}"]`
+  static lineSelector(lineNumber: number, side: FileSide) {
+    return DiffLineReveal.sideSelector(side, (attribute) => {
+      return `[${attribute}="${lineNumber}"]`
+    })
+  }
+
+  static rangeSelector(start: number, end: number, side: FileSide) {
+    const lines: number[] = []
+    for (let line = start; line <= end; line += 1) {
+      lines.push(line)
+    }
+    return DiffLineReveal.sideSelector(side, (attribute) => {
+      const values = lines.map((line) => {
+        return `[${attribute}="${line}"]`
+      })
+      return `:is(${values.join(',')})`
+    })
+  }
+
+  private static sideSelector(side: FileSide, line: (attribute: string) => string) {
     if (side === 'old') {
       return [
-        `[data-code][data-deletions] ${line}`,
-        `[data-code][data-unified] ${line}[data-line-type="change-deletion"]`,
-        `[data-code][data-unified] [data-alt-line="${lineNumber}"]`,
+        `[data-code][data-deletions] ${line('data-line')}`,
+        `[data-code][data-unified] ${line('data-line')}[data-line-type="change-deletion"]`,
+        `[data-code][data-unified] ${line('data-alt-line')}`,
       ].join(',')
     }
-    return `[data-code]:not([data-deletions]) ${line}:not([data-line-type="change-deletion"])`
+    return `[data-code]:not([data-deletions]) ${line('data-line')}:not([data-line-type="change-deletion"])`
   }
 
   private static lineElements(node: HTMLElement, lineNumber: number, side: FileSide) {

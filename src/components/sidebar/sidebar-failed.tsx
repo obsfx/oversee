@@ -3,14 +3,15 @@ import { Button } from '@/src/primitives/button.tsx'
 import { CenteredStatus } from '@/src/primitives/centered-status.tsx'
 
 interface SidebarFailedProps {
+  label: string
   reason: string
   onRetry: () => void
 }
 
-export function SidebarFailed({ reason, onRetry }: SidebarFailedProps) {
+export function SidebarFailed({ label, reason, onRetry }: SidebarFailedProps) {
   return (
     <CenteredStatus icon={<VscWarning className={'text-danger'} />}>
-      <span title={reason}>Could not load files</span>
+      <span title={reason}>{label}</span>
       <Button onClick={onRetry}>
         <VscRefresh />
         Retry

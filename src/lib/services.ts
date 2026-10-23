@@ -2,6 +2,9 @@ import { AsyncResource } from '@/src/lib/async-resource.ts'
 import type { BranchGateway, BranchList } from '@/src/lib/branch-gateway.ts'
 import type { ChangeSet } from '@/src/lib/change-set.ts'
 import type { ChangeSetGateway } from '@/src/lib/change-set-gateway.ts'
+import type { ChangeFlowGateway } from '@/src/lib/change-flow-gateway.ts'
+import { ChangeFlowProgress } from '@/src/lib/change-flow-progress.ts'
+import { ChangeFlows } from '@/src/lib/change-flows.ts'
 import type { CommentGateway } from '@/src/lib/comment-gateway.ts'
 import { ComparisonCache } from '@/src/lib/comparison-cache.ts'
 import type { DefinitionGateway } from '@/src/lib/definition-gateway.ts'
@@ -40,6 +43,7 @@ interface Gateways {
   comments: CommentGateway
   sessions: ReviewSessionGateway
   changeSets: ChangeSetGateway
+  changeFlows: ChangeFlowGateway
   fileDiffs: FileDiffGateway
   notifications: NotificationGateway
   settings: SettingsGateway
@@ -56,6 +60,8 @@ export class Services {
   readonly comments: ReviewComments
   readonly sessions: ReviewSessions
   readonly changeSets: ComparisonCache<ChangeSet>
+  readonly changeFlows: ChangeFlows
+  readonly changeFlowProgress: ChangeFlowProgress
   readonly fileDiffs: ResourceCache<FileDiffRequest, FileDiff>
   readonly notifications: Notifications
   readonly settings: SettingsSync
@@ -77,6 +83,8 @@ export class Services {
     this.changeSets = new ComparisonCache((comparison) => {
       return gateways.changeSets.load(comparison)
     })
+    this.changeFlowProgress = new ChangeFlowProgress()
+    this.changeFlows = new ChangeFlows(gateways.changeFlows, this.changeFlowProgress)
     this.fileDiffs = new ResourceCache(FileDiffRequests.key, (request) => {
       return gateways.fileDiffs.load(request)
     })
@@ -96,12 +104,14 @@ export class Services {
       new WorkspaceRefresh(
         this.branches,
         this.changeSets,
+        this.changeFlows,
         this.fileDiffs,
         this.fileContents,
         this.definitions,
       ),
       this.languageServers,
       this.definitions,
+      this.changeFlowProgress,
     )
   }
 }

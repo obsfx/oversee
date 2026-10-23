@@ -1,24 +1,22 @@
-import { useState } from 'react'
 import { useServices } from '@/src/context/services/use-services.ts'
 import {
   LanguageServerLabels,
   type LanguageServerRequest,
 } from '@/src/lib/language-server-labels.ts'
+import { useLanguageServerStore } from '@/src/store/language-server-store.ts'
 
 export const useLanguageServerActions = () => {
   const services = useServices()
-  const [failures, setFailures] = useState<ReadonlyMap<string, string>>(new Map())
+  const failures = useLanguageServerStore((state) => {
+    return state.requestFailures
+  })
 
   const run = (id: string, action: LanguageServerRequest, request: () => Promise<void>) => {
-    setFailures((current) => {
-      const next = new Map(current)
-      next.delete(id)
-      return next
-    })
+    useLanguageServerStore.getState().clearRequestFailure(id)
     request().catch((error: unknown) => {
-      setFailures((current) => {
-        return new Map(current).set(id, LanguageServerLabels.requestFailed(action, error))
-      })
+      useLanguageServerStore
+        .getState()
+        .failRequest(id, LanguageServerLabels.requestFailed(action, error))
     })
   }
 

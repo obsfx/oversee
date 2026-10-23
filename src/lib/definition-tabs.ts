@@ -1,4 +1,5 @@
 import type { FileChange, FileSide } from '@/src/lib/change-set.ts'
+import { FileContentRequests } from '@/src/lib/file-content-gateway.ts'
 
 export type DefinitionTabView = 'diff' | 'file'
 
@@ -33,8 +34,8 @@ export abstract class DefinitionTabs {
 
   static readonly initial: TabsState = { tabs: [], activeId: DefinitionTabs.reviewId }
 
-  static idOf({ path, external }: Pick<DefinitionTarget, 'path' | 'external'>) {
-    return `${external ? 'external' : 'repo'}::${path}`
+  static idOf(target: Pick<DefinitionTarget, 'path' | 'external'>) {
+    return FileContentRequests.key(target)
   }
 
   static open(state: TabsState, target: DefinitionTarget, requestedAt: number): TabsState {

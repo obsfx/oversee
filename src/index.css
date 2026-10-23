@@ -16,12 +16,17 @@
   --color-accent: #7c5cc4;
   --color-accent-subtle: #efeafb;
   --color-accent-strong: #5b3fa6;
-  --color-sidebar: #eef0f3;
-  --color-sidebar-hover: #e4e7eb;
-  --color-sidebar-selected: #dde1e6;
+  --color-sidebar: #ffffff;
+  --color-sidebar-hover: #f1f3f5;
+  --color-sidebar-selected: #e5e7eb;
   --color-sidebar-fg: #24292f;
   --color-sidebar-muted: #57606a;
   --color-sidebar-guide: #d0d7de;
+  --color-symbol-component: #ea580c;
+  --color-symbol-hook: #0d9488;
+  --color-symbol-function: #7c3aed;
+  --color-symbol-callback: #d97706;
+  --color-symbol-handler: #0284c7;
   --color-reviewed: #4a8a6a;
   --color-reviewed-soft: #5f9c79;
   --color-status-added: #4f8a68;
@@ -30,7 +35,21 @@
   --color-status-renamed: #7a6aa8;
   --color-status-untracked: #5f8590;
   --color-folder: #d2a95e;
-  --color-folder-back: #9a7334;
+  --color-kind-typescript: #3178c6;
+  --color-kind-react: #087ea4;
+  --color-kind-javascript: #8a7700;
+  --color-kind-go: #0086a8;
+  --color-kind-godot: #3d7db0;
+  --color-kind-json: #a07a2c;
+  --color-kind-css: #663399;
+  --color-kind-html: #d2461f;
+  --color-kind-yaml: #cb171e;
+  --color-kind-graphql: #c70084;
+  --color-kind-sql: #336791;
+  --color-kind-image: #b06e08;
+  --color-kind-video: #7b4fc9;
+  --color-kind-env: #8a7700;
+  --color-kind-git: #e0442a;
   --font-ui: 'Google Sans Flex', system-ui, sans-serif;
   --font-editor: 'JetBrains Mono', ui-monospace, monospace;
   --text-micro: 0.625rem;
@@ -61,6 +80,11 @@
   }
 }
 
+@theme inline {
+  --color-folder-edge: color-mix(in oklab, var(--color-folder) 80%, black);
+  --color-folder-tab: color-mix(in oklab, var(--color-folder) 62%, black);
+}
+
 .dark {
   --color-surface: #0d1117;
   --color-surface-subtle: #151b23;
@@ -75,12 +99,17 @@
   --color-accent: #a991e8;
   --color-accent-subtle: #2a2140;
   --color-accent-strong: #c9b8f5;
-  --color-sidebar: #0a0d12;
-  --color-sidebar-hover: #151a21;
-  --color-sidebar-selected: #1f2731;
+  --color-sidebar: #0d1117;
+  --color-sidebar-hover: #1f2630;
+  --color-sidebar-selected: #2a313c;
   --color-sidebar-fg: #d1d7e0;
   --color-sidebar-muted: #9198a1;
   --color-sidebar-guide: #2d333b;
+  --color-symbol-component: #fb923c;
+  --color-symbol-hook: #2dd4bf;
+  --color-symbol-function: #a78bfa;
+  --color-symbol-callback: #fbbf24;
+  --color-symbol-handler: #38bdf8;
   --color-reviewed: #6fae8c;
   --color-reviewed-soft: #86c0a0;
   --color-status-added: #7fb896;
@@ -89,7 +118,21 @@
   --color-status-renamed: #a99ad6;
   --color-status-untracked: #8db1bb;
   --color-folder: #c9a467;
-  --color-folder-back: #8f7347;
+  --color-kind-typescript: #5a9be6;
+  --color-kind-react: #58c4dc;
+  --color-kind-javascript: #f0db4f;
+  --color-kind-go: #00add8;
+  --color-kind-godot: #6fa8dc;
+  --color-kind-json: #d4ae62;
+  --color-kind-css: #b48edb;
+  --color-kind-html: #f0714e;
+  --color-kind-yaml: #f0626a;
+  --color-kind-graphql: #f25cc0;
+  --color-kind-sql: #7aa7d6;
+  --color-kind-image: #ffb13b;
+  --color-kind-video: #b795f2;
+  --color-kind-env: #ecd53f;
+  --color-kind-git: #f26b50;
 }
 
 body {

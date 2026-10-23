@@ -22,7 +22,24 @@ type LanguageServerState struct {
 	Progress         InstallProgress
 	Failure          string
 	Available        bool
-	Missing          []string
+	Missing          []MissingTool
+}
+
+type MissingTool struct {
+	Tool    string
+	Minimum string
+	Found   string
+}
+
+func (m MissingTool) Outdated() bool {
+	return m.Minimum != ""
+}
+
+func (m MissingTool) String() string {
+	if !m.Outdated() {
+		return m.Tool
+	}
+	return m.Tool + " " + m.Minimum + " or newer"
 }
 
 type InstallProgress struct {
@@ -56,7 +73,11 @@ func (s LanguageServerState) Installable() error {
 		return fmt.Errorf("%w: %s has no build for this platform", ErrLanguageServerUnavailable, s.ID)
 	}
 	if len(s.Missing) > 0 {
-		return fmt.Errorf("%w: %s needs %s", ErrLanguageServerUnavailable, s.ID, strings.Join(s.Missing, ", "))
+		tools := make([]string, 0, len(s.Missing))
+		for _, missing := range s.Missing {
+			tools = append(tools, missing.String())
+		}
+		return fmt.Errorf("%w: %s needs %s", ErrLanguageServerUnavailable, s.ID, strings.Join(tools, ", "))
 	}
 	return nil
 }

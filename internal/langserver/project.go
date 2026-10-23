@@ -3,6 +3,7 @@ package langserver
 import (
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -10,7 +11,7 @@ import (
 	"github.com/obsfx/oversee/internal/domain"
 )
 
-const readLimit = 8 << 20
+const ReadLimit = 8 << 20
 
 type FileTooLargeError struct {
 	LimitMiB int
@@ -81,7 +82,7 @@ func (p Project) Read(file string) domain.Blob {
 }
 
 func (p Project) ReadAbsolute(file string) (domain.Blob, error) {
-	return readRegular(os.Stat, os.ReadFile, file)
+	return readRegular(os.Stat, os.Open, file)
 }
 
 func (p Project) ReadRelative(relative string) (domain.Blob, error) {
@@ -90,10 +91,27 @@ func (p Project) ReadRelative(relative string) (domain.Blob, error) {
 		return nil, err
 	}
 	defer root.Close()
-	return readRegular(root.Stat, root.ReadFile, filepath.FromSlash(relative))
+	name := filepath.FromSlash(relative)
+	content, err := readRegular(root.Stat, root.Open, name)
+	if err != nil && p.unreachable(name) {
+		return nil, nil
+	}
+	return content, err
 }
 
-func readRegular(stat func(string) (fs.FileInfo, error), read func(string) ([]byte, error), name string) (domain.Blob, error) {
+func (p Project) unreachable(name string) bool {
+	resolved, err := filepath.EvalSymlinks(filepath.Join(p.roots[0], name))
+	if errors.Is(err, fs.ErrNotExist) {
+		return true
+	}
+	if err != nil {
+		return false
+	}
+	_, inside := p.Relative(resolved)
+	return !inside
+}
+
+func readRegular(stat func(string) (fs.FileInfo, error), open func(string) (*os.File, error), name string) (domain.Blob, error) {
 	info, err := stat(name)
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil, nil
@@ -104,8 +122,23 @@ func readRegular(stat func(string) (fs.FileInfo, error), read func(string) ([]by
 	if !info.Mode().IsRegular() {
 		return nil, nil
 	}
-	if info.Size() > readLimit {
-		return nil, FileTooLargeError{LimitMiB: readLimit >> 20}
+	if info.Size() > ReadLimit {
+		return nil, FileTooLargeError{LimitMiB: ReadLimit >> 20}
 	}
-	return read(name)
+	file, err := open(name)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	content, err := io.ReadAll(io.LimitReader(file, ReadLimit+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(content) > ReadLimit {
+		return nil, FileTooLargeError{LimitMiB: ReadLimit >> 20}
+	}
+	return content, nil
 }

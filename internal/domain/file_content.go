@@ -17,8 +17,8 @@ func (r FileContentRequest) Validate() error {
 		}
 		return nil
 	}
-	if !filepath.IsLocal(filepath.FromSlash(r.Path)) {
-		return r.Reject("must stay inside the repository")
+	if problem := repoPathProblem(r.Path); problem != "" {
+		return r.Reject(problem)
 	}
 	return nil
 }

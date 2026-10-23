@@ -52,10 +52,9 @@ func (h Home) TempDir() string {
 	return filepath.Join(h.ServersDir(), tempDir)
 }
 
-func (h Home) EnsureDataDir(id, root string) (string, error) {
+func (h Home) DataDir(id, root string) string {
 	sum := sha256.Sum256([]byte(root))
-	dir := filepath.Join(h.serverDataDir(id), hex.EncodeToString(sum[:8]))
-	return dir, os.MkdirAll(dir, 0o755)
+	return filepath.Join(h.serverDataDir(id), hex.EncodeToString(sum[:8]))
 }
 
 func (h Home) serverDataDir(id string) string {

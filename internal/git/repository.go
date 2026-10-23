@@ -1,13 +1,17 @@
 package git
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"syscall"
 
 	"github.com/obsfx/oversee/internal/domain"
@@ -17,6 +21,12 @@ const (
 	noMergeBaseExitCode = 1
 	missingRefExitCode  = 1
 )
+
+var patchArgs = []string{
+	"-c", "core.quotePath=false",
+	"diff", "-U0", "--inter-hunk-context=0", "--submodule=short", "-M", "--no-color", "--no-ext-diff", "--no-textconv",
+	"--src-prefix=" + patchOldPrefix, "--dst-prefix=" + patchNewPrefix,
+}
 
 type Repository struct {
 	root   string
@@ -37,7 +47,7 @@ func (r *Repository) Branches(ctx context.Context) (domain.BranchList, error) {
 	if err != nil {
 		return domain.BranchList{}, err
 	}
-	current, err := r.runner.Text(ctx, "rev-parse", "--abbrev-ref", "HEAD")
+	current, err := r.CurrentBranch(ctx)
 	if err != nil {
 		return domain.BranchList{}, err
 	}
@@ -46,6 +56,10 @@ func (r *Repository) Branches(ctx context.Context) (domain.BranchList, error) {
 		Remote:  remoteRefOutput(remote).Branches(),
 		Current: current,
 	}, nil
+}
+
+func (r *Repository) CurrentBranch(ctx context.Context) (string, error) {
+	return r.runner.Text(ctx, "rev-parse", "--abbrev-ref", "HEAD")
 }
 
 func (r *Repository) Tree(ctx context.Context, comparison domain.Comparison) (domain.FileTree, error) {
@@ -58,14 +72,19 @@ func (r *Repository) Tree(ctx context.Context, comparison domain.Comparison) (do
 	return r.branchTree(ctx, comparison)
 }
 
+func (r *Repository) TrackedPaths(ctx context.Context, comparison domain.Comparison) ([]string, error) {
+	if comparison.IsUncommitted() {
+		return r.trackedPaths(ctx)
+	}
+	return r.branchPaths(ctx, comparison.Source)
+}
+
 func (r *Repository) Contents(ctx context.Context, comparison domain.Comparison, path string, side domain.FileSide) (domain.Blob, error) {
 	blob, err := r.contents(ctx, comparison, path, side)
-	if _, failed := errors.AsType[*CommandError](err); failed {
-		if refErr := r.requireRefs(ctx, comparison); errors.Is(refErr, domain.ErrUnknownBranch) {
-			return nil, refErr
-		}
+	if err != nil {
+		return nil, r.refError(ctx, comparison, err)
 	}
-	return blob, err
+	return blob, nil
 }
 
 func (r *Repository) requireRefs(ctx context.Context, comparison domain.Comparison) error {
@@ -81,19 +100,100 @@ func (r *Repository) requireRefs(ctx context.Context, comparison domain.Comparis
 	return nil
 }
 
-func (r *Repository) contents(ctx context.Context, comparison domain.Comparison, path string, side domain.FileSide) (domain.Blob, error) {
-	if side == domain.FileSideNew && comparison.IsUncommitted() {
-		return r.workingFile(path)
+func (r *Repository) ContentsOf(ctx context.Context, comparison domain.Comparison, side domain.FileSide, paths []string, limit int64) (map[string]domain.Blob, error) {
+	ref, working, err := r.sideRef(ctx, comparison, side)
+	if err != nil {
+		return nil, r.refError(ctx, comparison, err)
 	}
-	ref := comparison.Source
+	if working {
+		return r.workingFiles(paths, limit)
+	}
+	var input bytes.Buffer
+	names := make([]string, 0, len(paths))
+	for _, path := range paths {
+		if strings.ContainsAny(path, "\n\r") {
+			continue
+		}
+		input.WriteString(ref + ":" + path + "\n")
+		names = append(names, path)
+	}
+	if len(names) == 0 {
+		return map[string]domain.Blob{}, nil
+	}
+	var blobs map[string]domain.Blob
+	err = r.runner.Stream(ctx, input.Bytes(), func(output *bufio.Reader) {
+		blobs = catFileOutput{reader: output}.Blobs(names, limit)
+	}, "cat-file", "--batch")
+	if err != nil {
+		return nil, r.refError(ctx, comparison, err)
+	}
+	if len(blobs) < len(names) {
+		if refErr := r.requireRefs(ctx, comparison); errors.Is(refErr, domain.ErrUnknownBranch) {
+			return nil, refErr
+		}
+	}
+	return blobs, nil
+}
+
+func (r *Repository) refError(ctx context.Context, comparison domain.Comparison, err error) error {
+	if _, failed := errors.AsType[*CommandError](err); failed {
+		if refErr := r.requireRefs(ctx, comparison); errors.Is(refErr, domain.ErrUnknownBranch) {
+			return refErr
+		}
+	}
+	return err
+}
+
+func (r *Repository) sideRef(ctx context.Context, comparison domain.Comparison, side domain.FileSide) (string, bool, error) {
+	if side == domain.FileSideNew && comparison.IsUncommitted() {
+		return "", true, nil
+	}
 	if side == domain.FileSideOld {
 		base, err := r.base(ctx, comparison)
-		if err != nil {
-			return nil, err
-		}
-		ref = base
+		return base, false, err
+	}
+	return comparison.Source, false, nil
+}
+
+func (r *Repository) contents(ctx context.Context, comparison domain.Comparison, path string, side domain.FileSide) (domain.Blob, error) {
+	ref, working, err := r.sideRef(ctx, comparison, side)
+	if err != nil {
+		return nil, err
+	}
+	if working {
+		return r.workingFile(path)
 	}
 	return r.blobAt(ctx, ref, path)
+}
+
+func (r *Repository) ChangedLines(ctx context.Context, comparison domain.Comparison) ([]domain.LineChanges, error) {
+	if err := r.requireRefs(ctx, comparison); err != nil {
+		return nil, err
+	}
+	base, err := r.base(ctx, comparison)
+	if err != nil {
+		return nil, err
+	}
+	revisions := []string{base}
+	if !comparison.IsUncommitted() {
+		revisions = append(revisions, comparison.Source)
+	}
+	patch, err := r.runner.Text(ctx, slices.Concat(patchArgs, revisions, []string{"--"})...)
+	if err != nil {
+		return nil, err
+	}
+	files := patchOutput(patch).Files()
+	if !comparison.IsUncommitted() {
+		return files, nil
+	}
+	untracked, err := r.untrackedPaths(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, path := range untracked {
+		files = append(files, domain.WholeFileAdded(path))
+	}
+	return files, nil
 }
 
 func (r *Repository) ChangedPaths(ctx context.Context, from, to string) ([]string, error) {
@@ -128,11 +228,11 @@ func (r *Repository) Fingerprint(ctx context.Context) (domain.WorkspaceFingerpri
 }
 
 func (r *Repository) uncommittedTree(ctx context.Context) (domain.FileTree, error) {
-	tracked, err := r.runner.Text(ctx, "ls-files", "--cached")
+	tracked, err := r.trackedPaths(ctx)
 	if err != nil {
 		return domain.FileTree{}, err
 	}
-	untracked, err := r.runner.Text(ctx, "ls-files", "--others", "--exclude-standard")
+	untrackedPaths, err := r.untrackedPaths(ctx)
 	if err != nil {
 		return domain.FileTree{}, err
 	}
@@ -140,7 +240,6 @@ func (r *Repository) uncommittedTree(ctx context.Context) (domain.FileTree, erro
 	if err != nil {
 		return domain.FileTree{}, err
 	}
-	untrackedPaths := lineOutput(untracked).Lines()
 	changes := make([]domain.Change, 0, len(entries)+len(untrackedPaths))
 	for _, entry := range entries {
 		changes = append(changes, entry.revised(r.workingIdentity(entry)))
@@ -154,11 +253,11 @@ func (r *Repository) uncommittedTree(ctx context.Context) (domain.FileTree, erro
 			Revision:  domain.RevisionOf("", content.Digest()),
 		})
 	}
-	return domain.FileTree{Paths: append(lineOutput(tracked).Lines(), untrackedPaths...), Changes: changes}, nil
+	return domain.FileTree{Paths: append(tracked, untrackedPaths...), Changes: changes}, nil
 }
 
 func (r *Repository) branchTree(ctx context.Context, comparison domain.Comparison) (domain.FileTree, error) {
-	tree, err := r.runner.Text(ctx, "ls-tree", "-r", "--name-only", comparison.Source)
+	paths, err := r.branchPaths(ctx, comparison.Source)
 	if err != nil {
 		return domain.FileTree{}, err
 	}
@@ -174,7 +273,27 @@ func (r *Repository) branchTree(ctx context.Context, comparison domain.Compariso
 	for _, entry := range entries {
 		changes = append(changes, entry.revised(entry.target))
 	}
-	return domain.NewFileTree(lineOutput(tree).Lines(), changes), nil
+	return domain.NewFileTree(paths, changes), nil
+}
+
+func (r *Repository) trackedPaths(ctx context.Context) ([]string, error) {
+	return r.listedPaths(ctx, "ls-files", "-z", "--cached")
+}
+
+func (r *Repository) untrackedPaths(ctx context.Context) ([]string, error) {
+	return r.listedPaths(ctx, "ls-files", "-z", "--others", "--exclude-standard")
+}
+
+func (r *Repository) branchPaths(ctx context.Context, ref string) ([]string, error) {
+	return r.listedPaths(ctx, "ls-tree", "-r", "-z", "--name-only", ref)
+}
+
+func (r *Repository) listedPaths(ctx context.Context, args ...string) ([]string, error) {
+	output, err := r.runner.Bytes(ctx, args...)
+	if err != nil {
+		return nil, err
+	}
+	return pathListOutput(output).Paths(), nil
 }
 
 func (r *Repository) changes(ctx context.Context, revisions ...string) ([]rawEntry, error) {
@@ -238,6 +357,48 @@ func (r *Repository) workingFile(path string) (domain.Blob, error) {
 	return nil, err
 }
 
+func (r *Repository) workingFiles(paths []string, limit int64) (map[string]domain.Blob, error) {
+	root, err := os.OpenRoot(r.root)
+	if err != nil {
+		return nil, err
+	}
+	defer root.Close()
+	blobs := make(map[string]domain.Blob, len(paths))
+	for _, path := range paths {
+		blob, err := regularFile(root, filepath.FromSlash(path), limit)
+		if err != nil {
+			return nil, err
+		}
+		if blob != nil {
+			blobs[path] = blob
+		}
+	}
+	return blobs, nil
+}
+
+func regularFile(root *os.Root, name string, limit int64) (domain.Blob, error) {
+	info, err := root.Lstat(name)
+	if err != nil {
+		return nil, readFailure(err)
+	}
+	if !info.Mode().IsRegular() || info.Size() > limit {
+		return nil, nil
+	}
+	file, err := root.Open(name)
+	if err != nil {
+		return nil, readFailure(err)
+	}
+	defer file.Close()
+	content, err := io.ReadAll(io.LimitReader(file, limit+1))
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(content)) > limit {
+		return nil, nil
+	}
+	return content, nil
+}
+
 func (r *Repository) pathState(entry statusEntry) domain.PathState {
 	state := domain.PathState{Record: entry.signature()}
 	info, err := os.Stat(r.absolute(entry.path))
@@ -257,6 +418,13 @@ func (r *Repository) indexLocked() bool {
 
 func (r *Repository) absolute(path string) string {
 	return filepath.Join(r.root, filepath.FromSlash(path))
+}
+
+func readFailure(err error) error {
+	if _, failed := errors.AsType[syscall.Errno](err); failed && !isMissing(err) {
+		return err
+	}
+	return nil
 }
 
 func isMissing(err error) bool {

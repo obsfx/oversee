@@ -17,11 +17,12 @@ var curatedSource []byte
 type CuratedServers map[string]CuratedServer
 
 type CuratedServer struct {
-	FileTypes   map[string]CuratedFileType `json:"fileTypes"`
-	RootMarkers []string                   `json:"rootMarkers"`
-	Run         catalog.Run                `json:"run"`
-	Requires    []catalog.Requirement      `json:"requires"`
-	SkipFiles   []string                   `json:"skipFiles"`
+	FileTypes   map[string]CuratedFileType     `json:"fileTypes"`
+	RootMarkers []string                       `json:"rootMarkers"`
+	Run         catalog.Run                    `json:"run"`
+	Requires    []catalog.Requirement          `json:"requires"`
+	Minimums    map[catalog.Requirement]string `json:"minimums"`
+	SkipFiles   []string                       `json:"skipFiles"`
 }
 
 type CuratedFileType struct {
@@ -72,5 +73,6 @@ func (c CuratedServer) Apply(server catalog.Server) catalog.Server {
 	requires := slices.Concat(server.Install.Requirements(), c.Requires)
 	slices.Sort(requires)
 	server.Requires = slices.Compact(requires)
+	server.Minimums = c.Minimums
 	return server
 }

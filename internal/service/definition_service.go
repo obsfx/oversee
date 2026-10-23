@@ -37,27 +37,23 @@ func (s *DefinitionService) Find(ctx context.Context, query domain.DefinitionQue
 	if err := query.Validate(); err != nil {
 		return domain.DefinitionLookup{}, err
 	}
-	languageID, ok := s.catalog.FileTypeOf(query.Path)
+	server, languageID, ok := s.catalog.ServerFor(query.Path)
 	if !ok {
-		return domain.DefinitionsWith(domain.DefinitionsUnsupported, ""), nil
-	}
-	server, ok := s.catalog.Server(s.catalog.FileTypes[languageID].Server)
-	if !ok {
-		return domain.DefinitionLookup{}, fmt.Errorf("language server for %s: %w", languageID, domain.ErrNotFound)
+		return domain.DefinitionsWith(domain.ServerUnsupported, ""), nil
 	}
 	installation, found, err := s.installs.Find(server.ID)
 	if err != nil {
 		return domain.DefinitionLookup{}, err
 	}
 	if !found {
-		return domain.DefinitionsWith(domain.DefinitionsNotInstalled, server.ID), nil
+		return domain.DefinitionsWith(domain.ServerNotInstalled, server.ID), nil
 	}
-	branches, err := s.git.Branches(ctx)
+	onDisk, err := onWorkingTree(ctx, s.git.CurrentBranch, query.Comparison)
 	if err != nil {
 		return domain.DefinitionLookup{}, err
 	}
-	if !query.OnWorkingTree(branches.Current) {
-		return domain.DefinitionsWith(domain.DefinitionsNeedsCheckout, server.ID), nil
+	if !onDisk {
+		return domain.DefinitionsWith(domain.ServerNeedsCheckout, server.ID), nil
 	}
 	content, err := s.git.Contents(ctx, query.Comparison, query.Path, query.Side)
 	if err != nil {
@@ -127,37 +123,55 @@ func (s *DefinitionService) WorkspaceChanged(ctx context.Context, change domain.
 func (s *DefinitionService) lookup(ctx context.Context, query domain.DefinitionQuery, server catalog.Server, installation langserver.Installation, languageID string, content domain.Blob) domain.DefinitionLookup {
 	file := s.project.Path(query.Path)
 	root := s.project.RootOf(file, server.RootMarkers)
-	ctx, cancel := context.WithTimeout(ctx, definitionTimeout)
+	bounded, cancel := context.WithTimeout(ctx, definitionTimeout)
 	defer cancel()
-	client, err := s.sessions.Client(ctx, s.launch(server, installation, root))
-	if errors.Is(err, lsp.ErrStarting) {
-		return domain.DefinitionsWith(domain.DefinitionsStarting, server.ID)
-	}
+	client, err := s.sessions.Client(bounded, serverLaunch(s.launcher, server, installation, root))
 	if err != nil {
-		return domain.DefinitionsFailure(server.ID, err)
+		return domain.DefinitionsUnavailable(server.ID, serverStatusOf(ctx, err), err)
 	}
 	document := lsp.Document{Path: file, LanguageID: languageID, Text: string(content)}
-	locations, err := client.Definition(ctx, document, lsp.Position{Line: query.Line - 1, Character: query.Character})
-	if errors.Is(err, context.DeadlineExceeded) || err == nil && len(locations) == 0 && client.Indexing() {
-		return domain.DefinitionsWith(domain.DefinitionsIndexing, server.ID)
-	}
+	locations, err := client.Definition(bounded, document, lsp.Position{Line: query.Line - 1, Character: query.Character})
 	if err != nil {
-		return domain.DefinitionsFailure(server.ID, err)
+		return domain.DefinitionsUnavailable(server.ID, serverStatusOf(ctx, err), err)
 	}
-	return domain.DefinitionLookup{Status: domain.DefinitionsReady, Server: server.ID, Definitions: s.definitions(query, content, locations)}
+	if len(locations) == 0 && client.Indexing() {
+		return domain.DefinitionsWith(domain.ServerIndexing, server.ID)
+	}
+	return domain.DefinitionLookup{Status: domain.ServerReady, Server: server.ID, Definitions: s.definitions(query, content, locations)}
 }
 
-func (s *DefinitionService) launch(server catalog.Server, installation langserver.Installation, root string) lsp.Launch {
+func onWorkingTree(ctx context.Context, currentBranch func(context.Context) (string, error), comparison domain.Comparison) (bool, error) {
+	if comparison.IsUncommitted() {
+		return true, nil
+	}
+	current, err := currentBranch(ctx)
+	if err != nil {
+		return false, err
+	}
+	return comparison.OnWorkingTree(current), nil
+}
+
+func serverStatusOf(ctx context.Context, err error) domain.ServerStatus {
+	switch {
+	case errors.Is(err, lsp.ErrStarting) && ctx.Err() == nil:
+		return domain.ServerStarting
+	case ctx.Err() != nil, errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled), lsp.IsRetryable(err):
+		return domain.ServerIndexing
+	default:
+		return domain.ServerFailed
+	}
+}
+
+func serverLaunch(launcher ServerLauncher, server catalog.Server, installation langserver.Installation, root string) lsp.Launch {
 	return lsp.Launch{
-		Key:                   sessionKeyPrefix(server.ID) + installation.Version + "\x00" + root,
-		Root:                  root,
-		InitializationOptions: server.Run.InitializationOptions,
-		Start: func(ctx context.Context) (lsp.Transport, error) {
-			process, err := s.launcher.Start(ctx, installation, server.Run, root)
+		Key:  sessionKeyPrefix(server.ID) + installation.Version + "\x00" + root,
+		Root: root,
+		Start: func(ctx context.Context) (lsp.Transport, map[string]any, error) {
+			process, initializationOptions, err := launcher.Start(ctx, installation, server.Run, root)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
-			return process, nil
+			return process, initializationOptions, nil
 		},
 	}
 }

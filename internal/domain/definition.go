@@ -1,7 +1,5 @@
 package domain
 
-import "path/filepath"
-
 type DefinitionQuery struct {
 	Comparison Comparison
 	Side       FileSide
@@ -10,20 +8,8 @@ type DefinitionQuery struct {
 	Character  int
 }
 
-type DefinitionStatus string
-
-const (
-	DefinitionsReady         DefinitionStatus = "ready"
-	DefinitionsUnsupported   DefinitionStatus = "unsupported"
-	DefinitionsNotInstalled  DefinitionStatus = "not-installed"
-	DefinitionsNeedsCheckout DefinitionStatus = "needs-checkout"
-	DefinitionsStarting      DefinitionStatus = "starting"
-	DefinitionsIndexing      DefinitionStatus = "indexing"
-	DefinitionsFailed        DefinitionStatus = "failed"
-)
-
 type DefinitionLookup struct {
-	Status      DefinitionStatus
+	Status      ServerStatus
 	Server      string
 	Error       string
 	Definitions []Definition
@@ -49,11 +35,8 @@ func (q DefinitionQuery) Validate() error {
 	if err := q.Side.Validate(); err != nil {
 		return err
 	}
-	if q.Path == "" {
-		return invalid("path", "is required")
-	}
-	if !filepath.IsLocal(filepath.FromSlash(q.Path)) {
-		return invalid("path", "must stay inside the repository")
+	if problem := repoPathProblem(q.Path); problem != "" {
+		return invalid("path", problem)
 	}
 	if q.Line < 1 {
 		return invalid("line", "must be at least 1")
@@ -64,14 +47,10 @@ func (q DefinitionQuery) Validate() error {
 	return nil
 }
 
-func (q DefinitionQuery) OnWorkingTree(currentBranch string) bool {
-	return q.Comparison.IsUncommitted() || q.Comparison.Source == currentBranch
-}
-
-func DefinitionsWith(status DefinitionStatus, server string) DefinitionLookup {
+func DefinitionsWith(status ServerStatus, server string) DefinitionLookup {
 	return DefinitionLookup{Status: status, Server: server}
 }
 
-func DefinitionsFailure(server string, err error) DefinitionLookup {
-	return DefinitionLookup{Status: DefinitionsFailed, Server: server, Error: err.Error()}
+func DefinitionsUnavailable(server string, status ServerStatus, err error) DefinitionLookup {
+	return DefinitionLookup{Status: status, Server: server, Error: status.ErrorOf(err)}
 }

@@ -37,7 +37,7 @@ export function DiffViewer() {
     <div className={'relative h-full'}>
       {loading && <LoadingBar />}
       {shown && !shown.diff.binary && (
-        <VirtualizedScroller className={surface}>
+        <VirtualizedScroller key={shown.key} className={surface}>
           <FileDiffView
             path={shown.path}
             diff={shown.diff}
@@ -47,7 +47,7 @@ export function DiffViewer() {
         </VirtualizedScroller>
       )}
       {shown?.diff.binary && (
-        <div className={surface}>
+        <div key={shown.key} className={surface}>
           {shown.diff.images ? (
             <ImageDiffView images={shown.diff.images} />
           ) : (

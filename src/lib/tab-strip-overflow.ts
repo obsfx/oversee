@@ -1,3 +1,5 @@
+import { ReducedMotion } from '@/src/lib/reduced-motion.ts'
+
 interface StripEdges {
   start: boolean
   end: boolean
@@ -44,10 +46,9 @@ export abstract class TabStripOverflow {
   }
 
   static pageOf(scroller: HTMLElement, direction: 1 | -1): ScrollToOptions {
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     return {
       left: direction * scroller.clientWidth * PAGE_RATIO,
-      behavior: reduced ? 'auto' : 'smooth',
+      behavior: ReducedMotion.preferred() ? 'auto' : 'smooth',
     }
   }
 

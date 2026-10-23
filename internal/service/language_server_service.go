@@ -17,7 +17,7 @@ type LanguageServerService struct {
 	toolchain RequirementProbe
 	sessions  SessionStopper
 	jobs      *installJobs
-	changed   chan struct{}
+	changed   wakeup
 }
 
 type LanguageServerList struct {
@@ -39,9 +39,9 @@ func NewLanguageServerService(servers catalog.Catalog, platform catalog.Platform
 		installs:  installs,
 		toolchain: toolchain,
 		sessions:  sessions,
-		changed:   make(chan struct{}, 1),
+		changed:   newWakeup(),
 	}
-	service.jobs = newInstallJobs(service.notify)
+	service.jobs = newInstallJobs(service.changed.raise)
 	return service
 }
 
@@ -103,14 +103,7 @@ func (s *LanguageServerService) Uninstall(ctx context.Context, id string) error 
 }
 
 func (s *LanguageServerService) Follow(ctx context.Context, publish func()) {
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-s.changed:
-			publish()
-		}
-	}
+	s.changed.follow(ctx, publish)
 }
 
 func (s *LanguageServerService) Close() {
@@ -143,10 +136,6 @@ func (s *LanguageServerService) entry(server catalog.Server) (LanguageServerEntr
 		return LanguageServerEntry{}, err
 	}
 	installing, failure, progress := s.jobs.state(server.ID)
-	missing := make([]string, 0, len(server.Requires))
-	for _, requirement := range s.toolchain.Missing(server.Requires) {
-		missing = append(missing, string(requirement))
-	}
 	return LanguageServerEntry{
 		Server: server,
 		State: domain.LanguageServerState{
@@ -157,14 +146,7 @@ func (s *LanguageServerService) entry(server catalog.Server) (LanguageServerEntr
 			Progress:         progress,
 			Failure:          failure,
 			Available:        server.Install.AvailableOn(s.platform),
-			Missing:          missing,
+			Missing:          s.toolchain.Missing(server.Requires, server.Minimums),
 		},
 	}, nil
-}
-
-func (s *LanguageServerService) notify() {
-	select {
-	case s.changed <- struct{}{}:
-	default:
-	}
 }

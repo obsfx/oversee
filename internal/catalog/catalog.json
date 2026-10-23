@@ -506,7 +506,10 @@
       "requires": [
         "java",
         "python3"
-      ]
+      ],
+      "minimums": {
+        "java": "21"
+      }
     },
     {
       "id": "kotlin-language-server",
@@ -929,7 +932,10 @@
       },
       "requires": [
         "dotnet"
-      ]
+      ],
+      "minimums": {
+        "dotnet": "6"
+      }
     },
     {
       "id": "pyright",
@@ -998,7 +1004,13 @@
         "Cargo.toml"
       ],
       "run": {
-        "bin": "rust-analyzer"
+        "bin": "rust-analyzer",
+        "initializationOptions": {
+          "checkOnSave": false,
+          "cargo": {
+            "targetDir": "${dataDir}/target"
+          }
+        }
       },
       "install": {
         "type": "download",

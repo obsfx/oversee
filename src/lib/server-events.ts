@@ -1,5 +1,6 @@
 import * as v from 'valibot'
 import { ComparisonRules, type Comparison } from '@/src/lib/comparison-rules.ts'
+import { type FlowProgress, FlowProgressRules } from '@/src/lib/flow-progress.ts'
 import { NotificationShapes, type ReviewNotification } from '@/src/lib/notification-gateway.ts'
 import { SessionStatuses, type SessionStatus } from '@/src/lib/session-statuses.ts'
 import { ValueSchemas } from '@/src/lib/value-schemas.ts'
@@ -58,6 +59,10 @@ export interface LanguageServersChangedEvent {
   kind: 'language-servers.changed'
 }
 
+export interface ChangeFlowProgressEvent extends FlowProgress {
+  kind: 'change-flow.progress'
+}
+
 export type ServerEvent =
   | SessionChangedEvent
   | CommentRepliedEvent
@@ -67,6 +72,7 @@ export type ServerEvent =
   | WorkspaceChangedEvent
   | StreamResumedEvent
   | LanguageServersChangedEvent
+  | ChangeFlowProgressEvent
 
 export type ServerEventListener = (event: ServerEvent) => void
 
@@ -101,6 +107,13 @@ export abstract class ServerEvents {
     }),
     v.object({
       kind: v.literal('language-servers.changed'),
+    }),
+    v.object({
+      kind: v.literal('change-flow.progress'),
+      payload: v.object({
+        comparison: ComparisonRules.wireSchema,
+        servers: v.array(FlowProgressRules.server),
+      }),
     }),
     v.object({
       kind: v.picklist(SESSION_KINDS),
@@ -155,6 +168,9 @@ export abstract class ServerEvents {
     }
     if (event.kind === 'language-servers.changed') {
       return { kind: event.kind }
+    }
+    if (event.kind === 'change-flow.progress') {
+      return { kind: event.kind, ...event.payload }
     }
     if (event.kind === 'session.finished' || event.kind === 'session.status') {
       return { kind: event.kind, ...event.payload }

@@ -12,6 +12,7 @@ import {
   type LanguageServerBlocker,
   LanguageServerStates,
 } from '@/src/lib/language-server-states.ts'
+import { ListLabels } from '@/src/lib/list-labels.ts'
 
 export interface RequirementLabel {
   tool: string
@@ -36,8 +37,6 @@ const ACTIONS: Record<LanguageServerAction, string> = {
 }
 
 export abstract class LanguageServerLabels {
-  private static readonly list = new Intl.ListFormat('en', { style: 'long', type: 'conjunction' })
-
   static action(action: LanguageServerAction) {
     return ACTIONS[action]
   }
@@ -80,7 +79,21 @@ export abstract class LanguageServerLabels {
     if (blocker.kind === 'unavailable') {
       return `No build for ${platform}`
     }
-    return `Needs ${LanguageServerLabels.list.format(blocker.tools)} on PATH`
+    return `Needs ${LanguageServerLabels.tools(blocker)} on PATH`
+  }
+
+  private static tools(blocker: Extract<LanguageServerBlocker, { kind: 'missing' }>) {
+    return ListLabels.and(
+      blocker.tools.map((tool) => {
+        const outdated = blocker.outdated.find((candidate) => {
+          return candidate.tool === tool
+        })
+        if (outdated === undefined) {
+          return tool
+        }
+        return `${tool} ${outdated.minimum} or newer`
+      }),
+    )
   }
 
   static overview(state: ResourceState<LanguageServerList>) {
@@ -97,7 +110,14 @@ export abstract class LanguageServerLabels {
   static requirements(server: LanguageServer): RequirementLabel[] {
     return server.requires.map((tool) => {
       const missing = server.missing.includes(tool)
-      return { tool, missing, title: missing ? `${tool} is not on PATH` : `${tool} is on PATH` }
+      const outdated = server.outdated.find((candidate) => {
+        return candidate.tool === tool
+      })
+      let title = missing ? `${tool} is not on PATH` : `${tool} is on PATH`
+      if (outdated !== undefined) {
+        title = `${tool} ${outdated.found} is on PATH, ${outdated.minimum} or newer is needed`
+      }
+      return { tool, missing, title }
     })
   }
 
@@ -128,12 +148,12 @@ export abstract class LanguageServerLabels {
         if (server.requires.length === 0) {
           return `Install ${server.id} ${server.version}`
         }
-        return `Install ${server.id} ${server.version}, needs ${LanguageServerLabels.list.format(server.requires)}`
+        return `Install ${server.id} ${server.version}, needs ${ListLabels.and(server.requires)}`
       }
       case 'blocked': {
         const blocker = LanguageServerStates.blocker(server)
         if (blocker?.kind === 'missing') {
-          return `${server.id} needs ${LanguageServerLabels.list.format(blocker.tools)} on PATH`
+          return `${server.id} needs ${LanguageServerLabels.tools(blocker)} on PATH`
         }
         return `${server.id} has no build for ${platform}`
       }
@@ -161,11 +181,11 @@ export abstract class LanguageServerLabels {
     return ApiError.describe(error, `${REQUESTS[action]} request`)
   }
 
-  private static megabytes(bytes: number) {
-    return `${(bytes / 1_000_000).toFixed(1)} MB`
+  static firstLine(text: string) {
+    return text.split('\n')[0]
   }
 
-  private static firstLine(text: string) {
-    return text.split('\n')[0]
+  private static megabytes(bytes: number) {
+    return `${(bytes / 1_000_000).toFixed(1)} MB`
   }
 }

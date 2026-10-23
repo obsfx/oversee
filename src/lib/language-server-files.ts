@@ -1,5 +1,6 @@
 import { PathParts } from '@/src/lib/path-parts.ts'
 import type { LanguageServer, LanguageServerList } from '@/src/lib/language-server-gateway.ts'
+import { LanguageServers } from '@/src/lib/language-servers.ts'
 
 export abstract class LanguageServerFiles {
   static fileTypeOf(list: LanguageServerList, path: string) {
@@ -23,12 +24,7 @@ export abstract class LanguageServerFiles {
     if (!fileType) {
       return null
     }
-    const id = list.fileTypes[fileType].server
-    return (
-      list.servers.find((server) => {
-        return server.id === id
-      }) ?? null
-    )
+    return LanguageServers.byId(list, list.fileTypes[fileType].server)
   }
 
   static fileLabel(list: LanguageServerList, path: string) {

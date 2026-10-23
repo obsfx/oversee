@@ -1,21 +1,21 @@
 import { BranchSelectionGuard, type ComparisonSelection } from '@/src/lib/branch-selection-guard.ts'
+import { ChangeFlowInstallSync } from '@/src/lib/change-flow-install-sync.ts'
 import {
   DefinitionTabsSync,
   type DefinitionTabsPort,
   type ReviewNavigation,
 } from '@/src/lib/definition-tabs-sync.ts'
+import { Disposers } from '@/src/lib/disposers.ts'
 import { DocumentTitleSync } from '@/src/lib/document-title-sync.ts'
 import { FaviconBlinker } from '@/src/lib/favicon-blinker.ts'
 import { DocumentFavicon } from '@/src/lib/favicon-frames.ts'
+import type { FollowedComparison } from '@/src/lib/followed-change-set-watch.ts'
 import { InstallCompletionWatch, type ReadyServerPort } from '@/src/lib/install-completion-watch.ts'
 import { NotificationBlink } from '@/src/lib/notification-blink.ts'
 import { ReducedMotion } from '@/src/lib/reduced-motion.ts'
-import {
-  ReviewedMarksSync,
-  type FollowedComparison,
-  type ReviewedMarksStore,
-} from '@/src/lib/reviewed-marks-sync.ts'
+import { ReviewedMarksSync, type ReviewedMarksStore } from '@/src/lib/reviewed-marks-sync.ts'
 import type { Services } from '@/src/lib/services.ts'
+import { SymbolHighlightSync, type SymbolHighlightPort } from '@/src/lib/symbol-highlight-sync.ts'
 
 export interface ReviewSyncPorts {
   selection: ComparisonSelection & FollowedComparison
@@ -23,6 +23,7 @@ export interface ReviewSyncPorts {
   ready: ReadyServerPort
   navigation: ReviewNavigation
   tabs: DefinitionTabsPort
+  highlight: SymbolHighlightPort
 }
 
 export class ReviewSync {
@@ -35,7 +36,7 @@ export class ReviewSync {
   }
 
   start() {
-    const disposers = [
+    return Disposers.all([
       this.services.serverSync.start(),
       new BranchSelectionGuard(this.services.branches, this.ports.selection).start(),
       new ReviewedMarksSync(
@@ -55,12 +56,20 @@ export class ReviewSync {
       ).start(),
       new DocumentTitleSync(this.services.workspace).start(),
       new InstallCompletionWatch(this.services.languageServers.list, this.ports.ready).start(),
+      new ChangeFlowInstallSync(
+        this.services.languageServers.list,
+        this.services.changeFlows,
+      ).start(),
       new DefinitionTabsSync(this.ports.selection, this.ports.navigation, this.ports.tabs).start(),
-    ]
-    return () => {
-      for (const dispose of disposers) {
-        dispose()
-      }
-    }
+      new SymbolHighlightSync(
+        {
+          branches: this.services.branches,
+          changeSets: this.services.changeSets,
+          changeFlows: this.services.changeFlows,
+        },
+        this.ports.selection,
+        this.ports.highlight,
+      ).start(),
+    ])
   }
 }

@@ -1,25 +1,27 @@
-import type { FileTree } from '@pierre/trees'
 import { VscClose } from 'react-icons/vsc'
-import { useTreeFilter } from '@/src/hooks/use-tree-filter.ts'
 import { BareInput } from '@/src/primitives/bare-input.tsx'
 import { FilterField } from '@/src/primitives/filter-field.tsx'
 
-export function TreeFilter({ model }: { model: FileTree }) {
-  const { value, apply, clear } = useTreeFilter(model)
+interface TreeFilterProps {
+  label: string
+  value: string
+  onChange: (value: string) => void
+}
 
+export function TreeFilter({ label, value, onChange }: TreeFilterProps) {
   return (
     <FilterField>
       <BareInput
         value={value}
-        placeholder={'Filter files'}
-        aria-label={'Filter files'}
+        placeholder={label}
+        aria-label={label}
         className={'text-xs'}
         onChange={(event) => {
-          apply(event.target.value)
+          onChange(event.target.value)
         }}
         onKeyDown={(event) => {
           if (event.key === 'Escape') {
-            clear()
+            onChange('')
           }
         }}
       />
@@ -28,7 +30,9 @@ export function TreeFilter({ model }: { model: FileTree }) {
           type={'button'}
           aria-label={'Clear filter'}
           className={'cursor-pointer text-sidebar-muted hover:text-sidebar-fg'}
-          onClick={clear}
+          onClick={() => {
+            onChange('')
+          }}
         >
           <VscClose />
         </button>

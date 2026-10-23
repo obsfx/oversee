@@ -1,3 +1,4 @@
+import type { FileChange } from '@/src/lib/change-set.ts'
 import { ComparisonRules } from '@/src/lib/comparison-rules.ts'
 import { ReviewedMarkRules } from '@/src/lib/reviewed-marks.ts'
 import { changeSet } from '@/src/stories/support/change-set-fixture.ts'
@@ -12,7 +13,10 @@ export const resetReviewState = (selectedPath: string | null = STORY_PATH) => {
   useAnnotationStore.setState({ selection: null, selecting: false, draft: null })
 }
 
-export const seedReviewedMarks = (reviewed: readonly string[] = []) => {
+export const seedReviewedMarks = (
+  reviewed: readonly string[] = [],
+  changes: readonly FileChange[] = changeSet.changes,
+) => {
   const comparison = { source: ComparisonRules.uncommitted, target: 'main' }
   useReviewStore.setState({
     marks: ReviewedMarkRules.empty,
@@ -20,7 +24,7 @@ export const seedReviewedMarks = (reviewed: readonly string[] = []) => {
     reviewed: ReviewedMarkRules.none,
   })
   const review = useReviewStore.getState()
-  review.focus(ReviewedMarkRules.scopeOf(comparison, changeSet.changes))
+  review.focus(ReviewedMarkRules.scopeOf(comparison, changes))
   for (const path of reviewed) {
     review.toggleReviewed(path)
   }

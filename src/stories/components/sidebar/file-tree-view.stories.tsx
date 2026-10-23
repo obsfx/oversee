@@ -1,16 +1,21 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { FileTreeView } from '@/src/components/sidebar/file-tree-view.tsx'
 import { createStoryServices } from '@/src/stories/support/fixtures.ts'
+import { changeSet } from '@/src/stories/support/change-set-fixture.ts'
+import { StoryFileTree } from '@/src/stories/support/story-file-tree.tsx'
 import { StoryFrame } from '@/src/stories/support/story-frame.tsx'
-import { createStoryTree } from '@/src/stories/support/story-tree.ts'
+import { seedReviewedMarks } from '@/src/stories/support/story-review-state.ts'
+import { useNavigationStore } from '@/src/store/navigation-store.ts'
 
 const services = createStoryServices()
 
 const meta = {
   title: 'Components/Sidebar/FileTreeView',
-  component: FileTreeView,
-  args: { model: createStoryTree() },
-  argTypes: { model: { table: { disable: true } } },
+  component: StoryFileTree,
+  args: { changes: changeSet.changes },
+  argTypes: { changes: { table: { disable: true } } },
+  beforeEach: () => {
+    seedReviewedMarks()
+  },
   decorators: [
     (Story) => {
       return (
@@ -22,8 +27,31 @@ const meta = {
       )
     },
   ],
-} satisfies Meta<typeof FileTreeView>
+} satisfies Meta<typeof StoryFileTree>
 
 export default meta
 
-export const Default: StoryObj<typeof meta> = {}
+type Story = StoryObj<typeof meta>
+
+export const Default: Story = {}
+
+export const Selected: Story = {
+  beforeEach: () => {
+    useNavigationStore.setState({
+      selectedPath: 'src/graphql/resolvers/User/mutations/auth.ts',
+      reveal: null,
+      focus: null,
+    })
+  },
+}
+
+export const WithReviewed: Story = {
+  beforeEach: () => {
+    seedReviewedMarks([
+      '.env.template',
+      '.gitignore',
+      'scripts/alpha_user_subscribe.ts',
+      'scripts/expire_password.ts',
+    ])
+  },
+}

@@ -1,6 +1,13 @@
+import { TextQueries } from '@/src/lib/text-queries.ts'
+
 export abstract class PathParts {
   static name(path: string) {
     return path.slice(PathParts.lastSeparator(path) + 1)
+  }
+
+  static split(path: string) {
+    const name = PathParts.name(path)
+    return { directory: path.slice(0, path.length - name.length), name }
   }
 
   static directory(path: string) {
@@ -9,7 +16,7 @@ export abstract class PathParts {
   }
 
   static matches(path: string, query: string) {
-    return path.toLowerCase().includes(query.trim().toLowerCase())
+    return TextQueries.matches(path, query)
   }
 
   static segments(path: string) {

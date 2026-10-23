@@ -1,3 +1,4 @@
+import { FileTreeLabels } from '@/src/lib/file-tree-labels.ts'
 import { useReviewStore } from '@/src/store/review-store.ts'
 
 export const useReviewedToggle = (path: string, onMarked: () => void) => {
@@ -15,5 +16,9 @@ export const useReviewedToggle = (path: string, onMarked: () => void) => {
     }
   }
 
-  return { reviewed, toggle, title: reviewed ? 'Unmark as reviewed' : 'Mark as reviewed' }
+  return {
+    reviewed,
+    toggle,
+    title: reviewed ? FileTreeLabels.unmarkReviewed : FileTreeLabels.markReviewed,
+  }
 }

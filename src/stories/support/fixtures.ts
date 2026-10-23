@@ -1,5 +1,9 @@
 import type { BranchList } from '@/src/lib/branch-gateway.ts'
+import { CallFlowGraphs } from '@/src/lib/call-flow.ts'
+import type { ChangeFlow } from '@/src/lib/change-flow-gateway.ts'
+import { ChangeFlowInstallSync } from '@/src/lib/change-flow-install-sync.ts'
 import type { ChangeSet } from '@/src/lib/change-set.ts'
+import type { Comparison } from '@/src/lib/comparison-rules.ts'
 import type { ReviewComment } from '@/src/lib/comment-gateway.ts'
 import type { FileDiff, FileDiffRequest } from '@/src/lib/file-diff-gateway.ts'
 import type { FileContentGateway } from '@/src/lib/file-content-gateway.ts'
@@ -126,7 +130,7 @@ export const reviewCommentsWithOutdated: ReviewComment[] = [
   ...outdatedReviewComments,
 ]
 
-interface StoryServicesOptions {
+export interface StoryServicesOptions {
   workspace?: () => Promise<WorkspaceInfo>
   branches?: () => Promise<BranchList>
   comments?: ReviewComment[]
@@ -135,6 +139,7 @@ interface StoryServicesOptions {
   events?: InMemoryEventStream
   commentGateway?: InMemoryCommentGateway
   changeSets?: () => Promise<ChangeSet>
+  changeFlows?: (comparison: Comparison) => Promise<ChangeFlow>
   fileDiffs?: (request: FileDiffRequest) => Promise<FileDiff>
   serverList?: LanguageServerList
   languageServers?: LanguageServerGateway
@@ -161,6 +166,9 @@ export const createStoryServices = ({
   changeSets = () => {
     return Promise.resolve(changeSet)
   },
+  changeFlows = () => {
+    return Promise.resolve({ servers: [], graph: CallFlowGraphs.empty })
+  },
   fileDiffs = ({ change }) => {
     return Promise.resolve(fileDiffFor(change))
   },
@@ -177,6 +185,7 @@ export const createStoryServices = ({
     comments: commentGateway,
     sessions: new InMemoryReviewSessionGateway(commentGateway, sessions, snapshotOf),
     changeSets: { load: changeSets },
+    changeFlows: { load: changeFlows },
     fileDiffs: { load: fileDiffs },
     notifications: new InMemoryNotificationGateway(notifications),
     settings: new InMemorySettingsGateway(),
@@ -194,6 +203,7 @@ export const createLiveStoryServices = (options: StoryServicesOptions = {}) => {
   const services = createStoryServices(options)
   services.serverSync.start()
   new InstallCompletionWatch(services.languageServers.list, readyServerPort).start()
+  new ChangeFlowInstallSync(services.languageServers.list, services.changeFlows).start()
   return services
 }
 

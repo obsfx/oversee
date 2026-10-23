@@ -1,6 +1,9 @@
 package git
 
 import (
+	"bufio"
+	"io"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -17,6 +20,49 @@ func (o lineOutput) Lines() []string {
 		}
 	}
 	return lines
+}
+
+type catFileOutput struct {
+	reader *bufio.Reader
+}
+
+const (
+	catFileMissing   = "missing"
+	catFileAmbiguous = "ambiguous"
+)
+
+func (o catFileOutput) Blobs(names []string, limit int64) map[string]domain.Blob {
+	blobs := make(map[string]domain.Blob, len(names))
+	for _, name := range names {
+		header, err := o.reader.ReadString('\n')
+		if err != nil {
+			break
+		}
+		fields := strings.Fields(header)
+		last := len(fields) - 1
+		if last < 2 || fields[last] == catFileMissing || fields[last] == catFileAmbiguous {
+			continue
+		}
+		size, err := strconv.Atoi(fields[last])
+		if err != nil || size < 0 {
+			break
+		}
+		if fields[last-1] != "blob" || int64(size) > limit {
+			if _, err := o.reader.Discard(size + 1); err != nil {
+				break
+			}
+			continue
+		}
+		blob := make(domain.Blob, size)
+		if _, err := io.ReadFull(o.reader, blob); err != nil {
+			break
+		}
+		blobs[name] = blob
+		if _, err := o.reader.Discard(1); err != nil {
+			break
+		}
+	}
+	return blobs
 }
 
 type pathListOutput string
@@ -229,7 +275,7 @@ func (o numstatOutput) Stats() map[string]lineStat {
 			path = tokens[index+2]
 			index += 2
 		}
-		stats[path] = lineStat{additions: statCount(fields[0]), deletions: statCount(fields[1])}
+		stats[path] = lineStat{additions: numberOr(fields[0], 0), deletions: numberOr(fields[1], 0)}
 	}
 	return stats
 }
@@ -244,10 +290,115 @@ func (o numstatOutput) ApplyTo(entries []rawEntry) []rawEntry {
 	return entries
 }
 
-func statCount(value string) int {
-	count, err := strconv.Atoi(value)
-	if err != nil {
-		return 0
+var hunkHeader = regexp.MustCompile(`^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@`)
+
+const (
+	patchFileStart = "diff --git "
+	patchOldPath   = "--- "
+	patchNewPath   = "+++ "
+	patchNullPath  = "/dev/null"
+	patchOldPrefix = "a/"
+	patchNewPrefix = "b/"
+)
+
+type patchFile struct {
+	changes domain.LineChanges
+	oldPath string
+	newPath string
+	inHunks bool
+}
+
+func (f *patchFile) read(line string) {
+	if f.inHunks {
+		f.readHunk(line)
+		return
 	}
-	return count
+	switch {
+	case strings.HasPrefix(line, patchOldPath):
+		f.oldPath = patchPath(strings.TrimPrefix(line, patchOldPath), patchOldPrefix)
+	case strings.HasPrefix(line, patchNewPath):
+		f.newPath = patchPath(strings.TrimPrefix(line, patchNewPath), patchNewPrefix)
+	case strings.HasPrefix(line, "@@"):
+		f.inHunks = true
+		f.readHunk(line)
+	}
+}
+
+func (f *patchFile) readHunk(line string) {
+	match := hunkHeader.FindStringSubmatch(line)
+	if match == nil {
+		return
+	}
+	f.changes.Hunks = append(f.changes.Hunks, domain.LineHunk{
+		OldStart: numberOr(match[1], 0),
+		OldLines: numberOr(match[2], 1),
+		NewStart: numberOr(match[3], 0),
+		NewLines: numberOr(match[4], 1),
+	})
+}
+
+func (f *patchFile) finish() (domain.LineChanges, bool) {
+	changes := f.changes
+	changes.Status = domain.ChangeModified
+	changes.Path = f.newPath
+	switch {
+	case f.oldPath == "":
+		changes.Status = domain.ChangeAdded
+	case f.newPath == "":
+		changes.Status = domain.ChangeDeleted
+		changes.Path = f.oldPath
+	case f.oldPath != f.newPath:
+		changes.Status = domain.ChangeRenamed
+		changes.PreviousPath = f.oldPath
+	}
+	return changes, changes.Path != "" && len(changes.Hunks) > 0
+}
+
+type patchOutput string
+
+func (o patchOutput) Files() []domain.LineChanges {
+	files := []domain.LineChanges{}
+	var current *patchFile
+	flush := func() {
+		if current == nil {
+			return
+		}
+		if changes, ok := current.finish(); ok {
+			files = append(files, changes)
+		}
+	}
+	for line := range strings.SplitSeq(string(o), "\n") {
+		if strings.HasPrefix(line, patchFileStart) {
+			flush()
+			current = &patchFile{}
+			continue
+		}
+		if current != nil {
+			current.read(line)
+		}
+	}
+	flush()
+	return files
+}
+
+func patchPath(raw, prefix string) string {
+	path := strings.TrimSuffix(raw, "\t")
+	if path == patchNullPath {
+		return ""
+	}
+	if strings.HasPrefix(path, `"`) {
+		unquoted, err := strconv.Unquote(path)
+		if err == nil {
+			path = unquoted
+		}
+	}
+	return strings.TrimPrefix(path, prefix)
+}
+
+func numberOr(value string, fallback int) int {
+	number, err := strconv.Atoi(value)
+	if err != nil {
+		return fallback
+	}
+	return number
 }

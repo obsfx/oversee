@@ -45,7 +45,7 @@ func New(config Config) *Server {
 func (s *Server) Serve(ctx context.Context, listener net.Listener) error {
 	ctx, cancel := context.WithCancel(ctx)
 	httpServer := &http.Server{
-		Handler:           localOnly(http.NewCrossOriginProtection().Handler(s.routes())),
+		Handler:           s.handler(),
 		ReadHeaderTimeout: 10 * time.Second,
 		BaseContext: func(net.Listener) context.Context {
 			return ctx
@@ -64,6 +64,9 @@ func (s *Server) Serve(ctx context.Context, listener net.Listener) error {
 		s.services.LanguageServers.Follow(ctx, s.hub.PublishLanguageServersChange)
 	})
 	background.Go(func() {
+		s.services.Flows.Follow(ctx, s.hub.PublishFlowProgress)
+	})
+	background.Go(func() {
 		<-ctx.Done()
 		shutdownCtx, cancelShutdown := context.WithTimeout(context.Background(), shutdownTimeout)
 		defer cancelShutdown()
@@ -78,6 +81,10 @@ func (s *Server) Serve(ctx context.Context, listener net.Listener) error {
 	return err
 }
 
+func (s *Server) handler() http.Handler {
+	return localOnly(http.NewCrossOriginProtection().Handler(s.routes()))
+}
+
 func (s *Server) routes() http.Handler {
 	diffs := diffHandler{diffs: s.services.Diffs}
 	comments := commentHandler{comments: s.services.Comments}
@@ -86,6 +93,7 @@ func (s *Server) routes() http.Handler {
 	settings := settingsHandler{settings: s.services.Settings}
 	languageServers := languageServerHandler{servers: s.services.LanguageServers}
 	definitions := definitionHandler{definitions: s.services.Definitions}
+	flows := changeFlowHandler{flows: s.services.Flows}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/workspace", s.index.workspace)
 	mux.HandleFunc("GET /api/branches", diffs.branches)
@@ -107,11 +115,23 @@ func (s *Server) routes() http.Handler {
 	mux.HandleFunc("POST /api/language-servers/{id}/install", languageServers.install)
 	mux.HandleFunc("DELETE /api/language-servers/{id}/install", languageServers.cancel)
 	mux.HandleFunc("DELETE /api/language-servers/{id}", languageServers.uninstall)
-	mux.HandleFunc("GET /api/definitions", definitions.find)
-	mux.HandleFunc("GET /api/file-content", definitions.fileContent)
+	mux.HandleFunc("GET /api/definitions", sameOrigin(definitions.find))
+	mux.HandleFunc("GET /api/file-content", sameOrigin(definitions.fileContent))
+	mux.HandleFunc("GET /api/change-flow", sameOrigin(flows.get))
 	mux.Handle("GET /ws", s.hub)
 	mux.HandleFunc("GET /{$}", s.index.serve)
 	return mux
+}
+
+func sameOrigin(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Header.Get("Sec-Fetch-Site") {
+		case "", "same-origin", "none":
+			next(w, r)
+		default:
+			http.Error(w, "cross-origin request", http.StatusForbidden)
+		}
+	}
 }
 
 func localOnly(next http.Handler) http.Handler {

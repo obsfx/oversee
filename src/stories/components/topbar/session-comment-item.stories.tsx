@@ -8,7 +8,7 @@ import { useCommentsMenuStore } from '@/src/store/comments-menu-store.ts'
 
 const services = createStoryServices()
 const replied = reviewSessions[1].comments[0]
-const outdated = reviewSessions[0].comments[1]
+const outdatedComment = reviewSessions[0].comments[1]
 
 const meta = {
   title: 'Components/Topbar/SessionCommentItem',
@@ -40,4 +40,4 @@ export const Focused: StoryObj<typeof meta> = {
   },
 }
 
-export const Outdated: StoryObj<typeof meta> = { args: { comment: outdated } }
+export const Outdated: StoryObj<typeof meta> = { args: { comment: outdatedComment } }

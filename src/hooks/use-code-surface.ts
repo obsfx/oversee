@@ -9,6 +9,8 @@ import type { FileSide } from '@/src/lib/change-set.ts'
 import type { TabReveal } from '@/src/lib/definition-tabs.ts'
 import type { RenderedLines } from '@/src/lib/diff-line-reveal.ts'
 import { DiffSurface } from '@/src/lib/diff-surface.ts'
+import { SymbolHighlights } from '@/src/lib/symbol-highlight.ts'
+import { useSymbolHighlightStore } from '@/src/store/symbol-highlight-store.ts'
 
 export const useCodeSurface = (
   path: string,
@@ -21,12 +23,15 @@ export const useCodeSurface = (
   const { themes, themeType } = useDiffTheme()
   const { tokenHandlers, definition } = useDefinitionInteractions(path)
   const revealing = useLineReveal(reveal, rendered, virtualizer, lastLines)
+  const highlight = useSymbolHighlightStore((state) => {
+    return state.highlight
+  })
   const base: BaseCodeOptions = {
     theme: themes,
     themeType,
     disableFileHeader: true,
     overflow: 'scroll',
-    unsafeCSS: DiffSurface.css,
+    unsafeCSS: DiffSurface.css + SymbolHighlights.css(highlight, path),
   }
 
   return {

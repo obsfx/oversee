@@ -1,5 +1,5 @@
-import { CountLabels } from '@/src/lib/count-labels.ts'
 import { DiffStatsRules } from '@/src/lib/diff-stats.ts'
+import { DiffStatsLabels } from '@/src/lib/diff-stats-labels.ts'
 import { useChangeSet } from '@/src/hooks/use-change-set.ts'
 
 export const useDiffStats = () => {
@@ -8,6 +8,5 @@ export const useDiffStats = () => {
     return null
   }
   const stats = DiffStatsRules.of(state.data.changes)
-  const description = `${CountLabels.of(stats.additions, 'line')} added, ${CountLabels.of(stats.deletions, 'line')} removed across ${CountLabels.of(stats.files, 'file')}`
-  return { ...stats, description }
+  return { ...stats, description: DiffStatsLabels.description(stats) }
 }

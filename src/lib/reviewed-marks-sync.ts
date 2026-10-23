@@ -1,8 +1,10 @@
-import { ResourceStates, type AsyncResource, type ResourceState } from '@/src/lib/async-resource.ts'
-import type { BranchList } from '@/src/lib/branch-gateway.ts'
-import type { ChangeSet } from '@/src/lib/change-set.ts'
-import type { ComparisonCache } from '@/src/lib/comparison-cache.ts'
-import { ComparisonRules, type Comparison } from '@/src/lib/comparison-rules.ts'
+import type { AsyncResource, ResourceState } from '@/src/lib/async-resource.ts'
+import { Disposers } from '@/src/lib/disposers.ts'
+import {
+  FollowedChangeSetWatch,
+  type FollowedChangeSetSources,
+  type FollowedComparison,
+} from '@/src/lib/followed-change-set-watch.ts'
 import {
   ReviewedMarkRules,
   type ReviewedMarks,
@@ -17,29 +19,16 @@ export interface ReviewedMarksStore {
   subscribe(listener: (marks: ReviewedMarks) => void): () => void
 }
 
-export interface FollowedComparison {
-  current(): Comparison | null
-  subscribe(listener: () => void): () => void
-}
-
-export interface ReviewedMarksSources {
+export interface ReviewedMarksSources extends FollowedChangeSetSources {
   workspace: AsyncResource<WorkspaceInfo>
-  branches: AsyncResource<BranchList>
-  changeSets: ComparisonCache<ChangeSet>
   gateway: ReviewedMarksGateway
-}
-
-interface FollowedChangeSet {
-  key: string
-  release: () => void
 }
 
 export class ReviewedMarksSync {
   private readonly sources: ReviewedMarksSources
   private readonly marks: ReviewedMarksStore
-  private readonly comparison: FollowedComparison
+  private readonly watch: FollowedChangeSetWatch
   private persisted: (() => void) | null = null
-  private followed: FollowedChangeSet | null = null
 
   constructor(
     sources: ReviewedMarksSources,
@@ -48,34 +37,35 @@ export class ReviewedMarksSync {
   ) {
     this.sources = sources
     this.marks = marks
-    this.comparison = comparison
+    this.watch = new FollowedChangeSetWatch(sources, comparison)
   }
 
   start() {
-    const { workspace, branches } = this.sources
+    const { workspace } = this.sources
     void workspace.load()
-    this.persist(workspace.store.getState())
-    this.follow()
-    const unsubscribers = [
-      workspace.store.subscribe((state) => {
-        this.persist(state)
-      }),
-      branches.store.subscribe(() => {
-        this.follow()
-      }),
-      this.comparison.subscribe(() => {
-        this.follow()
-      }),
-    ]
-    return () => {
-      for (const unsubscribe of unsubscribers) {
-        unsubscribe()
-      }
-      this.persisted?.()
-      this.followed?.release()
-      this.persisted = null
-      this.followed = null
-    }
+    const stopPersisting = workspace.follow((state) => {
+      this.persist(state)
+    })
+    const stopWatching = this.watch.start({
+      change: (comparison, state) => {
+        if (state.status === 'ready') {
+          this.marks.focus(ReviewedMarkRules.scopeOf(comparison, state.data.changes))
+        } else {
+          this.marks.focus(null)
+        }
+      },
+      release: () => {
+        this.marks.focus(null)
+      },
+    })
+    return Disposers.all([
+      stopPersisting,
+      stopWatching,
+      () => {
+        this.persisted?.()
+        this.persisted = null
+      },
+    ])
   }
 
   private persist(state: ResourceState<WorkspaceInfo>) {
@@ -91,34 +81,6 @@ export class ReviewedMarksSync {
     const stopListening = gateway.subscribe(workspace, (marks) => {
       this.marks.hydrate(marks)
     })
-    this.persisted = () => {
-      stopSaving()
-      stopListening()
-    }
-  }
-
-  private follow() {
-    const branchList = ResourceStates.dataOr(this.sources.branches.store.getState(), null)
-    const comparison = ComparisonRules.resolve(this.comparison.current(), branchList)
-    const key = comparison ? ComparisonRules.key(comparison) : null
-    if (key === (this.followed?.key ?? null)) {
-      return
-    }
-    this.followed?.release()
-    this.followed = null
-    if (!comparison || key === null) {
-      this.marks.focus(null)
-      return
-    }
-    const changeSet = this.sources.changeSets.get(comparison)
-    const apply = (state: ResourceState<ChangeSet>) => {
-      if (state.status === 'ready') {
-        this.marks.focus(ReviewedMarkRules.scopeOf(comparison, state.data.changes))
-      } else {
-        this.marks.focus(null)
-      }
-    }
-    apply(changeSet.store.getState())
-    this.followed = { key, release: changeSet.store.subscribe(apply) }
+    this.persisted = Disposers.all([stopSaving, stopListening])
   }
 }

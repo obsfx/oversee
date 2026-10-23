@@ -15,9 +15,12 @@ import (
 )
 
 const (
-	methodNotFound = -32601
-	maxFrameSize   = 64 << 20
-	writeTimeout   = 5 * time.Second
+	methodNotFound   = -32601
+	requestCancelled = -32800
+	contentModified  = -32801
+	serverCancelled  = -32802
+	maxFrameSize     = 64 << 20
+	writeTimeout     = 5 * time.Second
 )
 
 var lenient = []json.Options{jsontext.AllowInvalidUTF8(true), jsontext.AllowDuplicateNames(true)}
@@ -42,6 +45,15 @@ type ResponseError struct {
 
 func (e *ResponseError) Error() string {
 	return fmt.Sprintf("language server error %d: %s", e.Code, e.Message)
+}
+
+func (e *ResponseError) Retryable() bool {
+	return e.Code == requestCancelled || e.Code == contentModified || e.Code == serverCancelled
+}
+
+func IsRetryable(err error) bool {
+	responseErr, ok := errors.AsType[*ResponseError](err)
+	return ok && responseErr.Retryable()
 }
 
 type incoming struct {
@@ -105,6 +117,9 @@ func NewConn(transport Transport, handle RequestHandler, notified NotificationHa
 }
 
 func (c *Conn) Call(ctx context.Context, method string, params, result any) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	c.mu.Lock()
 	if c.closeErr != nil {
 		c.mu.Unlock()
@@ -116,7 +131,7 @@ func (c *Conn) Call(ctx context.Context, method string, params, result any) erro
 	c.pending[id] = replies
 	c.mu.Unlock()
 	defer c.forget(id)
-	if err := c.write(ctx, outgoingRequest{JSONRPC: "2.0", ID: id, Method: method, Params: params}); err != nil {
+	if err := c.send(outgoingRequest{JSONRPC: "2.0", ID: id, Method: method, Params: params}); err != nil {
 		return err
 	}
 	select {

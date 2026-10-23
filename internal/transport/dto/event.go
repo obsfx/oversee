@@ -78,9 +78,13 @@ type workspaceChangedPayload struct {
 }
 
 func WorkspaceChangedOf(change domain.WorkspaceChange, at time.Time) (Envelope, error) {
-	payload, err := json.Marshal(workspaceChangedPayload{Paths: change.Paths, Refs: change.RefsChanged})
+	return signalOf(workspaceChangedKind, workspaceChangedPayload{Paths: change.Paths, Refs: change.RefsChanged}, at)
+}
+
+func signalOf(kind string, payload any, at time.Time) (Envelope, error) {
+	encoded, err := json.Marshal(payload)
 	if err != nil {
-		return Envelope{}, err
+		return Envelope{}, fmt.Errorf("encode %s signal: %w", kind, err)
 	}
-	return Envelope{Kind: workspaceChangedKind, Payload: jsontext.Value(payload), CreatedAt: millis(at)}, nil
+	return Envelope{Kind: kind, Payload: jsontext.Value(encoded), CreatedAt: millis(at)}, nil
 }

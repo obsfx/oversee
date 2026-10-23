@@ -61,6 +61,8 @@ export abstract class DefinitionQueries {
 }
 
 export abstract class DefinitionShapes {
+  static readonly status = v.picklist(STATUSES)
+
   static readonly definition = v.object({
     path: v.string(),
     external: v.fallback(v.boolean(), false),
@@ -73,7 +75,7 @@ export abstract class DefinitionShapes {
   })
 
   static readonly lookup = v.object({
-    status: v.picklist(STATUSES),
+    status: DefinitionShapes.status,
     server: v.fallback(v.string(), ''),
     error: v.fallback(v.string(), ''),
     definitions: v.fallback(v.array(DefinitionShapes.definition), []),

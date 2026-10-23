@@ -15,9 +15,8 @@ export function CheckToggle({ checked, className, children, ...props }: CheckTog
       className={c(
         'flex h-6 shrink-0 cursor-pointer items-center gap-1.5 rounded px-2 text-xs outline-none',
         'focus-visible:ring-1 focus-visible:ring-fg-faint',
-        checked
-          ? 'bg-reviewed/10 text-reviewed hover:bg-reviewed/15'
-          : 'text-fg-muted hover:bg-surface-hover hover:text-fg',
+        checked && 'bg-reviewed/10 text-reviewed hover:bg-reviewed/15',
+        !checked && 'text-fg-muted hover:bg-surface-hover hover:text-fg',
         className,
       )}
       {...props}

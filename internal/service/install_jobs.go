@@ -34,7 +34,7 @@ type installJobs struct {
 	cancels  map[string]context.CancelCauseFunc
 	failures map[string]string
 	progress map[string]domain.InstallProgress
-	reported map[string]time.Time
+	throttle *throttle
 	ctx      context.Context
 	cancel   context.CancelFunc
 	group    sync.WaitGroup
@@ -48,7 +48,7 @@ func newInstallJobs(notify func()) *installJobs {
 		cancels:  map[string]context.CancelCauseFunc{},
 		failures: map[string]string{},
 		progress: map[string]domain.InstallProgress{},
-		reported: map[string]time.Time{},
+		throttle: newThrottle(progressInterval, systemClock{}, notify),
 		ctx:      ctx,
 		cancel:   cancel,
 		notify:   notify,
@@ -122,13 +122,9 @@ func (j *installJobs) report(id string, progress domain.InstallProgress) {
 	j.mu.Lock()
 	changed := j.progress[id] != progress
 	j.progress[id] = progress
-	due := changed && time.Since(j.reported[id]) >= progressInterval
-	if due {
-		j.reported[id] = time.Now()
-	}
 	j.mu.Unlock()
-	if due {
-		j.notify()
+	if changed {
+		j.throttle.touch()
 	}
 }
 
@@ -137,13 +133,12 @@ func (j *installJobs) finish(id string, err error) {
 	delete(j.running, id)
 	delete(j.cancels, id)
 	delete(j.progress, id)
-	delete(j.reported, id)
 	if err != nil && j.ctx.Err() == nil {
 		j.failures[id] = err.Error()
 		slog.Warn("language server install failed", "server", id, "error", err)
 	}
 	j.mu.Unlock()
-	j.notify()
+	j.throttle.flush()
 }
 
 func (j *installJobs) state(id string) (bool, string, domain.InstallProgress) {

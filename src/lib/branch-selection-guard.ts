@@ -5,6 +5,7 @@ import {
   type Comparison,
   type ComparisonReplacement,
 } from '@/src/lib/comparison-rules.ts'
+import { Disposers } from '@/src/lib/disposers.ts'
 
 export interface ComparisonSelection {
   current(): Comparison | null
@@ -23,14 +24,12 @@ export class BranchSelectionGuard {
   start() {
     void this.branches.load()
     const release = this.branches.watch()
-    this.check(this.branches.store.getState())
-    const unsubscribe = this.branches.store.subscribe((state) => {
-      this.check(state)
-    })
-    return () => {
-      unsubscribe()
-      release()
-    }
+    return Disposers.all([
+      this.branches.follow((state) => {
+        this.check(state)
+      }),
+      release,
+    ])
   }
 
   private check(state: ResourceState<BranchList>) {
