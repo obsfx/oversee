@@ -7,7 +7,8 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const OUT_DIR = join(ROOT, 'npm-dist')
 const SCOPE = '@obsfx'
 const MAIN_PACKAGE = `${SCOPE}/oversee`
-const REPOSITORY = 'https://github.com/obsfx/oversee'
+const REPOSITORY = { type: 'git', url: 'git+https://github.com/obsfx/oversee.git' }
+const LICENSE = 'MIT'
 
 const TARGETS = [
   { platform: 'darwin', arch: 'arm64', goos: 'darwin', goarch: 'arm64' },
@@ -30,6 +31,12 @@ const writeJson = (path, value) => {
 
 const packageNameOf = ({ platform, arch }) => {
   return `${SCOPE}/oversee-${platform}-${arch}`
+}
+
+const copyRootFiles = (directory, names) => {
+  for (const name of names) {
+    copyFileSync(join(ROOT, name), join(directory, name))
+  }
 }
 
 const generateWindowsResources = () => {
@@ -83,12 +90,14 @@ const buildTarget = (target) => {
     name,
     version,
     description: `The ${target.platform} ${target.arch} binary for ${MAIN_PACKAGE}.`,
+    license: LICENSE,
     repository: REPOSITORY,
     os: [target.platform],
     cpu: [target.arch],
     files: ['bin'],
     preferUnplugged: true,
   })
+  copyRootFiles(directory, ['LICENSE'])
 }
 
 const buildMainPackage = () => {
@@ -105,12 +114,14 @@ const buildMainPackage = () => {
     name: MAIN_PACKAGE,
     version,
     description: 'Diff review and line annotation for git repositories, with a CLI for AI agents.',
+    license: LICENSE,
     repository: REPOSITORY,
     bin: { oversee: 'bin/oversee.js' },
     files: ['bin'],
     engines: { node: '>=18' },
     optionalDependencies,
   })
+  copyRootFiles(directory, ['README.md', 'LICENSE'])
 }
 
 rmSync(OUT_DIR, { recursive: true, force: true })
