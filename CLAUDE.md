@@ -280,7 +280,6 @@ comment path click
     - `ServerEventSync`: event stream into the services.
     - `BranchSelectionGuard`: switches the comparison when a selected branch is gone, see **branch selection**.
     - `ReviewedMarksSync`: persists reviewed marks and prunes them against the current change set, see **reviewed marks**.
-    - `NotificationBlink`: blinks the favicon when the unread count rises, unless reduced motion is preferred.
     - `DocumentTitleSync`: keeps `document.title` on `<folder> - oversee`.
     - `InstallCompletionWatch`: shows the install notice's ready state for 2.5s after a language server goes from installing to installed, see **language servers**.
     - `DefinitionTabsSync`: resets and focuses definition tabs, see **tabs**.
@@ -526,7 +525,7 @@ gdscript.Analyzer.Flow(ProjectSources{Root, Settings: project.godot, Scripts: ev
 - `pnpm test`: vitest (`vitest.config.ts` merges `vite.config.ts`, so tests get the `@/` alias and the plugins) with two projects, also run alone with `pnpm test:unit` and `pnpm test:storybook`:
     - `unit`: `src/tests/**/*.test.ts` in node, for the `src/lib` classes and the stores.
     - `storybook`: every story rendered in headless chromium through `@storybook/addon-vitest`, plus the `play` interaction tests of stories (`Components/Sidebar/Sidebar` `FlowFilterUnderCollapsedRows`, `FlowStateSurvivesModeSwitch`). run `pnpm exec playwright install chromium` once.
-- `pnpm build:ui`: builds the UI shell into a single, gzipped `internal/webui/dist/index.html.gz` (vite `embed` mode, `vite-plugin-singlefile`, inlined diff worker).
+- `pnpm build:ui`: builds the UI shell into a single, gzipped `internal/webui/dist/index.html.gz` (vite `embed` mode, `vite-plugin-singlefile`, inlined diff worker, and the favicon `public/favicon.png` inlined as a data URI by `oversee:inline-favicon`).
 - `pnpm build:cli`: `build:ui`, then builds `bin/oversee`.
 - `pnpm generate:gdscript`: regenerates `internal/gdscript/grammar` from the pinned grammar, tree-sitter and bonsai commits. it downloads wasi-sdk and binaryen (sha256 pinned for darwin and linux, arm64 and x64) into `~/.cache/oversee/gdscript-grammar` (`OVERSEE_GRAMMAR_CACHE` overrides it) and installs `wasm2go` and `libc-gen` there. the pins live in `scripts/gdscript-grammar.json`.
     - `--update` moves the grammar commit to the head of its branch before generating, and reports newer tree-sitter releases and bonsai tags without moving them: tree-sitter and bonsai move together by hand, because bonsai's builder fixes the tree-sitter version. `--summary <file>` writes a markdown report.
@@ -559,7 +558,7 @@ gdscript.Analyzer.Flow(ProjectSources{Root, Settings: project.godot, Scripts: ev
 - if a class is only created once, use an **abstract class**.
 - if a class can be injected somewhere, use a normal class.
 - we never put logic and complexity in components. complexity is placed in custom hooks, and custom hooks orchestrate the necessary classes for the intended actions.
-- side effects that react to service or store changes (syncing, document title, favicon) are lib classes with `start(): () => void`, composed by `ReviewSync` and mounted by one hook. components and layouts do not subscribe to state they do not render, and lib reaches app stores only through small ports declared by the class that uses them.
+- side effects that react to service or store changes (syncing, document title) are lib classes with `start(): () => void`, composed by `ReviewSync` and mounted by one hook. components and layouts do not subscribe to state they do not render, and lib reaches app stores only through small ports declared by the class that uses them.
 - when styling components with tailwind, use `/Users/omercanbalandi/studio-2/oversee/src/c.ts` for long or conditional class names.
 - state management is `zustand`. stores live in `./src/store`.
 - react contexts live in `./src/context/<name>/`, together with their provider and the hook that consumes them.

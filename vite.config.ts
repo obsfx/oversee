@@ -39,7 +39,7 @@ const googleFonts = (): Plugin => {
 
 const EMBED_MODE = 'embed'
 const EMBED_OUT_DIR = 'internal/webui/dist'
-const FAVICON_PATH = '/favicon.svg'
+const FAVICON_PATH = '/favicon.png'
 const DEV_API_URL = process.env.OVERSEE_DEV_API ?? 'http://localhost:4400'
 
 const inlineFavicon = (): Plugin => {
@@ -48,8 +48,8 @@ const inlineFavicon = (): Plugin => {
     transformIndexHtml: {
       order: 'pre',
       async handler(html) {
-        const svg = await readFile(new URL(`./public${FAVICON_PATH}`, import.meta.url), 'utf8')
-        const dataUri = `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`
+        const png = await readFile(new URL(`./public${FAVICON_PATH}`, import.meta.url))
+        const dataUri = `data:image/png;base64,${png.toString('base64')}`
         return html.replace(`href="${FAVICON_PATH}"`, `href="${dataUri}"`)
       },
     },
