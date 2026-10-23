@@ -9,6 +9,22 @@ const SCOPE = '@obsfx'
 const MAIN_PACKAGE = `${SCOPE}/oversee`
 const REPOSITORY = { type: 'git', url: 'git+https://github.com/obsfx/oversee.git' }
 const LICENSE = 'MIT'
+const KEYWORDS = [
+  'agent-skills',
+  'agentic-ai',
+  'ai-agents',
+  'ai-code-review',
+  'annotation-tool',
+  'call-graph',
+  'claude-code',
+  'cli',
+  'code-review',
+  'developer-tools',
+  'diff-viewer',
+  'git',
+  'human-in-the-loop',
+  'language-server-protocol',
+]
 
 const TARGETS = [
   { platform: 'darwin', arch: 'arm64', goos: 'darwin', goarch: 'arm64' },
@@ -114,6 +130,7 @@ const buildMainPackage = () => {
     name: MAIN_PACKAGE,
     version,
     description: 'Diff review and line annotation for git repositories, with a CLI for AI agents.',
+    keywords: KEYWORDS,
     license: LICENSE,
     repository: REPOSITORY,
     bin: { oversee: 'bin/oversee.js' },
