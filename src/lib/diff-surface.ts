@@ -32,6 +32,7 @@ export abstract class DiffSurface {
     '--diffs-font-family': 'var(--font-editor)',
     '--diffs-font-size': 'var(--editor-font-size)',
     '--diffs-line-height': 'var(--editor-line-height-px)',
+    fontWeight: 'var(--editor-font-weight)',
   } as CSSProperties
 
   static readonly css =

@@ -16,7 +16,6 @@ export abstract class DocumentAppearance {
     root.style.setProperty('--font-editor', `'${settings.editorFont}', ui-monospace, monospace`)
     root.style.setProperty('--editor-font-weight', String(settings.editorFontWeight))
     root.style.setProperty('--editor-font-size', `${settings.editorFontSize}px`)
-    root.style.setProperty('--editor-line-height', String(settings.editorLineHeight))
     root.style.setProperty(
       '--editor-line-height-px',
       `${DiffSurface.lineHeight(settings.editorFontSize, settings.editorLineHeight)}px`,
