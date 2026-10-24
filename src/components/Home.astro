@@ -1,0 +1,120 @@
+---
+import Brand from "@/src/components/Brand.astro";
+import ExternalLink from "@/src/components/ExternalLink.astro";
+import FeatureTabs from "@/src/components/FeatureTabs.astro";
+import HeroCanvas from "@/src/components/HeroCanvas.astro";
+import InstallCommand from "@/src/components/InstallCommand.astro";
+import ProjectLinks from "@/src/components/ProjectLinks.astro";
+---
+
+<div class="home">
+  <div class="home__visual">
+    <HeroCanvas />
+  </div>
+  <main class="home__main">
+    <div class="home__copy">
+      <Brand />
+      <h1 class="home__intro">A Human Intervention Interface for agent-produced code.</h1>
+      <InstallCommand command="npm i -g @obsfx/oversee" />
+      <p>
+        As of October 2026, when I'm writing this, after using Opus 5.5, I've become convinced that writing code manually has largely become an old-fashioned practice. These tools are faster than us and sometimes even smarter. They can go through an entire codebase using bash tools much faster than we can by manually reading code, and on top of that, they can complete well-specified tasks in much less time. It's not hard to see this from the work I've done over almost the last year.
+      </p>
+      <p>
+        However, as a human, I still want to stay in the loop while developing tasks and products delegated to agents, especially at points where human intervention is still needed. The biggest reason for this is the concept of <ExternalLink href="https://simonwillison.net/2026/Feb/15/cognitive-debt/" hero={0}>Cognitive Debt</ExternalLink>, which Simon Willison also talks about. I've noticed that if things get out of hand and I no longer understand what's going on under the hood, even at a high level, I start having difficulty making decisions about the product's next steps and future. Also, not correcting an agent at an early stage can lead to much bigger problems, like a snowball effect. One thing is certain: I used to experience these problems much more frequently with earlier versions of Opus with 200k context windows, and things are much better now. Still, I feel the need to read the output to avoid Cognitive Debt.
+      </p>
+      <p>
+        That's exactly what <strong>oversee</strong> is for. What it does is very simple: it basically brings the GitHub PR experience to your local environment. Through a web-based UI, you can add <strong>comments</strong>, complete your <strong>review</strong>, and pass it to your agent through its CLI. This tool came out of my desire to have the same PR experience you'd have with a coworker, but locally, before pushing any code.
+      </p>
+      <p>
+        <strong>oversee</strong> is a diff viewer and line annotation tool. I also refer to it as a <strong>Human Intervention Interface</strong>. It's written in Go and React. The UI is embedded into the Go binary. It also has LSP support for a few languages.
+      </p>
+    </div>
+    <div class="home__features">
+      <FeatureTabs />
+    </div>
+    <div class="home__copy">
+      <p>
+        Run <code>oversee init</code> in your codebase, then <code>oversee serve</code> to open the UI. When you finish a review, tell your agent there are comments in oversee, or install the skill with <code>npx skills add obsfx/oversee</code> and run <code>/oversee-address</code>.
+      </p>
+      <p>
+        Prefer a single file? Download a <ExternalLink href="https://github.com/obsfx/oversee/releases" hero={1}>standalone executable</ExternalLink> for macOS, Linux or Windows.
+      </p>
+      <ProjectLinks />
+    </div>
+  </main>
+</div>
+
+<style>
+  .home {
+    position: relative;
+    overflow: hidden;
+    min-block-size: 100svh;
+    color: var(--fg);
+  }
+
+  .home__visual {
+    position: absolute;
+    inset: 0 0 auto;
+    block-size: clamp(26rem, 64svh, 44rem);
+    pointer-events: none;
+    mask-image: linear-gradient(
+      to bottom,
+      #000 20%,
+      rgb(0 0 0 / 0.62) 46%,
+      rgb(0 0 0 / 0.24) 66%,
+      rgb(0 0 0 / 0.06) 84%,
+      transparent
+    );
+  }
+
+  .home__main {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 3.5rem;
+    padding: clamp(15rem, 44svh, 27rem) clamp(1.25rem, 4vw, 3.5rem) 5rem;
+  }
+
+  .home__copy {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.9em;
+    inline-size: 100%;
+    max-inline-size: 31rem;
+    margin-inline: auto;
+    color: var(--fg-muted);
+    font-size: 0.9375rem;
+    line-height: 1.7;
+  }
+
+  .home__copy > :global(.install-command) {
+    justify-self: start;
+    margin-block: 0.2em 0.6em;
+  }
+
+  .home__intro {
+    color: var(--fg);
+    font-size: clamp(1.375rem, 1.15rem + 0.6vw, 1.75rem);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+    text-wrap: balance;
+  }
+
+  .home__copy strong {
+    color: var(--fg);
+    font-weight: 500;
+  }
+
+  .home__copy code {
+    color: var(--fg);
+    font-family: var(--font-mono);
+    font-size: 0.92em;
+  }
+
+  .home__features {
+    inline-size: 100%;
+    max-inline-size: 60rem;
+    margin-inline: auto;
+  }
+</style>

@@ -1,0 +1,28 @@
+---
+import painting from "@/src/assets/oversee-eye.webp";
+---
+
+<hero-canvas aria-hidden="true" data-painting={painting.src}></hero-canvas>
+
+<style>
+  hero-canvas {
+    position: relative;
+    display: block;
+    inline-size: 100%;
+    block-size: 100%;
+  }
+
+  hero-canvas :global(canvas) {
+    position: absolute;
+    inset: 0;
+    display: block;
+    inline-size: 100%;
+    block-size: 100%;
+  }
+</style>
+
+<script>
+  import { HeroCanvasElement } from "@/src/lib/hero/hero-canvas-element";
+
+  HeroCanvasElement.register();
+</script>

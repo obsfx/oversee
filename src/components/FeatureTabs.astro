@@ -1,0 +1,143 @@
+---
+const features = [
+  {
+    id: "review",
+    label: "Review",
+    text: "Select a line or a range of lines in the diff and write your comment in markdown. When you are done, finish the review. Its comments move into a review session that your agent can pick up.",
+    description: "Commenting on lines of a diff in oversee and finishing the review",
+  },
+  {
+    id: "agent",
+    label: "Agent",
+    text: "The agent works through the CLI: it lists the finished reviews, reads the comments with their saved code, fixes what needs fixing, replies to questions and updates the review status. Replies sit under the comment they answer.",
+    description: "An agent picking up the review in a terminal and replying under the comments",
+  },
+  {
+    id: "flow",
+    label: "Call flow",
+    text: "The Call flow mode of the sidebar shows the changed functions as a call tree, so you can read a change in the order it runs.",
+    description: "Following a change through the call flow sidebar",
+  },
+];
+const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+const width = 1600;
+const height = 900;
+---
+
+<div class="feature-tabs" data-feature-tabs>
+  <div class="feature-tabs__list" role="tablist" aria-label="Features">
+    {
+      features.map((feature, index) => {
+        return (
+          <button
+            type="button"
+            class="feature-tabs__tab"
+            role="tab"
+            id={`feature-tab-${feature.id}`}
+            aria-controls={`feature-panel-${feature.id}`}
+            aria-selected={index === 0}
+            tabindex={index === 0 ? 0 : -1}
+          >
+            {feature.label}
+          </button>
+        );
+      })
+    }
+  </div>
+  {
+    features.map((feature, index) => {
+      return (
+        <div class="feature-tabs__panel" role="tabpanel" id={`feature-panel-${feature.id}`} aria-labelledby={`feature-tab-${feature.id}`} hidden={index !== 0}>
+          <p class="feature-tabs__text">{feature.text}</p>
+          <video
+            class="feature-tabs__video"
+            muted
+            loop
+            playsinline
+            preload="none"
+            width={width}
+            height={height}
+            poster={`${base}/media/${feature.id}-poster.webp`}
+            aria-label={feature.description}
+            data-in-view-video
+          >
+            <source src={`${base}/media/${feature.id}.mp4`} type="video/mp4" />
+          </video>
+        </div>
+      );
+    })
+  }
+</div>
+
+<style>
+  .feature-tabs {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .feature-tabs__list {
+    display: flex;
+    justify-content: safe center;
+    gap: 0.25rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .feature-tabs__tab {
+    padding: 0.4rem 0.9rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: none;
+    color: var(--fg-muted);
+    font: inherit;
+    font-size: 0.875rem;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      color 160ms ease-out,
+      border-color 160ms ease-out;
+  }
+
+  .feature-tabs__tab:hover {
+    color: var(--fg);
+  }
+
+  .feature-tabs__tab[aria-selected="true"] {
+    border-color: var(--line);
+    background: rgb(241 237 249 / 0.06);
+    color: var(--fg);
+  }
+
+  .feature-tabs__panel:not([hidden]) {
+    display: grid;
+    justify-items: center;
+    gap: 1.25rem;
+  }
+
+  .feature-tabs__text {
+    max-inline-size: 31rem;
+    color: var(--fg-muted);
+    font-size: 0.9375rem;
+    line-height: 1.7;
+    text-align: center;
+    text-wrap: pretty;
+  }
+
+  .feature-tabs__video {
+    display: block;
+    inline-size: 100%;
+    block-size: auto;
+    border: 1px solid rgb(241 237 249 / 0.14);
+    border-radius: 14px;
+    background: #110e1b;
+    box-shadow: 0 30px 80px -30px rgb(0 0 0 / 0.8);
+  }
+</style>
+
+<script>
+  import { FeatureTabs } from "@/src/lib/feature-tabs";
+  import { InViewVideos } from "@/src/lib/in-view-videos";
+
+  FeatureTabs.start();
+  InViewVideos.start();
+</script>
