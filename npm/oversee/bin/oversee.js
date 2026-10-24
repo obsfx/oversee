@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 'use strict'
 
-const { spawnSync } = require('node:child_process')
+const { spawn } = require('node:child_process')
 
 const platformPackage = `@obsfx/oversee-${process.platform}-${process.arch}`
 const executable = process.platform === 'win32' ? 'oversee.exe' : 'oversee'
+const forwardedSignals = ['SIGINT', 'SIGTERM', 'SIGHUP']
+const consoleSignalsReachChild = process.platform === 'win32'
 
 let binaryPath
 try {
@@ -18,15 +20,30 @@ try {
   process.exit(1)
 }
 
-const result = spawnSync(binaryPath, process.argv.slice(2), { stdio: 'inherit' })
+const child = spawn(binaryPath, process.argv.slice(2), { stdio: 'inherit' })
 
-if (result.error) {
-  console.error(`oversee: failed to start ${binaryPath}: ${result.error.message}`)
+const relaySignal = (signal) => {
+  if (!consoleSignalsReachChild) {
+    child.kill(signal)
+  }
+}
+
+for (const signal of forwardedSignals) {
+  process.on(signal, relaySignal)
+}
+
+child.on('error', (error) => {
+  console.error(`oversee: failed to start ${binaryPath}: ${error.message}`)
   process.exit(1)
-}
+})
 
-if (result.signal) {
-  process.kill(process.pid, result.signal)
-} else {
-  process.exit(result.status ?? 1)
-}
+child.on('exit', (code, signal) => {
+  for (const forwarded of forwardedSignals) {
+    process.off(forwarded, relaySignal)
+  }
+  if (signal) {
+    process.kill(process.pid, signal)
+  } else {
+    process.exit(code ?? 1)
+  }
+})

@@ -540,7 +540,7 @@ gdscript.Analyzer.Flow(ProjectSources{Root, Settings: project.godot, Scripts: ev
 ## distribution
 
 - distributed over npm, like `esbuild`:
-    - `@obsfx/oversee`: a small node shim (`npm/oversee/bin/oversee.js`) with every platform package as an `optionalDependency`.
+    - `@obsfx/oversee`: a small node shim (`npm/oversee/bin/oversee.js`) with every platform package as an `optionalDependency`. it spawns the binary, forwards SIGINT, SIGTERM and SIGHUP to it (on windows the console already delivers Ctrl+C and close events to the binary, so the shim only waits) and exits with its code or re-raises its signal, so stopping the shim's pid stops the server too. `Stop-Process` on windows can not be intercepted and still leaves the binary running.
     - `@obsfx/oversee-<os>-<arch>`: one go binary each, limited by `os` and `cpu`, so npm only installs the one for the current machine.
 - platforms: `darwin`, `linux` and `win32` on `arm64` and `x64`, built with `CGO_ENABLED=0`.
 - `pnpm build:npm <version>` writes every package into `npm-dist/`. each package lists only `bin` in `files`, so no `.npmignore` is needed. npm adds the copied `LICENSE` (MIT, `license` field too) to every package and `README.md` to `@obsfx/oversee`. `repository` is written as an object, so publish has nothing to auto-correct. `@obsfx/oversee` carries the GitHub repo topics as `keywords` (`KEYWORDS`), without `go` and `react`, which on npm read as a Go or React library. npm metadata only changes with a published version.
