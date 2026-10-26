@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "masonRelease": "2026-10-20-awful-drum",
+  "masonRelease": "2026-10-26-aboard-grouse",
   "fileTypes": {
     "c": {
       "extensions": [
@@ -359,7 +359,7 @@
       "languages": [
         "Java"
       ],
-      "version": "v1.62.0",
+      "version": "v1.63.0",
       "fileTypes": [
         "java"
       ],
@@ -379,13 +379,13 @@
       "install": {
         "type": "download",
         "package": "eclipse/eclipse.jdt.ls",
-        "version": "v1.62.0",
+        "version": "v1.63.0",
         "platforms": {
           "darwin-arm64": {
             "files": [
               {
-                "url": "https://download.eclipse.org/jdtls/snapshots/jdt-language-server-1.62.0-202610131109.tar.gz",
-                "sha256": "f587dafd8410633c2c2bf005e853a2bbb03cddee88933d49bfe6d9cb1cf09342",
+                "url": "https://download.eclipse.org/jdtls/snapshots/jdt-language-server-1.63.0-202610191322.tar.gz",
+                "sha256": "b1f2abe0b3cccb462cf64fb4a5587c7d09df60cf8be7748b152cbd89d018bdc4",
                 "name": "jdtls.tar.gz"
               }
             ],
@@ -399,8 +399,8 @@
           "darwin-x64": {
             "files": [
               {
-                "url": "https://download.eclipse.org/jdtls/snapshots/jdt-language-server-1.62.0-202610131109.tar.gz",
-                "sha256": "f587dafd8410633c2c2bf005e853a2bbb03cddee88933d49bfe6d9cb1cf09342",
+                "url": "https://download.eclipse.org/jdtls/snapshots/jdt-language-server-1.63.0-202610191322.tar.gz",
+                "sha256": "b1f2abe0b3cccb462cf64fb4a5587c7d09df60cf8be7748b152cbd89d018bdc4",
                 "name": "jdtls.tar.gz"
               }
             ],
@@ -414,8 +414,8 @@
           "linux-arm64-gnu": {
             "files": [
               {
-                "url": "https://download.eclipse.org/jdtls/snapshots/jdt-language-server-1.62.0-202610131109.tar.gz",
-                "sha256": "f587dafd8410633c2c2bf005e853a2bbb03cddee88933d49bfe6d9cb1cf09342",
+                "url": "https://download.eclipse.org/jdtls/snapshots/jdt-language-server-1.63.0-202610191322.tar.gz",
+                "sha256": "b1f2abe0b3cccb462cf64fb4a5587c7d09df60cf8be7748b152cbd89d018bdc4",
                 "name": "jdtls.tar.gz"
               }
             ],
@@ -429,8 +429,8 @@
           "linux-arm64-musl": {
             "files": [
               {
-                "url": "https://download.eclipse.org/jdtls/snapshots/jdt-language-server-1.62.0-202610131109.tar.gz",
-                "sha256": "f587dafd8410633c2c2bf005e853a2bbb03cddee88933d49bfe6d9cb1cf09342",
+                "url": "https://download.eclipse.org/jdtls/snapshots/jdt-language-server-1.63.0-202610191322.tar.gz",
+                "sha256": "b1f2abe0b3cccb462cf64fb4a5587c7d09df60cf8be7748b152cbd89d018bdc4",
                 "name": "jdtls.tar.gz"
               }
             ],
@@ -444,8 +444,8 @@
           "linux-x64-gnu": {
             "files": [
               {
-                "url": "https://download.eclipse.org/jdtls/snapshots/jdt-language-server-1.62.0-202610131109.tar.gz",
-                "sha256": "f587dafd8410633c2c2bf005e853a2bbb03cddee88933d49bfe6d9cb1cf09342",
+                "url": "https://download.eclipse.org/jdtls/snapshots/jdt-language-server-1.63.0-202610191322.tar.gz",
+                "sha256": "b1f2abe0b3cccb462cf64fb4a5587c7d09df60cf8be7748b152cbd89d018bdc4",
                 "name": "jdtls.tar.gz"
               }
             ],
@@ -459,8 +459,8 @@
           "linux-x64-musl": {
             "files": [
               {
-                "url": "https://download.eclipse.org/jdtls/snapshots/jdt-language-server-1.62.0-202610131109.tar.gz",
-                "sha256": "f587dafd8410633c2c2bf005e853a2bbb03cddee88933d49bfe6d9cb1cf09342",
+                "url": "https://download.eclipse.org/jdtls/snapshots/jdt-language-server-1.63.0-202610191322.tar.gz",
+                "sha256": "b1f2abe0b3cccb462cf64fb4a5587c7d09df60cf8be7748b152cbd89d018bdc4",
                 "name": "jdtls.tar.gz"
               }
             ],
@@ -474,8 +474,8 @@
           "win32-arm64": {
             "files": [
               {
-                "url": "https://download.eclipse.org/jdtls/snapshots/jdt-language-server-1.62.0-202610131109.tar.gz",
-                "sha256": "f587dafd8410633c2c2bf005e853a2bbb03cddee88933d49bfe6d9cb1cf09342",
+                "url": "https://download.eclipse.org/jdtls/snapshots/jdt-language-server-1.63.0-202610191322.tar.gz",
+                "sha256": "b1f2abe0b3cccb462cf64fb4a5587c7d09df60cf8be7748b152cbd89d018bdc4",
                 "name": "jdtls.tar.gz"
               }
             ],
@@ -489,8 +489,8 @@
           "win32-x64": {
             "files": [
               {
-                "url": "https://download.eclipse.org/jdtls/snapshots/jdt-language-server-1.62.0-202610131109.tar.gz",
-                "sha256": "f587dafd8410633c2c2bf005e853a2bbb03cddee88933d49bfe6d9cb1cf09342",
+                "url": "https://download.eclipse.org/jdtls/snapshots/jdt-language-server-1.63.0-202610191322.tar.gz",
+                "sha256": "b1f2abe0b3cccb462cf64fb4a5587c7d09df60cf8be7748b152cbd89d018bdc4",
                 "name": "jdtls.tar.gz"
               }
             ],
@@ -1006,10 +1006,10 @@
       "run": {
         "bin": "rust-analyzer",
         "initializationOptions": {
-          "checkOnSave": false,
           "cargo": {
             "targetDir": "${dataDir}/target"
-          }
+          },
+          "checkOnSave": false
         }
       },
       "install": {
@@ -1188,7 +1188,7 @@
       "languages": [
         "Zig"
       ],
-      "version": "0.16.1",
+      "version": "0.17.0",
       "fileTypes": [
         "zig"
       ],
@@ -1202,13 +1202,13 @@
       "install": {
         "type": "download",
         "package": "zigtools/zls",
-        "version": "0.16.1",
+        "version": "0.17.0",
         "platforms": {
           "darwin-arm64": {
             "files": [
               {
-                "url": "https://github.com/zigtools/zls/releases/download/0.16.1/zls-aarch64-macos.tar.xz",
-                "sha256": "777df2d16f5ca9d9d77ee2f10db47e90b474039f008bf735c0066cc70c498d91",
+                "url": "https://github.com/zigtools/zls/releases/download/0.17.0/zls-aarch64-macos.tar.xz",
+                "sha256": "2e451358b4f7e2d4b1fccb65db177dbb321c5a98e95f67e09aa72d6ecfb39d20",
                 "name": "zls-aarch64-macos.tar.xz"
               }
             ],
@@ -1222,8 +1222,8 @@
           "darwin-x64": {
             "files": [
               {
-                "url": "https://github.com/zigtools/zls/releases/download/0.16.1/zls-x86_64-macos.tar.xz",
-                "sha256": "996bd864095208728096ec5b879fffb7ec5c125df70793cfb151e2838cac8abb",
+                "url": "https://github.com/zigtools/zls/releases/download/0.17.0/zls-x86_64-macos.tar.xz",
+                "sha256": "0801481ebf0027620db6729968c069401c7b80f376d35f9f91f480d72c393523",
                 "name": "zls-x86_64-macos.tar.xz"
               }
             ],
@@ -1237,8 +1237,8 @@
           "linux-arm64-gnu": {
             "files": [
               {
-                "url": "https://github.com/zigtools/zls/releases/download/0.16.1/zls-aarch64-linux.tar.xz",
-                "sha256": "6d2f2de1dd4c62b6f8ab2272aebdf701032a4789204a050f099543cfd152057a",
+                "url": "https://github.com/zigtools/zls/releases/download/0.17.0/zls-aarch64-linux.tar.xz",
+                "sha256": "0d314f3cab30da770328e1b8c84ab89bb308e56dbc26a85ac82429ff02b44873",
                 "name": "zls-aarch64-linux.tar.xz"
               }
             ],
@@ -1252,8 +1252,8 @@
           "linux-arm64-musl": {
             "files": [
               {
-                "url": "https://github.com/zigtools/zls/releases/download/0.16.1/zls-aarch64-linux.tar.xz",
-                "sha256": "6d2f2de1dd4c62b6f8ab2272aebdf701032a4789204a050f099543cfd152057a",
+                "url": "https://github.com/zigtools/zls/releases/download/0.17.0/zls-aarch64-linux.tar.xz",
+                "sha256": "0d314f3cab30da770328e1b8c84ab89bb308e56dbc26a85ac82429ff02b44873",
                 "name": "zls-aarch64-linux.tar.xz"
               }
             ],
@@ -1267,8 +1267,8 @@
           "linux-x64-gnu": {
             "files": [
               {
-                "url": "https://github.com/zigtools/zls/releases/download/0.16.1/zls-x86_64-linux.tar.xz",
-                "sha256": "7f3f993d61134b7db0d2f26f5e4a9e20d20c96521bae11d667ff78bbca97e357",
+                "url": "https://github.com/zigtools/zls/releases/download/0.17.0/zls-x86_64-linux.tar.xz",
+                "sha256": "dfa4514e1868803fdf2ae56832c88b9d400094d70ea6bb136b57bcc91af10258",
                 "name": "zls-x86_64-linux.tar.xz"
               }
             ],
@@ -1282,8 +1282,8 @@
           "linux-x64-musl": {
             "files": [
               {
-                "url": "https://github.com/zigtools/zls/releases/download/0.16.1/zls-x86_64-linux.tar.xz",
-                "sha256": "7f3f993d61134b7db0d2f26f5e4a9e20d20c96521bae11d667ff78bbca97e357",
+                "url": "https://github.com/zigtools/zls/releases/download/0.17.0/zls-x86_64-linux.tar.xz",
+                "sha256": "dfa4514e1868803fdf2ae56832c88b9d400094d70ea6bb136b57bcc91af10258",
                 "name": "zls-x86_64-linux.tar.xz"
               }
             ],
@@ -1297,8 +1297,8 @@
           "win32-x64": {
             "files": [
               {
-                "url": "https://github.com/zigtools/zls/releases/download/0.16.1/zls-x86_64-windows.zip",
-                "sha256": "97fdd44fee0b63cece4e966795617a46f0b7a0ee41df69656a9d1204fabba6b9",
+                "url": "https://github.com/zigtools/zls/releases/download/0.17.0/zls-x86_64-windows.zip",
+                "sha256": "b0e557b13032322f530a818ea4eb899a51a2e738808397a8cf3868fd56b73972",
                 "name": "zls-x86_64-windows.zip"
               }
             ],
