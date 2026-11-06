@@ -51,3 +51,5 @@ export const FiveDigitLines: Story = {
     gutterWidth: 'max(2rem, calc(5ch + 0.5rem))',
   },
 }
+
+export const Reader: Story = { args: { size: 'reader' } }

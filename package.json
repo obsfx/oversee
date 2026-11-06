@@ -39,6 +39,7 @@
     "@uidotdev/usehooks": "2.4.1",
     "clsx": "2.1.1",
     "dayjs": "1.11.23",
+    "pele": "1.12.0",
     "plur": "6.0.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

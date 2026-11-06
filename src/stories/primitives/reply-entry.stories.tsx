@@ -36,3 +36,5 @@ export const RichBody: Story = {
     ),
   },
 }
+
+export const Reader: Story = { args: { size: 'reader' } }

@@ -10,6 +10,29 @@ import { fileDiffFor } from '@/src/stories/support/file-diff-fixture.ts'
 const HOUR = 60 * 60 * 1000
 const DAY = 24 * HOUR
 
+export const AGENT_DIAGRAM_REPLY = [
+  'The mutation fans out in three steps. Firebase runs **before** the database delete, so a failed Firebase call leaves the rows in place and the mutation can be retried safely.',
+  '',
+  '```mermaid',
+  'flowchart LR',
+  '  A[deleteAdminUsers] --> B{loadUsers}',
+  '  B -->|found| C[firebaseUserDeletion]',
+  '  B -->|missing| E[skip id]',
+  '  C -->|ok| D[(users table delete)]',
+  '  C -->|error| F[keep rows, report id]',
+  '```',
+  '',
+  'Things I checked while tracing it:',
+  '',
+  '1. `firebaseUserDeletion` batches 1000 uids per call, which is the Admin SDK limit.',
+  '2. Rate limit errors are retried twice with a 500ms backoff, other errors are reported per id.',
+  '3. The resolver returns the ids that were actually removed, not the requested ones.',
+  '',
+  '> The order matters: deleting the rows first would orphan Firebase accounts that can still sign in.',
+  '',
+  'I left the flow as is and added a test for the partial failure case in `deleteAdminUsersCore.test.ts`.',
+].join('\n')
+
 const additions = (start: number, end: number): LineRange => {
   return { start, end, side: 'additions', endSide: 'additions' }
 }
@@ -19,6 +42,54 @@ const numbered = (start: number, texts: string[]) => {
     return { number: start + index, text }
   })
 }
+
+export const AGENT_LONG_REPLY = [
+  '## What changed',
+  '',
+  'I moved the TTL parsing out of the resolver and into `SessionConfig`, so every caller reads the same validated value. The resolver now only asks for `config.sessionTtl` and never touches the raw env var.',
+  '',
+  'The validation rejects three cases that used to slip through:',
+  '',
+  '1. `0` and negative values, which expired every session at once (the bug you pointed at).',
+  '2. Values above 30 days, which we never intended to support and which overflowed the cookie `maxAge` on Safari.',
+  '3. Non numeric strings such as `1h`, which `Number()` turned into `NaN` and the comparison then treated as "never expires".',
+  '',
+  '```ts',
+  'export class SessionConfig {',
+  '  static parse(raw: string | undefined): number {',
+  '    const ttl = Number(raw)',
+  '    if (!Number.isInteger(ttl) || ttl <= 0 || ttl > MAX_TTL_MS) {',
+  "      throw new ConfigError('SESSION_TTL must be a positive number of milliseconds')",
+  '    }',
+  '    return ttl',
+  '  }',
+  '}',
+  '```',
+  '',
+  '## Why it throws at startup',
+  '',
+  'A bad TTL is a deploy mistake, not a runtime condition, so the server refuses to boot instead of falling back to a default. A silent fallback would hide a misconfigured environment until users start getting logged out, which is exactly how the original bug went unnoticed for two weeks.',
+  '',
+  '```mermaid',
+  'sequenceDiagram',
+  '  participant Boot',
+  '  participant SessionConfig',
+  '  participant Resolver',
+  '  Boot->>SessionConfig: parse(SESSION_TTL)',
+  '  SessionConfig-->>Boot: ttl or ConfigError',
+  '  Resolver->>SessionConfig: sessionTtl',
+  '  SessionConfig-->>Resolver: validated ttl',
+  '```',
+  '',
+  '## Things I did not change',
+  '',
+  '- The refresh token TTL still lives in the auth module. It has its own validation and a different unit (seconds), so merging the two would need a migration of the env files.',
+  '- `expiresAt` is still computed with `Date.now()`. Injecting a clock would make the tests nicer, but nothing else in this module uses one yet.',
+  '',
+  '> If you want the clock injected anyway, I can do it in a follow up together with the refresh token cleanup.',
+  '',
+  'Tests: added `session-config.test.ts` with the three rejected cases and the 30 day boundary, and updated the resolver test to use the parsed config.',
+].join('\n')
 
 export const snapshotOf = (comment: ReviewComment): SnapshotLine[] => {
   const change = ChangeSets.find(changeSet.changes, comment.filePath)
@@ -121,6 +192,56 @@ export const reviewSessions: ReviewSession[] = [
         outdatedAt: null,
         replies: [],
         lines: numbered(3, ['SESSION_TTL=3600000']),
+      },
+      {
+        id: 's2c3',
+        filePath: 'src/graphql/resolvers/AdminUser/mutations/deleteMany.ts',
+        range: additions(12, 16),
+        body: 'How does the deletion flow reach Firebase? Draw it for me.',
+        createdAt: Date.now() - 1 * DAY - HOUR,
+        updatedAt: Date.now() - 1 * DAY - HOUR,
+        outdatedAt: null,
+        replies: [
+          {
+            id: 's2c3r1',
+            commentId: 's2c3',
+            author: 'agent',
+            body: AGENT_DIAGRAM_REPLY,
+            createdAt: Date.now() - 19 * HOUR,
+          },
+        ],
+        lines: numbered(12, [
+          'export const deleteMany = async (ids: string[]) => {',
+          '  const users = await loadUsers(ids)',
+          '  await firebaseUserDeletion(users)',
+          '  await db.deleteFrom("users").where("id", "in", ids).execute()',
+          '}',
+        ]),
+      },
+      {
+        id: 's2c4',
+        filePath: 'src/graphql/resolvers/User/mutations/auth.ts',
+        range: additions(22, 26),
+        body: 'Validate the **range** here, a `0` would expire every session instantly. Where should this validation live so the other callers get it too?',
+        createdAt: Date.now() - 1 * DAY - HOUR,
+        updatedAt: Date.now() - 1 * DAY - HOUR,
+        outdatedAt: null,
+        replies: [
+          {
+            id: 's2c4r1',
+            commentId: 's2c4',
+            author: 'agent',
+            body: AGENT_LONG_REPLY,
+            createdAt: Date.now() - 18 * HOUR,
+          },
+        ],
+        lines: numbered(22, [
+          'export const login = async (input: LoginInput) => {',
+          '  const user = await verifyCredentials(input)',
+          '  const expiresAt = Date.now() + config.sessionTtl',
+          '  return sessions.create({ userId: user.id, expiresAt })',
+          '}',
+        ]),
       },
     ],
   },

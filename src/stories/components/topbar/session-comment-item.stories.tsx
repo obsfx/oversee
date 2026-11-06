@@ -13,7 +13,7 @@ const outdatedComment = reviewSessions[0].comments[1]
 const meta = {
   title: 'Components/Topbar/SessionCommentItem',
   component: SessionCommentItem,
-  args: { comment: replied, onNavigate: fn() },
+  args: { comment: replied, onNavigate: fn(), onRead: fn() },
   decorators: [
     (Story) => {
       return (

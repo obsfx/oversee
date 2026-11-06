@@ -83,3 +83,5 @@ export const SingleNewlines: Story = {
     ],
   },
 }
+
+export const Reader: Story = { args: { size: 'reader' } }

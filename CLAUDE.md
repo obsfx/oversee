@@ -214,6 +214,7 @@ row click or Enter
 
 ##### replies
 - agents reply to comments with `oversee review reply`. replies show as an always visible thread under their comment in the session detail, rendered as full markdown (`MarkdownView`), so multi-paragraph answers stay intact. `CommentMarkdown` parses with `breaks: true` (like GitHub comments) in both the renderer and the editor, so a single newline from the CLI is a line break and edits round-trip it as `  \n`.
+- fenced `mermaid` blocks in comments and replies render as diagrams through `pele` (`pele/lazy`, loaded on first use): `MarkdownView` maps code blocks to `CommentCodeBlock`, which hands mermaid sources to `MermaidDiagram` (`useMermaidDiagram`, `MermaidDiagrams.mount`) and keeps every other language a code block. links and images inside diagrams are off, labels use the prose font size, colors come from the app tokens (`.comment-diagram` maps the `--pele-*` variables), and invalid syntax shows pele's error with the source below it. `CommentMarkdown.summary` skips fence lines.
 
 ##### outdated comments
 - an **outdated comment** is a comment of the **open (unfinished)** session whose saved lines can no longer be found in the current file, whose file left the comparison's change set, or whose comparison is gone (a source or target branch no longer exists).
@@ -242,6 +243,10 @@ row click or Enter
     - `Current`: comments of the open session. clicking one navigates to its file and scrolls to its line. outdated comments sit behind the notice row, see **outdated comments**.
     - `Sessions`: finished sessions of the current comparison, newest first. each row shows the status icon, finish date, branch and comment count.
 - selecting a session drills into it inside the same popover (with a back button). `ReviewSessionLoader` shows it: `useReviewSession` uses the current comparison's listed session when it has one and fetches it by id otherwise, so a session of another comparison opens there too. each comment shows its file and line range (a link, see **comment locations**), the saved code lines with **syntax highlighting** (same theme as the diff view), the full comment text as markdown and its replies. one-line rows (the `Current` tab) use `CommentMarkdown.summary` instead.
+- **reader**: a magnify button (`MagnifyButton`) on each session detail comment opens `CommentReaderDialog`, a centered dialog (`DialogSurface`, 50rem wide, 86vh tall) with the whole thread at the `reader` size (`ReadingSize`: 15px prose, a larger snippet without the height cap, larger reply headers). its title is the comment location (opens the file and closes both the reader and the popover), and a `n / N` pager steps through the session's comments with the buttons, Left/Right or k/j, disabled at the ends and not animated.
+    - the popover stays open under the reader. Esc or a backdrop click closes only the reader and focus returns to its magnify button. it works in the notifications popover too, which shows the same session detail.
+    - `useCommentReader` holds the comment id and the open flag (the id stays while closing, so the exit fade keeps its content), `CommentReaderRules` owns the step keys and neighbors. the body takes the initial focus, so Space and Page Down scroll it, and `useScrollReset` scrolls it to the top on each step.
+    - motion: scale 0.96 and opacity in 200ms, out in 150ms, ease-out `cubic-bezier(0.23,1,0.32,1)`, opacity only with reduced motion.
 
 ##### how it works
 - `ReviewSessionGateway` (http, and in-memory for stories) and the `ReviewSessions` class own the data. finishing updates the session list and clears the active comments. `ReviewSessions.session(id)` loads a single session from any comparison.

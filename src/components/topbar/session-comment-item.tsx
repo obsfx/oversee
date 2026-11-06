@@ -6,15 +6,17 @@ import { useSessionCommentFocus } from '@/src/hooks/use-session-comment-focus.ts
 import { CommentLists } from '@/src/lib/comment-lists.ts'
 import { LineRanges } from '@/src/lib/line-range.ts'
 import type { SessionComment as SessionCommentData } from '@/src/lib/review-session-gateway.ts'
+import { MagnifyButton } from '@/src/primitives/magnify-button.tsx'
 import { OutdatedLabel } from '@/src/primitives/outdated-label.tsx'
 import { SessionComment } from '@/src/primitives/session-comment.tsx'
 
 interface SessionCommentItemProps {
   comment: SessionCommentData
   onNavigate: () => void
+  onRead: () => void
 }
 
-export function SessionCommentItem({ comment, onNavigate }: SessionCommentItemProps) {
+export function SessionCommentItem({ comment, onNavigate, onRead }: SessionCommentItemProps) {
   const { attach, highlightKey, endHighlight } = useSessionCommentFocus(comment.id)
   const openLocation = useCommentLocationOpener(onNavigate)
   const outdated = CommentLists.isOutdated(comment)
@@ -30,7 +32,12 @@ export function SessionCommentItem({ comment, onNavigate }: SessionCommentItemPr
       onOpenFile={() => {
         openLocation(comment)
       }}
-      marker={outdated && <OutdatedLabel />}
+      marker={
+        <>
+          {outdated && <OutdatedLabel />}
+          <MagnifyButton label={'Read this thread'} onClick={onRead} />
+        </>
+      }
       dimmed={outdated}
       snippet={<SessionSnippet lines={comment.lines} filePath={comment.filePath} />}
       body={<MarkdownView body={comment.body} />}

@@ -24,3 +24,7 @@ export const FirstOfTwo: Story = {}
 export const ThirdOfTwelve: Story = { args: { position: 3, count: 12 } }
 
 export const ManyDefinitions: Story = { args: { position: 1, count: 128 } }
+
+export const AtStart: Story = { args: { position: 1, count: 4, previousDisabled: true } }
+
+export const AtEnd: Story = { args: { position: 4, count: 4, nextDisabled: true } }

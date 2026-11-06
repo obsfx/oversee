@@ -151,6 +151,11 @@ body {
   overflow-wrap: anywhere;
 }
 
+.comment-prose[data-size='reader'] {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
 .comment-prose > * + * {
   margin-top: 0.4em;
 }
@@ -235,6 +240,32 @@ body {
 .comment-prose hr {
   border: 0;
   border-top: 1px solid var(--color-line);
+}
+
+.comment-diagram {
+  --pele-bg: var(--color-surface-subtle);
+  --pele-fg: var(--color-fg);
+  --pele-fg-on-light: #1f2328;
+  --pele-fg-on-dark: #ffffff;
+  --pele-muted: var(--color-fg-muted);
+  --pele-line: var(--color-fg-muted);
+  --pele-surface: var(--color-surface);
+  --pele-surface-alt: var(--color-surface-hover);
+  --pele-border: var(--color-fg-faint);
+  --pele-accent: var(--color-accent);
+  --pele-critical: var(--color-danger);
+  --pele-error: var(--color-danger);
+  --pele-series-1: var(--color-accent);
+  --pele-series-2: var(--color-status-added);
+  --pele-series-3: var(--color-status-modified);
+  --pele-series-4: var(--color-symbol-handler);
+  --pele-series-5: var(--color-status-deleted);
+  --pele-series-6: var(--color-symbol-hook);
+  --pele-series-7: var(--color-symbol-callback);
+  --pele-series-8: var(--color-status-renamed);
+  --pele-font: var(--font-ui);
+  --pele-font-mono: var(--font-editor);
+  --pele-radius: 4px;
 }
 
 .comment-prose.ProseMirror {

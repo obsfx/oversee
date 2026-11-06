@@ -1,3 +1,5 @@
+import { c } from '@/src/c.ts'
+import type { ReadingSize } from '@/src/lib/comment-reader-rules.ts'
 import type { SnippetViewLine } from '@/src/lib/snippet-highlighter.ts'
 
 interface CodeSnippetViewProps {
@@ -5,6 +7,7 @@ interface CodeSnippetViewProps {
   background?: string
   foreground?: string
   gutterWidth?: string
+  size?: ReadingSize
 }
 
 export function CodeSnippetView({
@@ -12,13 +15,16 @@ export function CodeSnippetView({
   background,
   foreground,
   gutterWidth,
+  size = 'compact',
 }: CodeSnippetViewProps) {
   return (
     <div
       style={{ background, color: foreground }}
-      className={
-        'max-h-32 overflow-auto rounded border border-line bg-surface-subtle py-0.5 font-editor text-mini leading-4'
-      }
+      className={c(
+        'overflow-auto rounded border border-line bg-surface-subtle font-editor',
+        size === 'compact' && 'max-h-32 py-0.5 text-mini leading-4',
+        size === 'reader' && 'py-1.5 text-[0.8125rem] leading-5',
+      )}
     >
       {lines.map((line) => {
         return (

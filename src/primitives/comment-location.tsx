@@ -1,14 +1,22 @@
 import type { ReactNode } from 'react'
 import { c } from '@/src/c.ts'
+import type { ReadingSize } from '@/src/lib/comment-reader-rules.ts'
 
 interface CommentLocationProps {
   filePath: string
   location: string
+  size?: ReadingSize
   onOpen?: () => void
   children?: ReactNode
 }
 
-export function CommentLocation({ filePath, location, onOpen, children }: CommentLocationProps) {
+export function CommentLocation({
+  filePath,
+  location,
+  size = 'compact',
+  onOpen,
+  children,
+}: CommentLocationProps) {
   let place = (
     <>
       <span className={'truncate'}>{filePath}</span>
@@ -32,7 +40,13 @@ export function CommentLocation({ filePath, location, onOpen, children }: Commen
     )
   }
   return (
-    <span className={'flex items-center gap-1.5 text-mini text-fg-muted'}>
+    <span
+      className={c(
+        'flex items-center gap-1.5 text-fg-muted',
+        size === 'compact' && 'text-mini',
+        size === 'reader' && 'text-sm',
+      )}
+    >
       {place}
       {children}
     </span>

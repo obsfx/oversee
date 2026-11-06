@@ -1,5 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { MarkdownView } from '@/src/components/markdown-view.tsx'
+import {
+  AGENT_DIAGRAM_REPLY,
+  AGENT_LONG_REPLY,
+} from '@/src/stories/support/review-session-fixture.ts'
 
 const RICH_BODY = [
   'Extract **expiry math** into `nextExpiry`, keep ~~magic numbers~~ out, see *docs*.',
@@ -41,3 +45,7 @@ type Story = StoryObj<typeof meta>
 export const Rich: Story = {}
 
 export const Plain: Story = { args: { body: 'A plain one line comment.' } }
+
+export const Mermaid: Story = { args: { body: AGENT_DIAGRAM_REPLY } }
+
+export const Reader: Story = { args: { body: AGENT_LONG_REPLY, size: 'reader' } }

@@ -36,3 +36,5 @@ export const LongPath: Story = {
 }
 
 export const Clickable: Story = { args: { onOpen: fn() } }
+
+export const Reader: Story = { args: { size: 'reader', onOpen: fn() } }

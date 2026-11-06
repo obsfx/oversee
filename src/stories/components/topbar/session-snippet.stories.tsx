@@ -31,3 +31,5 @@ type Story = StoryObj<typeof meta>
 export const TypeScript: Story = {}
 
 export const Yaml: Story = { args: { lines: yamlComment.lines, filePath: yamlComment.filePath } }
+
+export const Reader: Story = { args: { size: 'reader' } }
